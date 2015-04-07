@@ -4,6 +4,7 @@ import java.security.SecureRandomSpi;
 
 import prng.Fortuna;
 import prng.NonceFactory;
+import prng.SeedSource;
 
 /**
  * Common NIST secure random number functionality.
@@ -14,6 +15,40 @@ import prng.NonceFactory;
 abstract public class BaseRandom extends SecureRandomSpi {
     /** serial version UID */
     private static final long serialVersionUID = 1l;
+
+
+    /**
+     * The re-seed counter
+     */
+    private int counter_ = 1;
+
+    /**
+     * A counter for how often this can generate bytes before needing reseeding.
+     */
+    private final int resistance_;
+
+    /**
+     * Number of bytes required for a re-seed
+     */
+    private final int seedSize_;
+
+    /** Source of entropy */
+    private final SeedSource source_;
+
+    /**
+     * New instance.
+     * 
+     * @param resistance
+     *            number of operations between re-seeds
+     * @param seedSize
+     *            the number of bytes in a re-seed.
+     */
+    protected BaseRandom(SeedSource source, int resistance, int seedSize) {
+        source_ = (source == null) ? Fortuna.SOURCE : source;
+        resistance_ = resistance;
+        seedSize_ = seedSize;
+    }
+
 
     /**
      * Concatenate the standard material inputs
@@ -30,9 +65,9 @@ abstract public class BaseRandom extends SecureRandomSpi {
      *            the desired bytes of entropy if none supplied
      * @return concatenated data
      */
-    protected static byte[] combineMaterials(byte[] entropy, byte[] nonce,
+    protected byte[] combineMaterials(byte[] entropy, byte[] nonce,
             byte[] personalization, int minEntropy, int desiredEntropy) {
-        if( entropy == null ) entropy = Fortuna.getSeed(desiredEntropy);
+        if( entropy == null ) entropy = source_.getSeed(desiredEntropy);
         if( entropy.length < minEntropy ) {
             byte[] newEntropy = Fortuna.getSeed(minEntropy);
             System.arraycopy(entropy, 0, newEntropy, 0, entropy.length);
@@ -52,39 +87,10 @@ abstract public class BaseRandom extends SecureRandomSpi {
         return seedMaterial;
     }
 
-    /**
-     * The re-seed counter
-     */
-    private int counter_ = 1;
-
-    /**
-     * A counter for how often this can generate bytes before needing reseeding.
-     */
-    private final int resistance_;
-
-    /**
-     * Number of bytes required for a re-seed
-     */
-    private final int seedSize_;
-
-
-    /**
-     * New instance.
-     * 
-     * @param resistance
-     *            number of operations between re-seeds
-     * @param seedSize
-     *            the number of bytes in a re-seed.
-     */
-    protected BaseRandom(int resistance, int seedSize) {
-        resistance_ = resistance;
-        seedSize_ = seedSize;
-    }
-
 
     @Override
     protected final byte[] engineGenerateSeed(int size) {
-        return Fortuna.getSeed(size);
+        return source_.getSeed(size);
     }
 
 
@@ -124,6 +130,16 @@ abstract public class BaseRandom extends SecureRandomSpi {
      */
     abstract protected void implSetSeed(byte[] seed);
 
-    
-    
+
+    /**
+     * Create a value that can be used to seed this algorithm without loss of
+     * entropy
+     * 
+     * @return a value for seeding this algorithm
+     */
+    protected byte[] newSeed() {
+        byte[] seed = new byte[seedSize_];
+        engineNextBytes(seed);
+        return seed;
+    }
 }

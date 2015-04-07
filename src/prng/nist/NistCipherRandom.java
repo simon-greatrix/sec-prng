@@ -8,6 +8,8 @@ import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 
+import prng.SeedSource;
+
 /**
  * An implementation of the NIST Cipher-based Deterministic Random Number
  * Generator as defined in SP800-90A. Only the AES-256 cipher is available as an
@@ -61,12 +63,10 @@ public class NistCipherRandom extends BaseRandom {
      */
     private final Cipher cipher_;
 
-
     /**
      * The "Key" parameter as defined in the specification.
      */
     private byte[] key_;
-
 
     /**
      * The "V" Value parameter as defined in the specification.
@@ -79,13 +79,15 @@ public class NistCipherRandom extends BaseRandom {
      * initialisation parameters.
      */
     public NistCipherRandom() {
-        this(0, null, null, null);
+        this(null, 0, null, null, null);
     }
 
 
     /**
      * Create a new deterministic random number generator
      * 
+     * @param source
+     *            entropy source
      * @param resistance
      *            the number of operations between reseeds
      * @param entropy
@@ -95,9 +97,9 @@ public class NistCipherRandom extends BaseRandom {
      * @param personalization
      *            an optional personalization value
      */
-    public NistCipherRandom(int resistance, byte[] entropy, byte[] nonce,
-            byte[] personalization) {
-        super(resistance,48);
+    public NistCipherRandom(SeedSource source, int resistance, byte[] entropy,
+            byte[] nonce, byte[] personalization) {
+        super(source, resistance, 48);
 
         try {
             cipher_ = Cipher.getInstance("AES/ECB/NoPadding");
@@ -107,14 +109,13 @@ public class NistCipherRandom extends BaseRandom {
             throw new Error("NoPadding not supported");
         }
 
-        byte[] seedMaterial = combineMaterials(entropy, nonce, personalization, 32, 48);
+        byte[] seedMaterial = combineMaterials(entropy, nonce, personalization,
+                32, 48);
 
         key_ = new byte[32];
         value_ = new byte[16];
         implSetSeed(seedMaterial);
     }
-
-
 
 
     @Override
@@ -143,7 +144,6 @@ public class NistCipherRandom extends BaseRandom {
 
         implSetSeed(EMPTY_BYTES);
     }
-
 
 
     /**

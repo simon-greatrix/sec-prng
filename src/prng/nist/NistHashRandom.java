@@ -3,6 +3,8 @@ package prng.nist;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+import prng.SeedSource;
+
 /**
  * An implementation of the NIST Hash-based Deterministic Random Number
  * Generator as defined in SP800-90A.
@@ -24,7 +26,7 @@ public class NistHashRandom extends BaseRandom {
 
         /** New instance */
         public RandomSHA1() {
-            super(HashSpec.SPEC_SHA1, 0, null, null, null);
+            super(null, HashSpec.SPEC_SHA1, 0, null, null, null);
         }
     }
 
@@ -41,7 +43,7 @@ public class NistHashRandom extends BaseRandom {
 
         /** New instance */
         public RandomSHA256() {
-            super(HashSpec.SPEC_SHA256, 0, null, null, null);
+            super(null, HashSpec.SPEC_SHA256, 0, null, null, null);
         }
     }
 
@@ -58,7 +60,7 @@ public class NistHashRandom extends BaseRandom {
 
         /** New instance */
         public RandomSHA512() {
-            super(HashSpec.SPEC_SHA512, 0, null, null, null);
+            super(null, HashSpec.SPEC_SHA512, 0, null, null, null);
         }
     }
 
@@ -87,10 +89,14 @@ public class NistHashRandom extends BaseRandom {
     /**
      * Create a new deterministic random number generator
      * 
+     * @param source
+     *            Entropy source
      * @param spec
      *            digest specification (required)
      * @param resistance
-     *            number of operations between reseeds.
+     *            number of operations between reseeds. Zero reseeds on every
+     *            operation, one reseeds on every alternate operation, and so
+     *            on.
      * @param entropy
      *            the initial entropy
      * @param nonce
@@ -99,12 +105,13 @@ public class NistHashRandom extends BaseRandom {
      *            an optional personalization value
      * @throws NoSuchAlgorithmException
      */
-    public NistHashRandom(HashSpec spec, int resistance, byte[] entropy,
-            byte[] nonce, byte[] personalization) {
-        super(resistance,spec.seedLength_);
+    public NistHashRandom(SeedSource source, HashSpec spec, int resistance,
+            byte[] entropy, byte[] nonce, byte[] personalization) {
+        super(source, resistance, spec.seedLength_);
         spec_ = spec;
         digest_ = spec.getInstance();
-        byte[] seedMaterial=combineMaterials(entropy, nonce, personalization, spec.seedLength_, spec.seedLength_);
+        byte[] seedMaterial = combineMaterials(entropy, nonce, personalization,
+                spec.seedLength_, spec.seedLength_);
 
         value_ = hashDF(false, seedMaterial);
         constant_ = hashDF(true, value_);
@@ -216,7 +223,7 @@ public class NistHashRandom extends BaseRandom {
         add(opCount_);
         opCount_++;
     }
-    
+
     /** Count of number of generator operations */
     private int opCount_ = 0;
 

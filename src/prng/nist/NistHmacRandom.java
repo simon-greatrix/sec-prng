@@ -4,6 +4,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
+import prng.SeedSource;
+
 /**
  * An implementation of the NIST HMAC-based Deterministic Random Number
  * Generator as defined in SP800-90A.
@@ -25,7 +27,7 @@ public class NistHmacRandom extends BaseRandom {
 
         /** New instance */
         public RandomHmacSHA1() {
-            super(HashSpec.SPEC_SHA1, 0, null, null, null);
+            super(null, HashSpec.SPEC_SHA1, 0, null, null, null);
         }
     }
 
@@ -42,7 +44,7 @@ public class NistHmacRandom extends BaseRandom {
 
         /** New instance */
         public RandomHmacSHA256() {
-            super(HashSpec.SPEC_SHA256, 0, null, null, null);
+            super(null, HashSpec.SPEC_SHA256, 0, null, null, null);
         }
     }
 
@@ -59,7 +61,7 @@ public class NistHmacRandom extends BaseRandom {
 
         /** New instance */
         public RandomHmacSHA512() {
-            super(HashSpec.SPEC_SHA512, 0, null, null, null);
+            super(null, HashSpec.SPEC_SHA512, 0, null, null, null);
         }
     }
 
@@ -68,7 +70,6 @@ public class NistHmacRandom extends BaseRandom {
 
     /** Serial version UID */
     private static final long serialVersionUID = 1l;
-
 
     /**
      * The hash function
@@ -79,7 +80,6 @@ public class NistHmacRandom extends BaseRandom {
      * The "Key" parameter as defined in the specification.
      */
     private byte[] key_;
-    
 
     /** Algorithm parameters */
     private final HashSpec spec_;
@@ -93,6 +93,8 @@ public class NistHmacRandom extends BaseRandom {
     /**
      * Create a new deterministic random number generator
      * 
+     * @param source
+     *            Entropy source
      * @param spec
      *            digest specification (required)
      * @param resistance
@@ -105,13 +107,14 @@ public class NistHmacRandom extends BaseRandom {
      *            an optional personalization value
      * @throws NoSuchAlgorithmException
      */
-    public NistHmacRandom(HashSpec spec, int resistance, byte[] entropy,
-            byte[] nonce, byte[] personalization) {
-        super(resistance,spec.seedLength_);
+    public NistHmacRandom(SeedSource source, HashSpec spec, int resistance,
+            byte[] entropy, byte[] nonce, byte[] personalization) {
+        super(source, resistance, spec.seedLength_);
         spec_ = spec;
         digest_ = spec.getInstance();
 
-        byte[] seedMaterial = combineMaterials(entropy,nonce,personalization,spec.seedLength_,spec.seedLength_);
+        byte[] seedMaterial = combineMaterials(entropy, nonce, personalization,
+                spec.seedLength_, spec.seedLength_);
 
         key_ = new byte[spec.outputLength_];
         value_ = new byte[spec.outputLength_];

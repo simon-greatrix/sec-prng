@@ -31,10 +31,21 @@ public class Fortuna {
     /** The singleton instance of Fortuna */
     private static final Fortuna INSTANCE;
 
+    /**
+     * Derive entropy from Fortuna
+     */
+    public static final SeedSource SOURCE = new SeedSource() {
+        @Override
+        public byte[] getSeed(int bytes) {
+            return Fortuna.getSeed(bytes);
+        }
+    };
+
     static {
         INSTANCE = new Fortuna();
         EntropyCollector.initialiseStandard();
     }
+
 
     /**
      * Create a seed value
@@ -87,28 +98,29 @@ public class Fortuna {
         // with system entropy initially.
         byte[] entropy = new byte[128];
         for(int i = 0;i < 32;i++) {
-            SystemRandom.get(entropy);
+            SystemRandom.nextBytes(entropy);
             SecureRandomSpi spi;
             switch (i % 5) {
             case 0:
             default:
-                spi = new NistCipherRandom(Integer.MAX_VALUE, entropy, null, null);
+                spi = new NistCipherRandom(SystemRandom.SOURCE, 971, entropy,
+                        null, null);
                 break;
             case 1:
-                spi = new NistHashRandom(HashSpec.SPEC_SHA256, Integer.MAX_VALUE, entropy, null,
-                        null);
+                spi = new NistHashRandom(SystemRandom.SOURCE,
+                        HashSpec.SPEC_SHA256, 977, entropy, null, null);
                 break;
             case 2:
-                spi = new NistHashRandom(HashSpec.SPEC_SHA512, Integer.MAX_VALUE, entropy, null,
-                        null);
+                spi = new NistHashRandom(SystemRandom.SOURCE,
+                        HashSpec.SPEC_SHA512, 983, entropy, null, null);
                 break;
             case 3:
-                spi = new NistHmacRandom(HashSpec.SPEC_SHA256, Integer.MAX_VALUE, entropy, null,
-                        null);
+                spi = new NistHmacRandom(SystemRandom.SOURCE,
+                        HashSpec.SPEC_SHA256, 991, entropy, null, null);
                 break;
             case 4:
-                spi = new NistHmacRandom(HashSpec.SPEC_SHA512, Integer.MAX_VALUE, entropy, null,
-                        null);
+                spi = new NistHmacRandom(SystemRandom.SOURCE,
+                        HashSpec.SPEC_SHA512, 997, entropy, null, null);
                 break;
             }
             pool_[i] = new SecureRandomImpl(spi);
@@ -249,7 +261,7 @@ public class Fortuna {
      */
     protected static void addEvent(int pool, byte[] data) {
         Fortuna instance = Fortuna.INSTANCE;
-        synchronized( instance ) {
+        synchronized (instance) {
             instance.pool_[pool].setSeed(data);
         }
     }
