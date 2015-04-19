@@ -265,7 +265,7 @@ public class Config implements Iterable<String> {
      *            the default value
      * @return the value
      */
-    public boolean get(String key, boolean dflt) {
+    public boolean getBoolean(String key, boolean dflt) {
         Boolean v = getBoolean(key);
         return (v == null) ? dflt : v;
     }

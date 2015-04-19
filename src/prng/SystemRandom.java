@@ -38,33 +38,52 @@ import prng.nist.NistHashRandom;
  *
  */
 public class SystemRandom implements Runnable {
-    public static void main(String[] args) {
-        for(int i = 0;i < 10000;i++) {
-            System.out.println(getRandom().nextLong());
-        }
-    }
-
     /**
      * A seed from one of the system sources
      * 
      * @author Simon Greatrix
      */
-    class Seed implements Callable<Seed> {
-        /** Generated seed */
-        byte[] seed_;
+    static class Seed implements Callable<Seed> {
+        /** Secure random seed source */
+        final SecureRandom random_;
+
+        /** Generated or injected seed */
+        byte[] seed_ = null;
+
+
+        /**
+         * Inject seed data
+         * 
+         * @param seed
+         *            data to inject
+         */
+        Seed(byte[] seed) {
+            random_ = null;
+            seed_ = seed.clone();
+        }
+
+
+        /**
+         * Create seeds from the supplied PRNG
+         * 
+         * @param random
+         *            seed source
+         */
+        Seed(SecureRandom random) {
+            random_ = random;
+        }
 
 
         @Override
         public Seed call() {
+            if( random_ == null ) return this;
+
             if( LOG.isDebugEnabled() ) {
                 LOG.debug("Generating seed from "
                         + random_.getProvider().getName() + ":"
                         + random_.getAlgorithm());
             }
             seed_ = random_.generateSeed(32);
-            System.out.println("Finished generating seed from "
-                    + random_.getProvider().getName() + ":"
-                    + random_.getAlgorithm());
             if( LOG.isDebugEnabled() ) {
                 LOG.debug("Finished generating seed from "
                         + random_.getProvider().getName() + ":"
@@ -78,26 +97,37 @@ public class SystemRandom implements Runnable {
          * Resubmit this seed source
          */
         public void resubmit() {
-            SEED_MAKER.submit(this);
+            seed_ = null;
+            if( random_ != null ) {
+                SEED_MAKER.submit(this);
+            }
         }
     }
+
+    /** Block length that is fetched from each source at one time */
+    private static final int BLOCK_LEN = 256;
 
     /**
      * Thread pool executor
      */
     private static final Executor EXECUTOR;
 
-    /**
-     * Fetching seed data may block. To prevent waits on re-seeding we use this
-     * completion service.
-     */
-    private static final ExecutorCompletionService<Seed> SEED_MAKER;
+    /** Current source in pre-fetched data */
+    private static int INDEX = 0;
 
     /** Logger for this class */
     private static final Logger LOG = LoggerFactory.getLogger(SystemRandom.class);
 
-    /** Block length that is fetched from each source at one time */
-    private static final int BLOCK_LEN = 256;
+    /**
+     * Random number generator that draws from the System random number sources
+     */
+    private static SecureRandom RANDOM = null;
+
+    /**
+     * The number of currently ready sources. Requests will block if there are
+     * none.
+     */
+    private static int READY = 0;
 
     /**
      * "Random" selection for which source gets reseeded. The intention is to
@@ -106,19 +136,11 @@ public class SystemRandom implements Runnable {
      */
     private static Random RESEED = new Random();
 
-    /** Current source in pre-fetched data */
-    private static int INDEX = 0;
-
     /**
-     * Random number generator that draws from the System random number sources
+     * Fetching seed data may block. To prevent waits on re-seeding we use this
+     * completion service.
      */
-    private static SecureRandom RANDOM = null;
-
-    /** Number of sources */
-    private static final int SOURCE_LEN;
-
-    /** System provided secure random number generators */
-    private final static SystemRandom[] SOURCES;
+    private static final ExecutorCompletionService<Seed> SEED_MAKER;
 
     /**
      * Source for getting entropy from the system
@@ -131,6 +153,12 @@ public class SystemRandom implements Runnable {
             return seed;
         }
     };
+
+    /** Number of sources */
+    private static final int SOURCE_LEN;
+
+    /** System provided secure random number generators */
+    private final static SystemRandom[] SOURCES;
 
     static {
         Provider[] provs = Security.getProviders();
@@ -211,6 +239,13 @@ public class SystemRandom implements Runnable {
     }
 
 
+    /**
+     * Get a SecureRandom instance that draws upon the system secure PRNGs for
+     * seed entropy. The SecureRandom is based upon a NIST algorithm and will
+     * reseed itself with additional entropy after every operation.
+     * 
+     * @return a SecureRandom instance.
+     */
     public static SecureRandom getRandom() {
         SecureRandom rand = RANDOM;
         if( rand == null ) {
@@ -219,6 +254,19 @@ public class SystemRandom implements Runnable {
             RANDOM = rand;
         }
         return rand;
+    }
+
+
+    /**
+     * Inject seed data into the system random number generators
+     * 
+     * @param seed
+     *            data to inject
+     */
+    public static void injectSeed(byte[] seed) {
+        if( seed == null || seed.length == 0 ) return;
+        Seed s = new Seed(seed);
+        SEED_MAKER.submit(s);
     }
 
 
@@ -232,110 +280,35 @@ public class SystemRandom implements Runnable {
         getRandom().nextBytes(rand);
     }
 
-    private SecureRandom random_ = null;
-
-    private int reseed_;
-
-    private byte[] block_ = new byte[BLOCK_LEN];
-
+    /** Number of bytes available in the current block */
     private int available_ = 0;
 
-    private static int READY = 0;
+    /** Random bytes drawn from the system PRNG */
+    private byte[] block_ = new byte[BLOCK_LEN];
+
+    /** The System SecureRandom instance */
+    private SecureRandom random_ = null;
+
+    /** Number of operations before requesting a reseed */
+    private int reseed_;
 
 
+    /**
+     * Create a new instance using the specified provider and algorithm. If the
+     * provider is null, the system "strong" algorithm will be requested.
+     * Initialisation will be undertaken asynchronously to prevent blocking.
+     * 
+     * @param prov
+     *            the provider
+     * @param alg
+     *            the algorithm
+     */
     SystemRandom(final Provider prov, final String alg) {
         EXECUTOR.execute(new Runnable() {
             public void run() {
                 SystemRandom.this.init(prov, alg);
             }
         });
-    }
-
-
-    /**
-     * Asynchronously initialise this
-     */
-    void init(Provider prov, String alg) {
-        if( prov == null ) {
-            LOG.info("Initialising System strong PRNG");
-            try {
-                random_ = SecureRandom.getInstanceStrong();
-            } catch (NoSuchAlgorithmException e) {
-                LOG.error(
-                        "System strong secure random generator is unavailable.",
-                        e);
-                random_ = new SecureRandom();
-            }
-        } else {
-            System.out.println(alg);
-            String n = prov.getName();
-            System.out.println(n);
-            LOG.info("Initialising System PRNG: {}:{}", prov.getName(), alg);
-            try {
-                random_ = SecureRandom.getInstance(alg, prov);
-            } catch (NoSuchAlgorithmException e) {
-                LOG.error("Provider " + prov + " does not implement " + alg
-                        + " after announcing it as a service");
-                random_ = new SecureRandom();
-            }
-        }
-
-        random_.nextBytes(block_);
-        SEED_MAKER.submit(new Seed());
-        reseed_ = RESEED.nextInt(SOURCE_LEN);
-        synchronized (this) {
-            available_ = BLOCK_LEN;
-            synchronized (SOURCES) {
-                READY++;
-                SOURCES.notifyAll();
-            }
-            notifyAll();
-        }
-    }
-
-
-    /**
-     * Get more data from the system random number generator
-     */
-    public void run() {
-        reseed_--;
-        if( reseed_ < 0 ) {
-            reseed_ = RESEED.nextInt(SOURCE_LEN);
-            Future<Seed> future = SEED_MAKER.poll();
-            if( future != null ) {
-                Seed seed = null;
-                try {
-                    seed = future.get();
-                } catch (InterruptedException e) {
-                    LOG.debug("Seed generation was interrupted.");
-                } catch (ExecutionException e) {
-                    LOG.error("Seed generation failed.", e.getCause());
-                }
-                if( seed != null ) {
-                    random_.setSeed(seed.seed_);
-                    seed.resubmit();
-                }
-            }
-        }
-        if( LOG.isDebugEnabled() ) {
-            LOG.debug("Generating bytes from "
-                    + random_.getProvider().getName() + ":"
-                    + random_.getAlgorithm());
-        }
-        random_.nextBytes(block_);
-        if( LOG.isDebugEnabled() ) {
-            LOG.debug("Finished generating bytes from "
-                    + random_.getProvider().getName() + ":"
-                    + random_.getAlgorithm());
-        }
-        synchronized (this) {
-            available_ = BLOCK_LEN;
-            synchronized (SOURCES) {
-                READY++;
-                SOURCES.notifyAll();
-            }
-            notifyAll();
-        }
     }
 
 
@@ -366,5 +339,118 @@ public class SystemRandom implements Runnable {
             output[pos] = block_[p];
         }
         return true;
+    }
+
+
+    /**
+     * Asynchronously initialise this.
+     * 
+     * @param prov
+     *            the provider
+     * @param alg
+     *            the algorithm
+     */
+    void init(Provider prov, String alg) {
+        if( prov == null ) {
+            // request the strong instance
+            LOG.info("Initialising System strong PRNG");
+            try {
+                random_ = SecureRandom.getInstanceStrong();
+            } catch (NoSuchAlgorithmException e) {
+                // fallback to some instance
+                LOG.error(
+                        "System strong secure random generator is unavailable.",
+                        e);
+                random_ = new SecureRandom();
+            }
+        } else {
+            // get the specific instance
+            LOG.info("Initialising System PRNG: {}:{}", prov.getName(), alg);
+            try {
+                random_ = SecureRandom.getInstance(alg, prov);
+            } catch (NoSuchAlgorithmException e) {
+                // fallback to some instance
+                LOG.error("Provider " + prov + " does not implement " + alg
+                        + " after announcing it as a service");
+                random_ = new SecureRandom();
+            }
+        }
+
+        // load the first block
+        random_.nextBytes(block_);
+
+        // enroll this algorithm with the seed maker
+        SEED_MAKER.submit(new Seed(random_));
+
+        // set when this reseeds
+        reseed_ = RESEED.nextInt(SOURCE_LEN);
+
+        // update the state
+        synchronized (this) {
+            available_ = BLOCK_LEN;
+            synchronized (SOURCES) {
+                READY++;
+                SOURCES.notifyAll();
+            }
+            notifyAll();
+        }
+    }
+
+
+    /**
+     * Get more data from the system random number generator
+     */
+    public void run() {
+        // see if we need to reseed before generating more random bytes
+        reseed_--;
+        if( reseed_ < 0 ) {
+            // get the next seed
+            Future<Seed> future = SEED_MAKER.poll();
+            if( future != null ) {
+                // got a future, does it have a seed?
+                Seed seed = null;
+                try {
+                    seed = future.get();
+                } catch (InterruptedException e) {
+                    LOG.debug("Seed generation was interrupted.");
+                } catch (ExecutionException e) {
+                    LOG.error("Seed generation failed.", e.getCause());
+                }
+
+                if( seed != null ) {
+                    // we are reseeding, schedule the next reseed
+                    reseed_ = RESEED.nextInt(SOURCE_LEN);
+
+                    // use the seed and then resubmit to get a future one
+                    random_.setSeed(seed.seed_);
+                    seed.resubmit();
+                }
+            }
+        }
+
+        if( LOG.isDebugEnabled() ) {
+            LOG.debug("Generating bytes from "
+                    + random_.getProvider().getName() + ":"
+                    + random_.getAlgorithm());
+        }
+
+        // generate random bytes
+        random_.nextBytes(block_);
+
+        if( LOG.isDebugEnabled() ) {
+            LOG.debug("Finished generating bytes from "
+                    + random_.getProvider().getName() + ":"
+                    + random_.getAlgorithm());
+        }
+
+        // update the state
+        synchronized (this) {
+            available_ = BLOCK_LEN;
+            synchronized (SOURCES) {
+                READY++;
+                SOURCES.notifyAll();
+            }
+            notifyAll();
+        }
     }
 }

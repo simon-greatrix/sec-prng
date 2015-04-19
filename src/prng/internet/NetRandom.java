@@ -135,9 +135,7 @@ abstract public class NetRandom {
     protected static byte[] read(HttpURLConnection conn) throws IOException {
         byte[] buffer = new byte[1024];
         int pos = 0;
-        InputStream in = null;
-        try {
-            in = conn.getInputStream();
+        try (InputStream in = conn.getInputStream()) {
             int r;
             while( (r = in.read()) != -1 ) {
                 if( pos < 1024 ) {
@@ -147,8 +145,6 @@ abstract public class NetRandom {
                 }
                 pos++;
             }
-        } finally {
-            in.close();
         }
 
         // copy output into appropriate sized array
@@ -200,13 +196,13 @@ abstract public class NetRandom {
 
     /**
      * Get entropy from this source.
+     * 
      * @param output
      * @param offset
      * @param length
      * @return
      */
-    public synchronized int getEntropy(byte[] output, int offset,
-            int length) {
+    public synchronized int getEntropy(byte[] output, int offset, int length) {
         sync();
         if( entropy_.length == 0 ) return 0;
 
