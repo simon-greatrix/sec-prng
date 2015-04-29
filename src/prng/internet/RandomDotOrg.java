@@ -19,16 +19,16 @@ import prng.internet.SimpleJSONParser.Type;
  * @author Simon Greatrix
  *
  */
-public class RandomOrg extends NetRandom {
+public class RandomDotOrg extends NetRandom {
     /** URL of random number services */
-    private static final URL RANDOM_ORG;
+    private static final URL RANDOM_DOT_ORG;
 
     /** JSON request sent to random.org */
     private static final byte[] RANDOM_REQUEST;
 
     static {
         try {
-            RANDOM_ORG = new URL("https://api.random.org/json-rpc/1/invoke");
+            RANDOM_DOT_ORG = new URL("https://api.random.org/json-rpc/1/invoke");
         } catch (MalformedURLException e) {
             throw new Error("Impossible exception", e);
         }
@@ -49,7 +49,7 @@ public class RandomOrg extends NetRandom {
 
 
     /** New instance */
-    public RandomOrg() {
+    public RandomDotOrg() {
         super("www.random.org");
     }
 
@@ -61,14 +61,14 @@ public class RandomOrg extends NetRandom {
      * @throws IOException
      */
     byte[] fetch() throws IOException {
-        byte[] data = connectRPC(RANDOM_ORG, RANDOM_REQUEST);
+        byte[] data = connectRPC(RANDOM_DOT_ORG, RANDOM_REQUEST);
 
         try {
             Primitive result = SimpleJSONParser.parse(new InputStreamReader(
                     new ByteArrayInputStream(data),
                     StandardCharsets.ISO_8859_1));
             if( result.getType() != Type.OBJECT ) {
-                throw new IOException(RANDOM_ORG.getHost()
+                throw new IOException(RANDOM_DOT_ORG.getHost()
                         + " returned JSON type: " + result.getType());
             }
             JSONObject obj = result.getValueSafe(JSONObject.class);
@@ -79,19 +79,19 @@ public class RandomOrg extends NetRandom {
             if( err != null ) {
                 String msg = err.get(String.class, "message", null);
                 if( msg == null ) msg = err.toString();
-                throw new IOException(RANDOM_ORG.getHost() + ": " + msg);
+                throw new IOException(RANDOM_DOT_ORG.getHost() + ": " + msg);
             }
 
             // if no error, a result is required
             if( res == null ) {
-                throw new IOException(RANDOM_ORG.getHost()
+                throw new IOException(RANDOM_DOT_ORG.getHost()
                         + ": no results returned\n" + result.toString());
             }
 
             // result should contain a "random" result
             res = res.get(JSONObject.class, "random", null);
             if( res == null ) {
-                throw new IOException(RANDOM_ORG.getHost()
+                throw new IOException(RANDOM_DOT_ORG.getHost()
                         + ": no \"random\" in results\n"
                         + result.toString());
             }
@@ -99,11 +99,11 @@ public class RandomOrg extends NetRandom {
             // and the "random" object should contain the actual data
             JSONArray randData = res.get(JSONArray.class, "data", null);
             if( randData == null ) {
-                throw new IOException(RANDOM_ORG.getHost()
+                throw new IOException(RANDOM_DOT_ORG.getHost()
                         + ": no data in results\n" + result.toString());
             }
             if( randData.size() != 128 ) {
-                throw new IOException(RANDOM_ORG.getHost() + " returned "
+                throw new IOException(RANDOM_DOT_ORG.getHost() + " returned "
                         + randData.size() + " bytes not 128");
             }
 
@@ -113,7 +113,7 @@ public class RandomOrg extends NetRandom {
             for(Primitive prim:randData) {
                 Integer val = prim.getValue(Integer.class, null);
                 if( val == null ) {
-                    throw new IOException(RANDOM_ORG.getHost()
+                    throw new IOException(RANDOM_DOT_ORG.getHost()
                             + " sent data of " + prim.getType() + ": "
                             + prim + " which is not an integer");
                 }
@@ -123,7 +123,7 @@ public class RandomOrg extends NetRandom {
             return bits;
         } catch (IOException ioe) {
             LOG.error("Bad data received from {}\n\n{}",
-                    RANDOM_ORG.getHost(), BLOBPrint.toString(data));
+                    RANDOM_DOT_ORG.getHost(), BLOBPrint.toString(data));
             throw ioe;
         }
     }

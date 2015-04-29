@@ -12,6 +12,7 @@ import java.net.URL;
  *
  */
 public class HotBits extends NetRandom {
+    /** URL for Hot Bits service */
     private static final URL HOT_BITS;
 
     static {
@@ -24,6 +25,9 @@ public class HotBits extends NetRandom {
     }
 
 
+    /**
+     * Create new instance
+     */
     public HotBits() {
         super("www.fourmilab.ch");
     }

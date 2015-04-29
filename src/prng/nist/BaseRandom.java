@@ -16,7 +16,6 @@ abstract public class BaseRandom extends SecureRandomSpi {
     /** serial version UID */
     private static final long serialVersionUID = 1l;
 
-
     /**
      * The re-seed counter
      */
@@ -35,9 +34,12 @@ abstract public class BaseRandom extends SecureRandomSpi {
     /** Source of entropy */
     private final SeedSource source_;
 
+
     /**
      * New instance.
      * 
+     * @param source
+     *            source of seed information
      * @param resistance
      *            number of operations between re-seeds
      * @param seedSize

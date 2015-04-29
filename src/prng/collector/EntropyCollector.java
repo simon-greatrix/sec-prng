@@ -59,18 +59,33 @@ abstract public class EntropyCollector extends EntropySource implements
 
 
     /**
-     * Initialise standard entropy gathering
+     * Initialise standard entropy gathering. This is configured in the configuration properties:<p>
+     * 
+     * <dl>
+     * <dt>collector.<i>class.name</i> = [boolean]
+     * <dd>If true, indicates that a collector of type <i>class.name</i> should be created.
+     * <dt>config.<i>class.name</i>.x = y
+     * <dd>Configuration with prefix config.<i>class.name</i> is passed to the collectors <code>initialise</code> method.
+     * </dl>
+     * 
      */
     public static void initialiseStandard() {
         Config config = Config.getConfig("collector");
         for(String cl:config) {
+            // is collector active?
+            if(! config.getBoolean(cl, true)) continue;
+            
             try {
+                // create collector
                 Class<?> clazz1 = Class.forName(cl);
                 Class<? extends EntropyCollector> clazz2 = clazz1.asSubclass(EntropyCollector.class);
-                Config ecConfig = Config.getConfig("config." + cl);
-
                 Constructor<? extends EntropyCollector> cons = clazz2.getConstructor(new Class<?>[] { Config.class });
+                
+                // get configuration
+                Config ecConfig = Config.getConfig("config." + cl);
                 EntropyCollector ec = cons.newInstance(ecConfig);
+                
+                // register and initialise collector
                 initialise(ec);
             } catch (ClassNotFoundException cnfe) {
                 LOG.error("Class " + cl + " is not available", cnfe);
@@ -81,11 +96,9 @@ abstract public class EntropyCollector extends EntropySource implements
                     | IllegalAccessException e) {
                 LOG.error("Class " + cl + " could not be instantiated", e);
             } catch (NoSuchMethodException e) {
-                LOG.error(
-                        "Class "
-                                + cl
-                                + " does not have a constructor that takes an instance of Config",
-                        e);
+                //
+                LOG.error("Class " + cl + " does not have a constructor"
+                        + " that takes an instance of Config", e);
             }
         }
     }

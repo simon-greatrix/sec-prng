@@ -15,6 +15,7 @@ public abstract class SeedStorage {
     /** Logger for seed storage operations */
     public static final Logger LOG = LoggerFactory.getLogger(SeedStorage.class);
 
+
     /**
      * Get the seed file where seed information can be stored.
      * 
@@ -48,9 +49,10 @@ public abstract class SeedStorage {
         // decrypt it means that no information has been lost and hence our
         // Shannon entropy is preserved.
         SystemRandom.nextBytes(cipher);
-        for(int i = 0;i < len;i++) {
-            output[i] = (byte) (data[i] ^ cipher[i]);
+        for(int i = 1;i < len;i++) {
+            output[i] = (byte) (data[i - 1] ^ cipher[i]);
         }
+        output[0] = (byte) (data[len - 1] ^ cipher[0]);
         return output;
     }
 
@@ -63,7 +65,7 @@ public abstract class SeedStorage {
      * @throws StorageException
      */
     public void put(Seed seed) throws StorageException {
-        LOG.debug("Putting seed {} into store",seed);
+        LOG.debug("Putting seed {} into store", seed);
         SeedOutput output = new SeedOutput();
         seed.save(output);
         byte[] data = output.toByteArray();
@@ -92,10 +94,10 @@ public abstract class SeedStorage {
      * @throws StorageException
      */
     public Seed get(String name) throws StorageException {
-        LOG.debug("Fetching seed {} from store",name);
+        LOG.debug("Fetching seed {} from store", name);
         byte[] data = getRaw(name);
         if( data == null ) {
-            LOG.info("Seed data {} not found in storage",name);
+            LOG.info("Seed data {} not found in storage", name);
             return null;
         }
 
@@ -103,9 +105,9 @@ public abstract class SeedStorage {
         Seed seed = new Seed();
         try {
             seed.initialize(input);
-        } catch ( Exception e ) {
-            LOG.error("Seed data for {} was corrupt",name,e);
-            remove(name);            
+        } catch (Exception e) {
+            LOG.error("Seed data for {} was corrupt", name, e);
+            remove(name);
         }
         return seed;
     }
@@ -118,14 +120,16 @@ public abstract class SeedStorage {
      *            the seed's type
      * @param name
      *            the seed's name
+     * @param <T>
+     *            type of seed
      * @return the seed or null
      * @throws StorageException
      */
     public <T extends Seed> T get(Class<T> type, String name) throws StorageException {
-        LOG.debug("Fetching seed {} from store",name);
+        LOG.debug("Fetching seed {} from store", name);
         byte[] data = getRaw(name);
         if( data == null ) {
-            LOG.info("Seed data {} not found in storage",name);
+            LOG.info("Seed data {} not found in storage", name);
             return null;
         }
 
@@ -139,9 +143,9 @@ public abstract class SeedStorage {
         SeedInput input = new SeedInput(data);
         try {
             seed.initialize(input);
-        } catch ( Exception e ) {
-            LOG.error("Seed data for {} was corrupt",name,e);
-            remove(name);            
+        } catch (Exception e) {
+            LOG.error("Seed data for {} was corrupt", name, e);
+            remove(name);
         }
         return seed;
     }
@@ -165,4 +169,12 @@ public abstract class SeedStorage {
      *            the seed's name
      */
     abstract protected void remove(String name);
+    
+    
+    /**
+     * Flush any changes and close the storage
+     */
+    public void close() {
+        // do nothing
+    }
 }

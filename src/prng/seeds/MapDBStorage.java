@@ -22,8 +22,8 @@ public class MapDBStorage extends SeedStorage {
 
     /** Key storage map */
     private final Map<String, byte[]> map_;
-
-
+    
+    
     /**
      * Create new storage
      */
@@ -41,12 +41,8 @@ public class MapDBStorage extends SeedStorage {
 
 
     @Override
-    protected void putRaw(String name, byte[] data) throws StorageException {
-        try {
-            map_.put(name, data);
-        } catch (IOError e) {
-            throw new StorageException("MapDB failure", e.getCause());
-        }
+    public void close() {
+        db_.close();
     }
 
 
@@ -54,6 +50,16 @@ public class MapDBStorage extends SeedStorage {
     public byte[] getRaw(String name) throws StorageException {
         try {
             return map_.get(name);
+        } catch (IOError e) {
+            throw new StorageException("MapDB failure", e.getCause());
+        }
+    }
+
+
+    @Override
+    protected void putRaw(String name, byte[] data) throws StorageException {
+        try {
+            map_.put(name, data);
         } catch (IOError e) {
             throw new StorageException("MapDB failure", e.getCause());
         }

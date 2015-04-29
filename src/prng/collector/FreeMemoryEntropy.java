@@ -10,8 +10,15 @@ import prng.Config;
  *
  */
 public class FreeMemoryEntropy extends EntropyCollector {
+    /**
+     * Create a collector that uses the current free memory amount to produce
+     * entropy
+     * 
+     * @param config
+     *            configuration for this
+     */
     public FreeMemoryEntropy(Config config) {
-        super(config,100);
+        super(config, 100);
     }
 
 

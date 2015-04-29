@@ -1,7 +1,5 @@
 package prng.seeds;
 
-import java.io.EOFException;
-import java.io.UTFDataFormatException;
 
 /**
  * Storable seed data. Every seed must have a unique name by which it is
@@ -11,12 +9,12 @@ import java.io.UTFDataFormatException;
  *
  */
 public class Seed {
-
+    
     /** Name of this seed datum */
     private String name_;
 
     /** The seed entropy */
-    private byte[] data_;
+    protected byte[] data_;
 
 
     /**
@@ -35,8 +33,6 @@ public class Seed {
 
     /**
      * Create an empty seed. Must be initialized.
-     * 
-     * @throws EOFException
      */
     public Seed() {
         name_ = "unset";
@@ -86,5 +82,18 @@ public class Seed {
      */
     public byte[] getSeed() {
         return data_.clone();
+    }
+    
+    
+    /**
+     * Save this seed to storage
+     */
+    public void save() {
+        SeedStorage store = SeedStorage.getInstance();
+        try {
+            store.put(this);
+        } catch (StorageException e) {
+            SeedStorage.LOG.error("Failed to store seed {}",name_,e);
+        }
     }
 }

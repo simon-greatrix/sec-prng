@@ -12,9 +12,17 @@ import prng.Config;
  *
  */
 public class ThreadTimeEntropy extends EntropyCollector {
+    /**
+     * Create a collector that uses allocation of thread times to produce
+     * entropy
+     * 
+     * @param config
+     *            configuration for this
+     */
     public ThreadTimeEntropy(Config config) {
-        super(config,100);
+        super(config, 100);
     }
+
 
     @Override
     protected boolean initialise() {

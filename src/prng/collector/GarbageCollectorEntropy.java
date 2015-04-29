@@ -17,8 +17,17 @@ public class GarbageCollectorEntropy extends EntropyCollector {
     /** The VM's garbage collectors */
     private final List<GarbageCollectorMXBean> gcBeans_ = ManagementFactory.getGarbageCollectorMXBeans();
 
+
+    /**
+     * Create a collector that uses garbage collection statistics to produce
+     * entropy
+     * 
+     * @param config
+     *            configuration for this
+     */
+
     public GarbageCollectorEntropy(Config config) {
-        super(config,10000);
+        super(config, 10000);
     }
 
 

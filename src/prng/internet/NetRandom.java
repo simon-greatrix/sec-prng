@@ -5,17 +5,16 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.security.GeneralSecurityException;
-import java.util.prefs.BackingStoreException;
-import java.util.prefs.Preferences;
-
-import javax.crypto.Cipher;
-import javax.crypto.spec.SecretKeySpec;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import prng.NonceFactory;
+import prng.Config;
+import prng.seeds.Seed;
+import prng.seeds.SeedInput;
+import prng.seeds.SeedOutput;
+import prng.seeds.SeedStorage;
 
 /**
  * Fetch random data from well known on-line sources. The web sources are:
@@ -32,15 +31,36 @@ import prng.NonceFactory;
  * @author Simon Greatrix
  *
  */
-abstract public class NetRandom {
+abstract public class NetRandom extends Seed {
     /** Logger for this class */
     protected static final Logger LOG = LoggerFactory.getLogger(NetRandom.class);
 
-    /** Default time. "Default" in ASCII */
-    private static final long TIME_DEFAULT = -0x44656661756c74l;
-
-    /** Unset time. "Unset" in ASCII */
+    /** Unset time. Negative of "Unset" in ASCII */
     private static final long TIME_UNSET = -0x556e736574l;
+    
+    /** Minimum age before entropy is refreshed */    
+    private static final long MIN_AGE;
+    
+    /** Maximum age after which entropy must be refreshed */
+    private static final long MAX_AGE;
+    
+    /** Minimum number of uses before entropy is refreshed */
+    private static final int MIN_USAGE;
+    
+    /** Number of milliseconds before a connection attempt times out */
+    private static final int CONNECT_TIMEOUT;
+    
+    /** Number of milliseconds before a read attempt times out */
+    private static final int READ_TIMEOUT;
+    
+    static {
+        Config config = Config.getConfig("expiry",NetRandom.class);
+        MIN_AGE = config.getLong("minAge", TimeUnit.MILLISECONDS.convert(1, TimeUnit.DAYS));
+        MAX_AGE = config.getLong("maxAge", TimeUnit.MILLISECONDS.convert(7, TimeUnit.DAYS));
+        MIN_USAGE = config.getInt("minUsage", 32);
+        CONNECT_TIMEOUT = config.getInt("connectionTimeOut",120000); 
+        READ_TIMEOUT = config.getInt("readTimeOut",120000); 
+    }
 
 
     /**
@@ -53,8 +73,8 @@ abstract public class NetRandom {
      */
     protected static HttpURLConnection connect(URL url) throws IOException {
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setConnectTimeout(120000);
-        conn.setReadTimeout(120000);
+        conn.setConnectTimeout(CONNECT_TIMEOUT);
+        conn.setReadTimeout(READ_TIMEOUT);
         conn.setUseCaches(false);
         conn.setDoInput(true);
         conn.setDoOutput(false);
@@ -153,17 +173,11 @@ abstract public class NetRandom {
         return output;
     }
 
-    /** The actual entropy */
-    private byte[] entropy_ = new byte[0];
-
     /**
      * The time the entropy was loaded. Old entropy can be replaced. The initial
      * value is ASCII for "Unset".
      */
     private long loadTime_ = TIME_UNSET;
-
-    /** This source's name */
-    private final String name_;
 
     /** Current position */
     private int position_;
@@ -179,15 +193,14 @@ abstract public class NetRandom {
      *            the source
      */
     protected NetRandom(String name) {
-        name_ = "NetRandom/" + name;
-        sync();
+        super("NetRandom/" + name, new byte[0]);
     }
 
 
     /**
      * Fetch data from the internet source, if possible
      * 
-     * @return the entropy
+     * @return the entropy, a 128 byte value
      * @throws IOException
      *             if fetch failed
      */
@@ -195,63 +208,59 @@ abstract public class NetRandom {
 
 
     /**
-     * Get entropy from this source.
+     * Get 256-bit entropy from this source.
      * 
-     * @param output
-     * @param offset
-     * @param length
-     * @return
+     * @return seed bytes
      */
-    public synchronized int getEntropy(byte[] output, int offset, int length) {
-        sync();
-        if( entropy_.length == 0 ) return 0;
+    public byte[] getSeed() {
+        synchronized (this) {
+            refresh();
+            if( data_ == null || data_.length == 0 ) return new byte[0];
 
-        int pos = position_;
-        int rem = 128 - pos;
+            byte[] output = new byte[32];
+            int pos = position_;
+            int rem = 128 - pos;
 
-        // if we have enough entropy, use some of what we have now
-        if( length <= rem ) {
-            System.arraycopy(entropy_, offset, output, pos, length);
-            position_ += length;
-            return length;
-        }
-
-        // use up what we have
-        System.arraycopy(entropy_, offset, output, pos, rem);
-        offset += rem;
-        int toDo = length - rem;
-
-        // for as many full blocks as we need, scramble and copy
-        while( toDo > 128 ) {
-            scramble();
-            usageCount_++;
-            System.arraycopy(entropy_, offset, output, 0, 128);
-            offset += 128;
-            toDo -= 128;
-        }
-
-        // scramble and copy the final part
-        scramble();
-        usageCount_++;
-        System.arraycopy(entropy_, offset, output, 0, toDo);
-        position_ = toDo;
-
-        // save new usage count
-        Preferences prefs = Preferences.userNodeForPackage(NetRandom.class);
-        prefs = prefs.node(name_);
-        try {
-            prefs.sync();
-            long savedLoadTime = prefs.getLong("loadTime", TIME_DEFAULT);
-            int savedUsageCount = prefs.getInt("usageCount", 0);
-            if( savedLoadTime == loadTime_ && savedUsageCount < usageCount_ ) {
-                prefs.putInt("usageCount", usageCount_);
-                prefs.flush();
+            // if we have enough entropy, use some of what we have now
+            if( 32 <= rem ) {
+                System.arraycopy(data_, 0, output, pos, 32);
+                position_ += 32;
+                return output;
             }
-        } catch (BackingStoreException e) {
-            BMLog.log(BMLog.COMPONENT_SYSTEM, 1, "External storage failed", e);
-        }
 
-        return length;
+            // scramble to create new blocks
+            data_ = SeedStorage.scramble(data_);
+            usageCount_++;
+            position_ = 32;
+            System.arraycopy(data_, 0, output, 0, 32);
+            save();
+            return output;
+        }
+    }
+
+
+    public NetRandom() {
+        // do nothing
+    }
+
+
+    @Override
+    public void initialize(SeedInput input) throws Exception {
+        super.initialize(input);
+        loadTime_ = input.readLong();
+        usageCount_ = input.readInt();
+        position_ = input.readInt();
+    }
+
+
+    @Override
+    public void save(SeedOutput output) {
+        synchronized (this) {
+            super.save(output);
+            output.writeLong(loadTime_);
+            output.writeInt(usageCount_);
+            output.writeInt(position_);
+        }
     }
 
 
@@ -261,13 +270,13 @@ abstract public class NetRandom {
     private void refresh() {
         long age = System.currentTimeMillis() - loadTime_;
         // must refresh if no entropy
-        boolean mustRefresh = (entropy_.length != 128);
+        boolean mustRefresh = (data_.length != 128);
 
         // must refresh if older than a week
-        if( age > 604800000 ) mustRefresh = true;
+        if( age > MAX_AGE ) mustRefresh = true;
 
         // must refresh if older than a day and used more than 32 times
-        if( (age > 86400000) && (usageCount_ >= 32) ) mustRefresh = true;
+        if( (age > MIN_AGE) && (usageCount_ >= MIN_USAGE) ) mustRefresh = true;
 
         if( !mustRefresh ) return;
         byte[] newData;
@@ -283,86 +292,16 @@ abstract public class NetRandom {
             newData = new byte[0];
         }
 
-        entropy_ = newData;
+        data_ = SeedStorage.scramble(newData);
         usageCount_ = 0;
         loadTime_ = System.currentTimeMillis();
-        scramble();
-
-        // save new entropy
-        Preferences prefs = Preferences.userNodeForPackage(NetRandom.class);
-        prefs = prefs.node(name_);
-
-        prefs.putByteArray("entropy", entropy_);
-        prefs.putLong("loadTime", loadTime_);
-        prefs.getInt("usageCount", 0);
-
-        try {
-            prefs.flush();
-        } catch (BackingStoreException e) {
-            BMLog.log(BMLog.COMPONENT_SYSTEM, 1, "External storage failed", e);
-        }
-    }
-
-
-    /**
-     * Scramble the current entropy
-     */
-    private void scramble() {
-        if( entropy_.length == 0 ) return;
-
-        // We encrypt the entropy using AES. This preserves all information but
-        // produces a completely new bit representation which will cause all
-        // cryptographic objects generated from it to be unique.
-        try {
-            byte[] nonce = NonceFactory.create();
-            SecretKeySpec key = new SecretKeySpec(nonce, "AES");
-            Cipher cipher = Cipher.getInstance("AES/ECB/NoPadding");
-            cipher.init(Cipher.ENCRYPT_MODE, key);
-            entropy_ = cipher.doFinal(entropy_);
-        } catch (GeneralSecurityException e) {
-            throw new Error("Cryptographic failure", e);
-        }
-    }
-
-
-    /**
-     * Sync this instance with the stored entropy
-     */
-    private void sync() {
-        try {
-            Preferences prefs = Preferences.userNodeForPackage(NetRandom.class);
-            prefs = prefs.node(name_);
-            prefs.sync();
-            if( prefs.nodeExists("entropy") ) {
-                // The default value is ASCII for "Default"
-                long savedLoadTime = prefs.getLong("loadTime", TIME_DEFAULT);
-                int savedUsageCount = prefs.getInt("usageCount", 0);
-
-                // do not reload entropy if it is the same value
-                if( savedLoadTime != loadTime_ && savedLoadTime != TIME_DEFAULT ) {
-                    entropy_ = prefs.getByteArray("entropy", entropy_);
-                    scramble();
-                    loadTime_ = savedLoadTime;
-                    usageCount_ = savedUsageCount;
-                } else if( usageCount_ < savedUsageCount ) {
-                    usageCount_ = savedUsageCount;
-                }
-            }
-        } catch (BackingStoreException e) {
-            entropy_ = new byte[0];
-            loadTime_ = TIME_UNSET;
-            usageCount_ = 0;
-        }
-
-        position_ = 0;
-
-        refresh();
+        save();
     }
 
 
     @Override
     public String toString() {
-        return "NetRandom [loadTime=" + loadTime_ + ", name=" + name_
+        return "NetRandom [loadTime=" + loadTime_ + ", name=" + getName()
                 + ", position=" + position_ + ", usageCount=" + usageCount_
                 + "]";
     }

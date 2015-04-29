@@ -11,9 +11,18 @@ import prng.Config;
 public class SchedulingEntropy extends EntropyCollector {
     /** Last time this was called */
     private long lastTime_ = System.nanoTime();
+
+
+    /**
+     * Create a collector that uses scheduling accuracy to produce entropy
+     * 
+     * @param config
+     *            configuration for this
+     */
     public SchedulingEntropy(Config config) {
-        super(config,50);
+        super(config, 50);
     }
+
 
     @Override
     protected int getDelay() {
