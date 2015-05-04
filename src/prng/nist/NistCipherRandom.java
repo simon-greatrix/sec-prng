@@ -8,8 +8,6 @@ import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 
-import prng.SeedSource;
-
 /**
  * An implementation of the NIST Cipher-based Deterministic Random Number
  * Generator as defined in SP800-90A. Only the AES-256 cipher is available as an

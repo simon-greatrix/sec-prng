@@ -13,10 +13,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ServerMain {
-    
+    /** Logger for the server */
     static final Logger LOG = LoggerFactory.getLogger(ServerMain.class);
     
-    protected void runServer() throws BMException {
+    /** Is the server shutdown? */
+    private boolean shutdown_ = false;
+    
+    protected void runServer() throws ServerException {
 
         // configure the server socket
         Selector selector;
@@ -45,7 +48,7 @@ public class ServerMain {
         // handle new exceptions at high priority
         Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
 
-        while( !(shutdown_ || Thread.interrupted()) ) {
+        while( !(shutdown_  || Thread.interrupted()) ) {
             // wait at most a second so we spot shutdowns.
             try {
                 int ready = selector.select(1000);
@@ -79,6 +82,11 @@ public class ServerMain {
         }
 
         boss.shutdown();
+    }
+
+    private InetSocketAddress getSocketAddress() {
+        // TODO Auto-generated method stub
+        return null;
     }
 
 }

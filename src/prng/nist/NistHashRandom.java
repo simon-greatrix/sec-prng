@@ -3,8 +3,6 @@ package prng.nist;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-import prng.SeedSource;
-
 /**
  * An implementation of the NIST Hash-based Deterministic Random Number
  * Generator as defined in SP800-90A.

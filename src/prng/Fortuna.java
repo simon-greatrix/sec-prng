@@ -14,6 +14,7 @@ import prng.nist.HashSpec;
 import prng.nist.NistCipherRandom;
 import prng.nist.NistHashRandom;
 import prng.nist.NistHmacRandom;
+import prng.nist.SeedSource;
 
 /**
  * Implementation of a Fortuna-like secure random number source. Fortuna has

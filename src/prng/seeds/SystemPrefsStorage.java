@@ -18,7 +18,7 @@ public class SystemPrefsStorage extends SeedStorage {
             prefs.putByteArray(name, data);
             prefs.flush();
         } catch (BackingStoreException e) {
-            throw new StorageException("User preference storage failed", e);
+            throw new StorageException("System preference storage failed", e);
         }
     }
 
@@ -31,7 +31,7 @@ public class SystemPrefsStorage extends SeedStorage {
             prefs.sync();
             data = prefs.getByteArray(name, null);
         } catch (BackingStoreException e) {
-            throw new StorageException("User preference storage failed", e);
+            throw new StorageException("System preference storage failed", e);
         }
         return data;
     }

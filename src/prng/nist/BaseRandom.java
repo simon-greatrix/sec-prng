@@ -4,7 +4,6 @@ import java.security.SecureRandomSpi;
 
 import prng.Fortuna;
 import prng.NonceFactory;
-import prng.SeedSource;
 
 /**
  * Common NIST secure random number functionality.

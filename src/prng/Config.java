@@ -68,56 +68,60 @@ public class Config implements Iterable<String> {
         prefix += context.getName() + ".";
         return new Config(prefix);
     }
-    
-    
+
+
     /**
-     * Expand any system properties or environment variables in the input. A system property or environment variable is enclosed in braces (i.e. {variable}).
-     * @param value the input
+     * Expand any system properties or environment variables in the input. A
+     * system property or environment variable is enclosed in braces (i.e.
+     * {variable}).
+     * 
+     * @param value
+     *            the input
      * @return the input with values replaced.
      */
     public static String expand(String value) {
         // if null, do not process
-        if( value==null ) return null;
-        
+        if( value == null ) return null;
+
         // are any replacements indicated?
         int s = value.indexOf('{');
-        if( s==-1 ) return value;
-        
+        if( s == -1 ) return value;
+
         // build new string
         StringBuilder buf = new StringBuilder();
         do {
-            buf.append(value.substring(0,s));
+            buf.append(value.substring(0, s));
 
             // advance to start of key, find end of key
-            value = value.substring(s+1);            
+            value = value.substring(s + 1);
             int e = value.indexOf('}');
-            if( e==-1 ) {
+            if( e == -1 ) {
                 // no key end, so done
                 buf.append('{');
                 break;
             }
-            
+
             // get key and advance
-            String key = value.substring(0,e);
-            value = value.substring(e+1);
+            String key = value.substring(0, e);
+            value = value.substring(e + 1);
             String env = System.getProperty(key);
-            if( env==null ) {
+            if( env == null ) {
                 env = System.getenv(key);
             }
-            
+
             // did we get a replacement?
-            if( env==null ) {
+            if( env == null ) {
                 // no replacement, leave as it was
                 buf.append('{').append(key).append('}');
             } else {
                 // replace
                 buf.append(env);
             }
-            
+
             // find next replacement
-            s = value.indexOf('{');            
-        } while( s!=-1 );
-        
+            s = value.indexOf('{');
+        } while( s != -1 );
+
         buf.append(value);
         return buf.toString();
     }

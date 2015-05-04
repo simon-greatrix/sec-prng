@@ -4,8 +4,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
-import prng.SeedSource;
-
 /**
  * An implementation of the NIST HMAC-based Deterministic Random Number
  * Generator as defined in SP800-90A.

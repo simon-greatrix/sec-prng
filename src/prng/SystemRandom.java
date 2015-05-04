@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import prng.nist.HashSpec;
 import prng.nist.NistHashRandom;
+import prng.nist.SeedSource;
 
 /**
  * System provided secure random sources. We assume there is at least one such
@@ -30,9 +31,13 @@ import prng.nist.NistHashRandom;
  * will be included in all outputs.
  * <p>
  * 
+ * The sources are periodically cross-polinated with entropy from each other.
+ * <p>
+ * 
  * Note that since some system provided random sources will block whilst they
  * wait for entropy to arrive (e.g. reading from /dev/random), this class may
  * delay start-up.
+ * <p>
  * 
  * @author Simon Greatrix
  *

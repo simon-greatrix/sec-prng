@@ -1,8 +1,5 @@
 package prng.server;
 
-import com.bluemartini.dna.BMException;
-import com.bluemartini.dna.BMLog;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
@@ -50,7 +47,7 @@ abstract class Communicator implements Runnable {
     protected final Object channelLock_ = new Object();
 
     /** Any asynchronous error */
-    private BMException error_ = null;
+    private ServerException error_ = null;
 
     /** The queue used to transfer raw data in to the box */
     private final Queue<ByteBuffer> input_ = new LinkedList<ByteBuffer>();
@@ -228,8 +225,7 @@ abstract class Communicator implements Runnable {
                 }
             }
         } catch (IOException ioe) {
-            BMException bme = new BMException("CACHE_MESSAGE_READ_FAILED", ioe,
-                    null);
+            ServerException bme = new ServerException("CACHE_MESSAGE_READ_FAILED", ioe);
             synchronized (input_) {
                 error_ = bme;
                 input_.clear();
@@ -323,7 +319,7 @@ abstract class Communicator implements Runnable {
                 Message msg = null;
                 try {
                     msg = reader_.read(buf);
-                } catch (BMException e) {
+                } catch (ServerException e) {
                     ServerMain.LOG.error("ERROR_READING_CACHE_MESSAGE", e);
                     msg = new Message(e);
                 }
@@ -372,8 +368,7 @@ abstract class Communicator implements Runnable {
                         }
                     }
                 } catch (IOException ioe) {
-                    process(new Message(new BMException("IO_EXCEPTION", ioe,
-                            null)));
+                    process(new Message(new ServerException("IO_EXCEPTION",ioe)));
                     return;
                 }
 
@@ -407,7 +402,7 @@ abstract class Communicator implements Runnable {
      *            true if this is the last message
      * @throws BMException
      */
-    void write(IMessage msg, boolean isFinal) throws BMException {
+    void write(IMessage msg, boolean isFinal) throws ServerException {
         ByteBuffer buf = writer_.write(msg);
         write(buf, isFinal);
     }
@@ -434,13 +429,12 @@ abstract class Communicator implements Runnable {
                             channel_.write(buf);
                         } else {
                             buf.clear();
-                            process(new Message(new BMException(
+                            process(new Message(new ServerException(
                                     "NET_CACHE_CHANNEL_CLOSED")));
                         }
                     }
                 } catch (IOException ioe) {
-                    process(new Message(new BMException("IO_EXCEPTION", ioe,
-                            null)));
+                    process(new Message(new ServerException("IO_EXCEPTION", ioe)));
                     return;
                 }
             }

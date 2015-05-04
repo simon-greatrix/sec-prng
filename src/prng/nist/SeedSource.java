@@ -1,7 +1,7 @@
-package prng;
+package prng.nist;
 
 /**
- * Something that can provide seed bytes on demand
+ * Something that can provide seed bytes on demand to a PRNG.
  * 
  * @author Simon Greatrix
  *

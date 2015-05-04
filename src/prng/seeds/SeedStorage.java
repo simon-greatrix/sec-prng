@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 import prng.SystemRandom;
 
 /**
- * Storage for PRNG seed information
+ * Storage for PRNG seed information.
  * 
  * @author Simon Greatrix
  *
@@ -22,7 +22,7 @@ public abstract class SeedStorage {
      * @return the seed file instance
      */
     public static SeedStorage getInstance() {
-        return null; // TODO
+        return null; // TODO implement SeedStorage.getInstance
     }
 
 
@@ -49,10 +49,9 @@ public abstract class SeedStorage {
         // decrypt it means that no information has been lost and hence our
         // Shannon entropy is preserved.
         SystemRandom.nextBytes(cipher);
-        for(int i = 1;i < len;i++) {
-            output[i] = (byte) (data[i - 1] ^ cipher[i]);
+        for(int i = 0;i < len;i++) {
+            output[i] = (byte) (data[i] ^ cipher[i]);
         }
-        output[0] = (byte) (data[len - 1] ^ cipher[0]);
         return output;
     }
 
