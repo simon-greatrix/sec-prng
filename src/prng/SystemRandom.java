@@ -13,6 +13,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -117,8 +118,9 @@ public class SystemRandom implements Runnable {
      */
     private static final Executor EXECUTOR;
 
-    /** Current source in pre-fetched data */
-    private static int INDEX = 0;
+    /** Queue for injected seeds */
+    private static final LinkedBlockingQueue<byte[]> INJECTED = new LinkedBlockingQueue<>(
+            100);
 
     /** Logger for this class */
     private static final Logger LOG = LoggerFactory.getLogger(SystemRandom.class);
@@ -211,35 +213,48 @@ public class SystemRandom implements Runnable {
      *            array to fill
      */
     public static void generateSeed(byte[] data) {
-        synchronized (SOURCES) {
-            int startIndex = INDEX;
-            int index = startIndex;
-            boolean gotOne = false;
-            for(int i = 0;i < data.length;i++) {
-                // try for a byte
+        int index = RESEED.nextInt(SOURCE_LEN);
+        for(int i = 0;i < data.length;i++) {
+            // try for a byte
+            boolean needByte = true;
+            int startIndex = index; 
+            // TODO - fix this method
+            while( needByte ) {
                 if( SOURCES[index].get(data, i) ) {
-                    gotOne = true;
+                    needByte = false;
                 }
-
-                // next source
                 index = (index + 1) % SOURCE_LEN;
-                if( index == startIndex && !gotOne ) {
-                    while( READY == 0 ) {
-                        try {
-                            LOG.info("Waiting for more system random bytes");
-                            SOURCES.wait();
-                        } catch (InterruptedException ie) {
-                            LOG.info("Seed generation was interrupted");
-                            byte[] failSafe = new byte[data.length - i];
-                            RESEED.nextBytes(failSafe);
-                            System.arraycopy(failSafe, 0, data, i,
-                                    failSafe.length);
-                            return;
+                if( index==startIndex )
+            }
+            while( !gotOne )
+            if( SOURCES[index].get(data, i) ) {
+                gotOne = true;
+            }
+
+            // next source
+            index = (index + 1) % SOURCE_LEN;
+            if( index == startIndex ) {
+                if( gotOne ) {
+                    // at least on
+                    gotOne = false;
+                } else {
+                    synchronized (SOURCES) {
+                        while( READY == 0 ) {
+                            try {
+                                LOG.info("Waiting for more system random bytes");
+                                SOURCES.wait();
+                            } catch (InterruptedException ie) {
+                                LOG.info("Seed generation was interrupted");
+                                byte[] failSafe = new byte[data.length - i];
+                                RESEED.nextBytes(failSafe);
+                                System.arraycopy(failSafe, 0, data, i,
+                                        failSafe.length);
+                                return;
+                            }
                         }
                     }
                 }
             }
-            INDEX = index;
         }
     }
 
@@ -263,15 +278,34 @@ public class SystemRandom implements Runnable {
 
 
     /**
-     * Inject seed data into the system random number generators
+     * Inject seed data into the system random number generators.
      * 
      * @param seed
      *            data to inject
      */
     public static void injectSeed(byte[] seed) {
         if( seed == null || seed.length == 0 ) return;
-        Seed s = new Seed(seed);
-        SEED_MAKER.submit(s);
+
+        // Offer it the injection queue.
+        while( !INJECTED.offer(seed) ) {
+            // did not go to queue, so combine some entries to make space
+            DigestDataOutput out = new DigestDataOutput("SHA-512");
+            out.writeInt(seed.length);
+            out.write(seed);
+
+            // attempt to remove 5 entries
+            for(int i = 0;i < 5;i++) {
+                byte[] s = INJECTED.poll();
+                if( s != null ) {
+                    out.write(i);
+                    out.writeInt(s.length);
+                    out.write(s);
+                }
+            }
+
+            // combine entries
+            seed = out.digest();
+        }
     }
 
 
@@ -285,8 +319,11 @@ public class SystemRandom implements Runnable {
         getRandom().nextBytes(rand);
     }
 
-    /** Number of bytes available in the current block */
-    private int available_ = 0;
+    /**
+     * Number of bytes available in the current block. A value of -1 means not
+     * initialised.
+     */
+    private int available_ = -1;
 
     /** Random bytes drawn from the system PRNG */
     private byte[] block_ = new byte[BLOCK_LEN];
@@ -328,20 +365,32 @@ public class SystemRandom implements Runnable {
      */
     boolean get(byte[] output, int pos) {
         synchronized (this) {
+            // is this initialised?
+            if( available_ == -1 ) return false;
+
+            // if no bytes available, cannot supply any
             if( available_ == 0 ) return false;
+
+            // get a byte
             int p = (--available_);
+            output[pos] = block_[p];
+
+            // have we used all available bytes?
             if( p == 0 ) {
                 if( LOG.isDebugEnabled() ) {
                     LOG.debug("Used all bytes from "
                             + random_.getProvider().getName() + ":"
                             + random_.getAlgorithm());
                 }
+
+                // this is no longer ready
                 synchronized (SOURCES) {
                     READY--;
                 }
+
+                // asynchronously generate more bytes
                 EXECUTOR.execute(this);
             }
-            output[pos] = block_[p];
         }
         return true;
     }
@@ -384,11 +433,11 @@ public class SystemRandom implements Runnable {
         // load the first block
         random_.nextBytes(block_);
 
-        // enroll this algorithm with the seed maker
-        SEED_MAKER.submit(new Seed(random_));
-
         // set when this reseeds
         reseed_ = RESEED.nextInt(SOURCE_LEN);
+
+        // enroll this algorithm with the seed maker
+        SEED_MAKER.submit(new Seed(random_));
 
         // update the state
         synchronized (this) {
@@ -397,7 +446,6 @@ public class SystemRandom implements Runnable {
                 READY++;
                 SOURCES.notifyAll();
             }
-            notifyAll();
         }
     }
 
@@ -406,8 +454,15 @@ public class SystemRandom implements Runnable {
      * Get more data from the system random number generator
      */
     public void run() {
-        // see if we need to reseed before generating more random bytes
-        reseed_--;
+        // use injected seeds immediately
+        byte[] s = INJECTED.poll();
+        if( s != null ) {
+            random_.setSeed(s);
+        } else {
+            reseed_--;
+        }
+
+        // is a reseed due?
         if( reseed_ < 0 ) {
             // get the next seed
             Future<Seed> future = SEED_MAKER.poll();
@@ -433,29 +488,39 @@ public class SystemRandom implements Runnable {
             }
         }
 
-        if( LOG.isDebugEnabled() ) {
-            LOG.debug("Generating bytes from "
-                    + random_.getProvider().getName() + ":"
-                    + random_.getAlgorithm());
-        }
+        fetchBytes();
+    }
 
-        // generate random bytes
-        random_.nextBytes(block_);
 
-        if( LOG.isDebugEnabled() ) {
-            LOG.debug("Finished generating bytes from "
-                    + random_.getProvider().getName() + ":"
-                    + random_.getAlgorithm());
-        }
-
-        // update the state
+    /**
+     * Fetch new bytes
+     */
+    private void fetchBytes() {
         synchronized (this) {
-            available_ = BLOCK_LEN;
-            synchronized (SOURCES) {
-                READY++;
-                SOURCES.notifyAll();
+            if( LOG.isDebugEnabled() ) {
+                LOG.debug("Generating bytes from "
+                        + random_.getProvider().getName() + ":"
+                        + random_.getAlgorithm());
             }
-            notifyAll();
+
+            // generate random bytes
+            random_.nextBytes(block_);
+
+            if( LOG.isDebugEnabled() ) {
+                LOG.debug("Finished generating bytes from "
+                        + random_.getProvider().getName() + ":"
+                        + random_.getAlgorithm());
+            }
+
+            // update the state
+            int oldAvail = available_;
+            available_ = BLOCK_LEN;
+            if( oldAvail <= 0 ) {
+                synchronized (SOURCES) {
+                    READY++;
+                    SOURCES.notifyAll();
+                }
+            }
         }
     }
 }

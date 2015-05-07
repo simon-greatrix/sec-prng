@@ -40,7 +40,7 @@ public class TimeBasedUUID {
     private static TimeBasedUUID INSTANCE = null;
 
     /** Secure random number generator */
-    private static final Random RANDOM = new SecureRandom();
+    private static final Random RANDOM = SystemRandom.getRandom();
 
 
     /**

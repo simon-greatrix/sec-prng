@@ -104,24 +104,24 @@ public class Fortuna {
             switch (i % 5) {
             case 0:
             default:
-                spi = new NistCipherRandom(SystemRandom.SOURCE, 971, entropy,
+                spi = new NistCipherRandom(SystemRandom.SOURCE, 5, entropy,
                         null, null);
                 break;
             case 1:
                 spi = new NistHashRandom(SystemRandom.SOURCE,
-                        HashSpec.SPEC_SHA256, 977, entropy, null, null);
+                        HashSpec.SPEC_SHA256, 5, entropy, null, null);
                 break;
             case 2:
                 spi = new NistHashRandom(SystemRandom.SOURCE,
-                        HashSpec.SPEC_SHA512, 983, entropy, null, null);
+                        HashSpec.SPEC_SHA512, 5, entropy, null, null);
                 break;
             case 3:
                 spi = new NistHmacRandom(SystemRandom.SOURCE,
-                        HashSpec.SPEC_SHA256, 991, entropy, null, null);
+                        HashSpec.SPEC_SHA256, 5, entropy, null, null);
                 break;
             case 4:
                 spi = new NistHmacRandom(SystemRandom.SOURCE,
-                        HashSpec.SPEC_SHA512, 997, entropy, null, null);
+                        HashSpec.SPEC_SHA512, 5, entropy, null, null);
                 break;
             }
             pool_[i] = new SecureRandomImpl(spi);

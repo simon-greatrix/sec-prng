@@ -22,6 +22,7 @@ abstract public class BaseRandom extends SecureRandomSpi {
 
     /**
      * A counter for how often this can generate bytes before needing reseeding.
+     * Counter-intuitively, higher values of resistance are less secure.
      */
     private final int resistance_;
 
@@ -99,9 +100,10 @@ abstract public class BaseRandom extends SecureRandomSpi {
     protected final synchronized void engineNextBytes(byte[] bytes) {
         if( resistance_ < counter_ ) {
             engineSetSeed(engineGenerateSeed(seedSize_));
+        } else {
+            counter_++;
         }
         implNextBytes(bytes);
-        counter_++;
     }
 
 
@@ -109,8 +111,8 @@ abstract public class BaseRandom extends SecureRandomSpi {
     protected final synchronized void engineSetSeed(byte[] seed) {
         implSetSeed(seed);
 
-        // if we re-seed on every operation, do not reset the counter
-        if( resistance_ != 0 ) counter_ = 1;
+        // reset the counter
+        counter_ = 1;
     }
 
 
