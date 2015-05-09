@@ -203,7 +203,7 @@ public class NistHmacRandom extends BaseRandom {
 
         digest_.update(ipad);
         digest_.update(value);
-        digest_.update((byte) 0);
+        digest_.update(extra);
         digest_.update(message);
         byte[] hash = digest_.digest();
         digest_.update(opad);
