@@ -52,18 +52,26 @@ public class NonceFactory {
 
         IDENTIFIER = dig.digest();
 
-        // Now create a personalization string
-        dig = new DigestDataOutput("SHA-256");
+        // Now create a personalization string. Start with the identifier info
+        dig = new DigestDataOutput("SHA-512");
         dig.writeUTF(runBean.getName());
         dig.writeLong(runBean.getStartTime());
+        dig.writeUTF(NonceFactory.class.getClassLoader().getClass().getName());
         dig.writeInt(System.identityHashCode(NonceFactory.class.getClassLoader()));
+        dig.writeLong(System.nanoTime());
+        dig.writeLong(Thread.currentThread().getId());
+        
+        // now the class path
         dig.writeUTF(runBean.getClassPath());
+        
+        // input arguments to this instance
         List<String> args = runBean.getInputArguments();
         dig.writeInt(args.size());
         for(String s:args) {
             dig.writeUTF(s);
         }
 
+        // system and environment properties
         Map<String, String> env = runBean.getSystemProperties();
         dig.writeInt(env.size());
         for(Entry<String, String> e:env.entrySet()) {

@@ -3,6 +3,13 @@ package prng.nist;
 import java.util.Arrays;
 import java.util.Random;
 
+/**
+ * The ISAAC random number generator is a cryptographically secure generator
+ * inspired by the RC4 cipher.
+ * 
+ * @see http://en.wikipedia.org/wiki/ISAAC_%28cipher%29
+ *
+ */
 public class IsaacRandom extends Random {
     /** serial version UID */
     private static final long serialVersionUID = 1L;
@@ -17,21 +24,35 @@ public class IsaacRandom extends Random {
     private final int[] mm_ = new int[256];
 
     /** Internal generator state */
-    private int aa_=0, bb_=0, cc_=0;
+    private int aa_ = 0, bb_ = 0, cc_ = 0;
 
 
+    /** Create a unseeded generator */
     public IsaacRandom() {
         super(0);
         init(null);
     }
 
 
+    /**
+     * Create a generator with the specified seed
+     * 
+     * @param seed
+     *            the full seed
+     */
     public IsaacRandom(int[] seed) {
         super(0);
         setSeed(seed);
     }
 
 
+    /**
+     * Create a generator using each character from the seed as one integer in
+     * the seed.
+     * 
+     * @param seed
+     *            the seed
+     */
     public IsaacRandom(String seed) {
         super(0);
         setSeed(seed);
@@ -67,6 +88,12 @@ public class IsaacRandom extends Random {
     }
 
 
+    /**
+     * Mix the bits of 8 integers
+     * 
+     * @param s
+     *            the 8 integers to mix
+     */
     private static void mix(int[] s) {
         s[0] ^= s[1] << 11;
         s[3] += s[0];
@@ -115,11 +142,7 @@ public class IsaacRandom extends Random {
             }
             mix(initState);
             for(int j = 0;j < 8;j++) {
-                // NB: This is a change from the official algorithm which only
-                // allows one initialisation. Changing this from direct
-                // assignment to XOR makes it possible to inject additional
-                // entropy.
-                mm_[i + j] ^= initState[j];
+                mm_[i + j] = initState[j];
             }
         }
 
@@ -136,7 +159,7 @@ public class IsaacRandom extends Random {
                 }
             }
         }
-
+        
         // Make sure generateMoreResults() will be called by
         // the next next() call.
         valuesUsed_ = 256;
@@ -158,36 +181,43 @@ public class IsaacRandom extends Random {
 
 
     @Override
-    public synchronized void setSeed(long seed) {
-        super.setSeed(0);
+    public void setSeed(long seed) {
         if( mm_ == null ) {
-            // We're being called from the superclass constructor. We don't have
-            // our state arrays instantiated yet, and we're going to do proper
-            // initialization later in our own constructor anyway, so just
-            // ignore this call.
+            // We're being called from the superclass constructor. We don't
+            // have our state arrays instantiated yet, and we're going to do
+            // proper initialization later in our own constructor anyway, so
+            // just ignore this call.
             return;
         }
-        int[] arraySeed = new int[256];
-        arraySeed[0] = (int) (seed & 0xFFFFFFFF);
-        arraySeed[1] = (int) (seed >>> 32);
-        init(arraySeed);
-    }
 
-
-    public synchronized void setSeed(int[] seed) {
-        super.setSeed(0);
-        init(seed);
-    }
-
-
-    public synchronized void setSeed(String seed) {
-        super.setSeed(0);
-        char[] charSeed = seed.toCharArray();
-        int[] intSeed = new int[charSeed.length];
-        for(int i = 0;i < charSeed.length;i++) {
-            intSeed[i] = charSeed[i];
+        synchronized (randResult_) {
+            super.setSeed(0);
+            int[] arraySeed = new int[256];
+            arraySeed[0] = (int) (seed & 0xFFFFFFFF);
+            arraySeed[1] = (int) (seed >>> 32);
+            init(arraySeed);
         }
-        init(intSeed);
+    }
+
+
+    public void setSeed(int[] seed) {
+        synchronized (randResult_) {
+            super.setSeed(0);
+            init(seed);
+        }
+    }
+
+
+    public void setSeed(String seed) {
+        synchronized (randResult_) {
+            super.setSeed(0);
+            char[] charSeed = seed.toCharArray();
+            int[] intSeed = new int[charSeed.length];
+            for(int i = 0;i < charSeed.length;i++) {
+                intSeed[i] = charSeed[i];
+            }
+            init(intSeed);
+        }
     }
 
 }

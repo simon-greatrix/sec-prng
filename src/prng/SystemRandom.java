@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import prng.collector.InstantEntropy;
 import prng.nist.HashSpec;
 import prng.nist.NistHashRandom;
 import prng.nist.SeedSource;
@@ -131,12 +132,6 @@ public class SystemRandom implements Runnable {
     private static SecureRandom RANDOM = null;
 
     /**
-     * The number of currently ready sources. Requests will block if there are
-     * none.
-     */
-    private static int READY = 0;
-
-    /**
      * "Random" selection for which source gets reseeded. The intention is to
      * all sources of seed data to influence all other sources by "randomly"
      * assigning seed data to a source.
@@ -155,9 +150,7 @@ public class SystemRandom implements Runnable {
     public static final SeedSource SOURCE = new SeedSource() {
         @Override
         public byte[] getSeed(int size) {
-            byte[] seed = new byte[size];
-            SystemRandom.generateSeed(seed);
-            return seed;
+            return SystemRandom.getSeed(size);
         }
     };
 
@@ -209,53 +202,28 @@ public class SystemRandom implements Runnable {
      * is drawn from the output of the system secure random number generators,
      * not their actual entropy sources.
      * 
-     * @param data
-     *            array to fill
+     * @param size number of seed bytes required
      */
-    public static void generateSeed(byte[] data) {
+    public static byte[] getSeed(int size) {
+        byte[] data = new byte[size];
         int index = RESEED.nextInt(SOURCE_LEN);
-        for(int i = 0;i < data.length;i++) {
+        for(int i = 0;i < size;i++) {
             // try for a byte
             boolean needByte = true;
-            int startIndex = index; 
-            // TODO - fix this method
-            while( needByte ) {
+            for(int j=0;needByte && (j<SOURCE_LEN);j++) {
                 if( SOURCES[index].get(data, i) ) {
                     needByte = false;
                 }
-                index = (index + 1) % SOURCE_LEN;
-                if( index==startIndex )
+                index = (index+1) % SOURCE_LEN;
             }
-            while( !gotOne )
-            if( SOURCES[index].get(data, i) ) {
-                gotOne = true;
-            }
-
-            // next source
-            index = (index + 1) % SOURCE_LEN;
-            if( index == startIndex ) {
-                if( gotOne ) {
-                    // at least on
-                    gotOne = false;
-                } else {
-                    synchronized (SOURCES) {
-                        while( READY == 0 ) {
-                            try {
-                                LOG.info("Waiting for more system random bytes");
-                                SOURCES.wait();
-                            } catch (InterruptedException ie) {
-                                LOG.info("Seed generation was interrupted");
-                                byte[] failSafe = new byte[data.length - i];
-                                RESEED.nextBytes(failSafe);
-                                System.arraycopy(failSafe, 0, data, i,
-                                        failSafe.length);
-                                return;
-                            }
-                        }
-                    }
-                }
+            
+            // if no byte, get one from instant entropy
+            if( needByte ) {
+                byte[] b = InstantEntropy.SOURCE.getSeed(1);
+                data[i] = b[0];
             }
         }
+        return data;
     }
 
 
@@ -383,11 +351,6 @@ public class SystemRandom implements Runnable {
                             + random_.getAlgorithm());
                 }
 
-                // this is no longer ready
-                synchronized (SOURCES) {
-                    READY--;
-                }
-
                 // asynchronously generate more bytes
                 EXECUTOR.execute(this);
             }
@@ -408,15 +371,16 @@ public class SystemRandom implements Runnable {
         if( prov == null ) {
             // request the strong instance
             LOG.info("Initialising System strong PRNG");
-            try {
-                random_ = SecureRandom.getInstanceStrong();
-            } catch (NoSuchAlgorithmException e) {
-                // fallback to some instance
-                LOG.error(
-                        "System strong secure random generator is unavailable.",
-                        e);
-                random_ = new SecureRandom();
-            }
+            random_ = new SecureRandom();
+//            try {
+//                random_ = SecureRandom.getInstanceStrong();
+//            } catch (NoSuchAlgorithmException e) {
+//                // fallback to some instance
+//                LOG.error(
+//                        "System strong secure random generator is unavailable.",
+//                        e);
+//                random_ = new SecureRandom();
+//            }
         } else {
             // get the specific instance
             LOG.info("Initialising System PRNG: {}:{}", prov.getName(), alg);
@@ -442,10 +406,6 @@ public class SystemRandom implements Runnable {
         // update the state
         synchronized (this) {
             available_ = BLOCK_LEN;
-            synchronized (SOURCES) {
-                READY++;
-                SOURCES.notifyAll();
-            }
         }
     }
 
@@ -513,14 +473,7 @@ public class SystemRandom implements Runnable {
             }
 
             // update the state
-            int oldAvail = available_;
             available_ = BLOCK_LEN;
-            if( oldAvail <= 0 ) {
-                synchronized (SOURCES) {
-                    READY++;
-                    SOURCES.notifyAll();
-                }
-            }
         }
     }
 }

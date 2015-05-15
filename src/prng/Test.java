@@ -11,12 +11,12 @@ import prng.nist.IsaacRandom;
 public class Test {
 
     public static void main(String[] args) {
-        // TODO Auto-generated method stub
-        long start = System.currentTimeMillis();
+        for(int i=0;i<120;i++) {
+            long start = System.currentTimeMillis();
         
-        InstantEntropy.get();
-        
-        System.out.println(System.currentTimeMillis()-start);
+            InstantEntropy.get();
+            System.out.println(System.currentTimeMillis()-start);
+        }
     }
 
 }
