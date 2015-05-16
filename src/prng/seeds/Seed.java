@@ -1,5 +1,7 @@
 package prng.seeds;
 
+import prng.BLOBPrint;
+
 
 /**
  * Storable seed data. Every seed must have a unique name by which it is
@@ -90,10 +92,12 @@ public class Seed {
      */
     public void save() {
         SeedStorage store = SeedStorage.getInstance();
-        try {
-            store.put(this);
-        } catch (StorageException e) {
-            SeedStorage.LOG.error("Failed to store seed {}",name_,e);
-        }
+        store.put(this);
+    }
+
+
+    @Override
+    public String toString() {
+        return "Seed( "+name_+" ) [\n"+BLOBPrint.toString(data_)+"]";
     }
 }

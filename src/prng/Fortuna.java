@@ -3,18 +3,19 @@ package prng;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
-import java.security.SecureRandom;
-import java.security.SecureRandomSpi;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 
 import prng.collector.EntropyCollector;
+import prng.nist.BaseRandom;
 import prng.nist.HashSpec;
 import prng.nist.NistCipherRandom;
 import prng.nist.NistHashRandom;
 import prng.nist.NistHmacRandom;
 import prng.nist.SeedSource;
+import prng.seeds.Seed;
+import prng.seeds.SeedStorage;
 
 /**
  * Implementation of a Fortuna-like secure random number source. Fortuna has
@@ -78,7 +79,7 @@ public class Fortuna {
     private byte[] key_ = new byte[32];
 
     /** Entropy accumulators */
-    private SecureRandom[] pool_ = new SecureRandom[32];
+    private SecureRandomImpl[] pool_ = new SecureRandomImpl[32];
 
     /** Number of times this instance has been reseeded. */
     private int reseedCount_ = 0;
@@ -100,7 +101,7 @@ public class Fortuna {
         byte[] entropy = new byte[128];
         for(int i = 0;i < 32;i++) {
             SystemRandom.nextBytes(entropy);
-            SecureRandomSpi spi;
+            BaseRandom spi;
             switch (i % 5) {
             case 0:
             default:
@@ -125,6 +126,19 @@ public class Fortuna {
                 break;
             }
             pool_[i] = new SecureRandomImpl(spi);
+        }
+        
+        try ( SeedStorage store = SeedStorage.getInstance() ) {
+            for(int i=0;i<32;i++) {
+                Seed seed = store.get("fortuna."+i);
+                if( seed!=null ) {
+                    pool_[i].setSeed(seed.getSeed());
+                }
+            }
+            for(int i=0;i<32;i++) {
+                Seed seed = new Seed("fortuna."+i,pool_[i].newSeed());
+                store.put(seed);
+            }
         }
     }
 

@@ -1,9 +1,14 @@
 package prng.seeds;
 
+import java.util.Random;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import prng.BLOBPrint;
+import prng.Config;
 import prng.SystemRandom;
+import prng.collector.InstantEntropy;
 
 /**
  * Storage for PRNG seed information.
@@ -11,9 +16,12 @@ import prng.SystemRandom;
  * @author Simon Greatrix
  *
  */
-public abstract class SeedStorage {
+public abstract class SeedStorage implements AutoCloseable {
     /** Logger for seed storage operations */
     public static final Logger LOG = LoggerFactory.getLogger(SeedStorage.class);
+
+    /** RNG used by the Scrambler */
+    private static Random RAND = InstantEntropy.RAND;
 
 
     /**
@@ -22,7 +30,35 @@ public abstract class SeedStorage {
      * @return the seed file instance
      */
     public static SeedStorage getInstance() {
-        return null; // TODO implement SeedStorage.getInstance
+        Config config = Config.getConfig("", SeedStorage.class);
+        String className = config.get("class", UserPrefsStorage.class.getName());
+        SeedStorage store = null;
+        try {
+            Class<?> cl = Class.forName(className);
+            Class<? extends SeedStorage> clStore = cl.asSubclass(SeedStorage.class);
+            store = clStore.newInstance();
+        } catch (ClassCastException e) {
+            LOG.error("Specified class of " + className
+                    + " is not a subclass of " + SeedStorage.class.getName());
+        } catch (ClassNotFoundException e) {
+            LOG.error("Specified class of " + className + " was not found");
+        } catch (InstantiationException e) {
+            LOG.error("Specified class of " + className + " failed to load", e);
+        } catch (IllegalAccessException e) {
+            LOG.error(
+                    "Specified class of " + className + " was not accessible",
+                    e);
+        }
+        if( store == null ) store = new UserPrefsStorage();
+        return store;
+    }
+
+
+    /**
+     * Internal method. Do not invoke this method.
+     */
+    public static void upgradeScrambler() {
+        RAND = SystemRandom.getRandom();
     }
 
 
@@ -41,14 +77,13 @@ public abstract class SeedStorage {
         byte[] output = new byte[len];
         byte[] cipher = new byte[len];
 
-        // Have to use SystemRandom as Fortuna may not be seeded yet. In theory,
-        // this is a cipher. If we had an exact record of the PRNG's state to
-        // use as a key we could decrypt the output at a later time. However, we
-        // have no intention of ever allowing anyone to decrypt it as that would
-        // reveal the seed data. The fact that it is theoretically possible to
-        // decrypt it means that no information has been lost and hence our
-        // Shannon entropy is preserved.
-        SystemRandom.nextBytes(cipher);
+        // In theory, this is a cipher. If we had an exact record of the PRNG's
+        // state to use as a key we could decrypt the output at a later time.
+        // However, we have no intention of ever allowing anyone to decrypt it
+        // as that would reveal the seed data. The fact that it is theoretically
+        // possible to decrypt it means that no information has been lost and
+        // hence our Shannon entropy is preserved.
+        RAND.nextBytes(cipher);
         for(int i = 0;i < len;i++) {
             output[i] = (byte) (data[i] ^ cipher[i]);
         }
@@ -61,14 +96,17 @@ public abstract class SeedStorage {
      * 
      * @param seed
      *            the seed to save
-     * @throws StorageException
      */
-    public void put(Seed seed) throws StorageException {
-        LOG.debug("Putting seed {} into store", seed);
+    public void put(Seed seed) {
+        LOG.debug("Putting seed into store\n{}", seed);
         SeedOutput output = new SeedOutput();
         seed.save(output);
         byte[] data = output.toByteArray();
-        putRaw(seed.getName(), data);
+        try {
+            putRaw(seed.getName(), data);
+        } catch ( StorageException se ) {
+            LOG.error("Failed to store seed\n{}.",seed,se);
+        }
     }
 
 
@@ -90,11 +128,16 @@ public abstract class SeedStorage {
      * @param name
      *            the seed's name
      * @return the seed, or null
-     * @throws StorageException
      */
-    public Seed get(String name) throws StorageException {
+    public Seed get(String name) {
         LOG.debug("Fetching seed {} from store", name);
-        byte[] data = getRaw(name);
+        byte[] data;
+        try {
+            data = getRaw(name);
+        } catch (StorageException e1) {
+            LOG.error("Could not retrieve seed {}",name,e1);
+            return null;
+        }
         if( data == null ) {
             LOG.info("Seed data {} not found in storage", name);
             return null;
@@ -105,7 +148,7 @@ public abstract class SeedStorage {
         try {
             seed.initialize(input);
         } catch (Exception e) {
-            LOG.error("Seed data for {} was corrupt", name, e);
+            LOG.error("Seed data for {} was corrupt:\n", name, BLOBPrint.toString(data), e);
             remove(name);
         }
         return seed;
@@ -122,11 +165,16 @@ public abstract class SeedStorage {
      * @param <T>
      *            type of seed
      * @return the seed or null
-     * @throws StorageException
      */
-    public <T extends Seed> T get(Class<T> type, String name) throws StorageException {
+    public <T extends Seed> T get(Class<T> type, String name) {
         LOG.debug("Fetching seed {} from store", name);
-        byte[] data = getRaw(name);
+        byte[] data;
+        try {
+            data = getRaw(name);
+        } catch (StorageException e1) {
+            LOG.error("Could not retrieve seed {}",name,e1);
+            return null;
+        }
         if( data == null ) {
             LOG.info("Seed data {} not found in storage", name);
             return null;
@@ -143,7 +191,7 @@ public abstract class SeedStorage {
         try {
             seed.initialize(input);
         } catch (Exception e) {
-            LOG.error("Seed data for {} was corrupt", name, e);
+            LOG.error("Seed data for {} was corrupt:\n", name, BLOBPrint.toString(data), e);
             remove(name);
         }
         return seed;
@@ -168,8 +216,8 @@ public abstract class SeedStorage {
      *            the seed's name
      */
     abstract protected void remove(String name);
-    
-    
+
+
     /**
      * Flush any changes and close the storage
      */

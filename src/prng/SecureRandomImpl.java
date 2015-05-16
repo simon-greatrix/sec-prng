@@ -1,7 +1,8 @@
 package prng;
 
 import java.security.SecureRandom;
-import java.security.SecureRandomSpi;
+
+import prng.nist.BaseRandom;
 
 /**
  * Implementation of a SecureRandom using a given SPI.
@@ -12,6 +13,9 @@ import java.security.SecureRandomSpi;
 class SecureRandomImpl extends SecureRandom {
     /** serial version UID */
     private static final long serialVersionUID = 2l;
+    
+    
+    private final BaseRandom base_;
 
 
     /**
@@ -20,7 +24,13 @@ class SecureRandomImpl extends SecureRandom {
      * @param spi
      *            SPI to use
      */
-    SecureRandomImpl(SecureRandomSpi spi) {
+    SecureRandomImpl(BaseRandom spi) {
         super(spi, SecureRandomProvider.PROVIDER);
+        base_ = spi;
+    }
+    
+    
+    public byte[] newSeed() {
+        return base_.newSeed();
     }
 }

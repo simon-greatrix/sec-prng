@@ -187,6 +187,7 @@ public class IsaacRandom extends Random {
             // have our state arrays instantiated yet, and we're going to do
             // proper initialization later in our own constructor anyway, so
             // just ignore this call.
+            super.setSeed(seed);
             return;
         }
 

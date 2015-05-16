@@ -140,7 +140,7 @@ abstract public class BaseRandom extends SecureRandomSpi {
      * 
      * @return a value for seeding this algorithm
      */
-    protected byte[] newSeed() {
+    public byte[] newSeed() {
         byte[] seed = new byte[seedSize_];
         engineNextBytes(seed);
         return seed;

@@ -8,6 +8,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
 import prng.BLOBPrint;
+import prng.Config;
 import prng.internet.SimpleJSONParser.JSONArray;
 import prng.internet.SimpleJSONParser.JSONObject;
 import prng.internet.SimpleJSONParser.Primitive;
@@ -33,18 +34,25 @@ public class RandomDotOrg extends NetRandom {
             throw new Error("Impossible exception", e);
         }
 
-        String apiKey = "47247f14-dd13-422e-bddf-0ec46f4e7412";
-        JSONObject obj = new JSONObject();
-        obj.put("jsonrpc", new Primitive(Type.STRING, "2.0"));
-        obj.put("method", new Primitive(Type.STRING, "generateIntegers"));
-        JSONObject params = new JSONObject();
-        obj.put("params", new Primitive(Type.OBJECT, params));
-        obj.put("id", new Primitive(Type.STRING, "seed"));
-        params.put("apiKey", new Primitive(Type.STRING, apiKey));
-        params.put("n", new Primitive(Type.NUMBER, Integer.valueOf(128)));
-        params.put("min", new Primitive(Type.NUMBER, Integer.valueOf(0)));
-        params.put("max", new Primitive(Type.NUMBER, Integer.valueOf(255)));
-        RANDOM_REQUEST = obj.toString().getBytes(StandardCharsets.US_ASCII);
+        Config config = Config.getConfig("",RandomDotOrg.class);        
+        String apiKey = config.get("apiKey");
+        if( apiKey != null ) {
+            NetRandom.LOG.info("random.org RNG using API key :"+apiKey);
+            JSONObject obj = new JSONObject();
+            obj.put("jsonrpc", new Primitive(Type.STRING, "2.0"));
+            obj.put("method", new Primitive(Type.STRING, "generateIntegers"));
+            JSONObject params = new JSONObject();
+            obj.put("params", new Primitive(Type.OBJECT, params));
+            obj.put("id", new Primitive(Type.STRING, "seed"));
+            params.put("apiKey", new Primitive(Type.STRING, apiKey));
+            params.put("n", new Primitive(Type.NUMBER, Integer.valueOf(128)));
+            params.put("min", new Primitive(Type.NUMBER, Integer.valueOf(0)));
+            params.put("max", new Primitive(Type.NUMBER, Integer.valueOf(255)));
+            RANDOM_REQUEST = obj.toString().getBytes(StandardCharsets.US_ASCII);
+        } else {
+            NetRandom.LOG.info("random.org RNG not in use as no API key provided");
+            RANDOM_REQUEST = null;
+        }
     }
 
 
@@ -61,6 +69,7 @@ public class RandomDotOrg extends NetRandom {
      * @throws IOException
      */
     byte[] fetch() throws IOException {
+        if( RANDOM_REQUEST==null ) return new byte[0];
         byte[] data = connectRPC(RANDOM_DOT_ORG, RANDOM_REQUEST);
 
         try {

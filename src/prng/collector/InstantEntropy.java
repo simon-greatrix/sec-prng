@@ -113,7 +113,7 @@ public class InstantEntropy implements Runnable {
      * of these values. Of course, not all numbers of the form 30k+c are prime!
      */
     private static final int[] ADD_CONST = new int[] { 1, 7, 11, 13, 17, 19,
-        23, 29 };
+            23, 29 };
 
     private static ExecutorService ENTROPY_RUNNER = new ThreadPoolExecutor(20,
             20, 1, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
@@ -132,8 +132,11 @@ public class InstantEntropy implements Runnable {
     private static ExecutorService FUTURE_RUNNER = new ThreadPoolExecutor(2, 2,
             1, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
 
-    /** A random number for generating prime numbers with */
-    private static final IsaacRandom RAND = new IsaacRandom();
+    /**
+     * A random number generator. This is a secure algorithm, but its seed
+     * information is only the instant entropy we are able to create.
+     */
+    public static final IsaacRandom RAND = new IsaacRandom();
 
     /** An "instant" entropy source */
     public static final SeedSource SOURCE = new SeedSource() {
