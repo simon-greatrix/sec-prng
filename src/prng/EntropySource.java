@@ -55,7 +55,7 @@ public class EntropySource {
      * @param data
      *            the data to post
      */
-    private synchronized void post(byte[] data) {
+    protected void post(byte[] data) {
         int pool;
         synchronized (this) {
             pool_ = pool = (pool_ + 1) % 32;

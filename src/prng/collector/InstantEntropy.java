@@ -19,6 +19,8 @@ import prng.SystemRandom;
 import prng.nist.HashSpec;
 import prng.nist.IsaacRandom;
 import prng.nist.SeedSource;
+import prng.seeds.Seed;
+import prng.seeds.SeedStorage;
 
 /**
  * Attempts to create useful entropy from nothing. It should be assumed that
@@ -42,7 +44,9 @@ public class InstantEntropy implements Runnable {
 
         /**
          * Get the entropy, waiting for it to arrive.
-         *
+         * 
+         * @param millis
+         *            maximum time to wait for entropy
          * @return the entropy
          */
         public byte[] get(long millis) throws InterruptedException {
@@ -109,37 +113,13 @@ public class InstantEntropy implements Runnable {
     }
 
     /**
-     * All prime numbers greater than 30 take the form of 30k+c, where c is one
-     * of these values. Of course, not all numbers of the form 30k+c are prime!
+     * A seed source that holds the result of entropy generation and releases it
+     * as it is requested.
+     * 
+     * @author Simon Greatrix
+     *
      */
-    private static final int[] ADD_CONST = new int[] { 1, 7, 11, 13, 17, 19,
-            23, 29 };
-
-    private static ExecutorService ENTROPY_RUNNER = new ThreadPoolExecutor(20,
-            20, 1, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
-
-    /** Mask for 256-bit FNV hash */
-    private static final BigInteger FNV_MASK = BigInteger.ZERO.flipBit(256);
-
-    /** Offset for 256-bit FNV hash */
-    private static final BigInteger FNV_OFFSET = new BigInteger(
-            "100029257958052580907070968620625704837092796014241193945225284501741471925557");
-
-    /** Prime for 256-bit FNV hash */
-    private static final BigInteger FNV_PRIME = new BigInteger(
-            "374144419156711147060143317175368453031918731002211");
-
-    private static ExecutorService FUTURE_RUNNER = new ThreadPoolExecutor(2, 2,
-            1, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
-
-    /**
-     * A random number generator. This is a secure algorithm, but its seed
-     * information is only the instant entropy we are able to create.
-     */
-    public static final IsaacRandom RAND = new IsaacRandom();
-
-    /** An "instant" entropy source */
-    public static final SeedSource SOURCE = new SeedSource() {
+    static class Result implements SeedSource {
         /** Current batch of entropy */
         byte[] entropy_ = new byte[0];
 
@@ -154,6 +134,7 @@ public class InstantEntropy implements Runnable {
             byte[] output = new byte[size];
             synchronized (this) {
                 while( len > 0 ) {
+                    // do we need more entropy?
                     if( pos_ >= entropy_.length ) {
                         entropy_ = get();
                         pos_ = 0;
@@ -161,10 +142,12 @@ public class InstantEntropy implements Runnable {
 
                     int rem = entropy_.length - pos_;
                     if( rem <= len ) {
+                        // insufficient bytes remain in current batch
                         System.arraycopy(output, offset, entropy_, pos_, rem);
                         len -= rem;
                         pos_ += rem;
                     } else {
+                        // we have enough bytes in this batch
                         System.arraycopy(output, offset, entropy_, pos_, len);
                         len = 0;
                         pos_ += len;
@@ -173,13 +156,62 @@ public class InstantEntropy implements Runnable {
             }
             return output;
         }
-    };
+    }
 
+    /**
+     * All prime numbers greater than 30 take the form of 30k+c, where c is one
+     * of these values. Of course, not all numbers of the form 30k+c are prime!
+     */
+    private static final int[] ADD_CONST = new int[] { 1, 7, 11, 13, 17, 19,
+            23, 29 };
+
+    /** Thread pool for generating entropy */
+    private static ExecutorService ENTROPY_RUNNER = new ThreadPoolExecutor(20,
+            20, 1, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
+
+    /** Bit for 256-bit FNV hash */
+    private static final BigInteger FNV_MASK = BigInteger.ZERO.setBit(256).subtract(
+            BigInteger.ONE);
+
+    /** Offset for 256-bit FNV hash */
+    private static final BigInteger FNV_OFFSET = new BigInteger(
+            "100029257958052580907070968620625704837092796014241193945225284501741471925557");
+
+    /** Prime for 256-bit FNV hash */
+    private static final BigInteger FNV_PRIME = new BigInteger(
+            "374144419156711147060143317175368453031918731002211");
+
+    /** Thread pool for handling requests for entropy */
+    private static ExecutorService FUTURE_RUNNER = new ThreadPoolExecutor(2, 2,
+            1, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
+
+    /**
+     * A random number generator. This is a secure algorithm, but its seed
+     * information is only the instant entropy we are able to create.
+     */
+    public static final IsaacRandom RAND = new IsaacRandom();
+
+    /** An "instant" entropy source */
+    public static final SeedSource SOURCE = new Result();
+
+    /**
+     * Stored entropy. We store 64 blocks of entropy and release them in a
+     * random order. There are much more than 2^256 ways of permuting 64 items,
+     * so this may add another layer of security to the implementation.
+     */
     private static final Holder[] STORE = new Holder[64];
 
     static {
         // start off with our personalization value
         setSeed(NonceFactory.personalization());
+
+        Seed seed;
+        try (SeedStorage storage = SeedStorage.getInstance()) {
+            seed = storage.get("instant");
+        }
+        if( seed != null ) {
+            setSeed(seed.getSeed());
+        }
 
         ((ThreadPoolExecutor) FUTURE_RUNNER).allowCoreThreadTimeOut(true);
         ((ThreadPoolExecutor) ENTROPY_RUNNER).allowCoreThreadTimeOut(true);
@@ -193,6 +225,22 @@ public class InstantEntropy implements Runnable {
             STORE[p[i]] = h;
             h.reset();
         }
+
+        // Save the ISAAC entropy after doing most of the seed store
+        // initialisation. As there are two threads in the FUTURE_RUNNER
+        // executor, this will start to run just before the final holder
+        // finishes.
+        FUTURE_RUNNER.submit(new Runnable() {
+            @Override
+            public void run() {
+                byte[] data = new byte[1024];
+                RAND.nextBytes(data);
+                Seed seed = new Seed("instant", data);
+                try (SeedStorage storage = SeedStorage.getInstance()) {
+                    storage.put(seed);
+                }
+            }
+        });
     }
 
 
@@ -205,11 +253,14 @@ public class InstantEntropy implements Runnable {
         DigestDataOutput dig = new DigestDataOutput(
                 HashSpec.SPEC_SHA512.getInstance());
 
+        // generate 256 samples in some order
         int[] p = permute(256);
         CountDownLatch latch = new CountDownLatch(256);
         for(int i = 0;i < 256;i++) {
             ENTROPY_RUNNER.submit(new InstantEntropy(p[i], latch, dig));
         }
+
+        // wait for the samples to be generated
         try {
             latch.await();
         } catch (InterruptedException ie) {
@@ -220,6 +271,9 @@ public class InstantEntropy implements Runnable {
                 dig.writeUTF(sw.toString());
             }
         }
+
+        // Get the entropy. It is necessary to synchronize because if we were
+        // interrupted the entropy generation may still be on-going.
         byte[] out;
         synchronized (dig) {
             out = dig.digest();
@@ -310,7 +364,7 @@ public class InstantEntropy implements Runnable {
             BigInteger hash = FNV_OFFSET;
             for(int j = 0;j < p.length;j++) {
                 hash = hash.xor(BigInteger.valueOf(0xff & p[j])).multiply(
-                        FNV_PRIME).mod(FNV_MASK);
+                        FNV_PRIME).and(FNV_MASK);
             }
 
             // Add the nano time to the hash. As we are not doing anything
@@ -321,15 +375,16 @@ public class InstantEntropy implements Runnable {
             long now = System.nanoTime();
             for(int j = 0;j < 8;j++) {
                 hash = hash.xor(BigInteger.valueOf(0xff & now)).multiply(
-                        FNV_PRIME).mod(FNV_MASK);
+                        FNV_PRIME).and(FNV_MASK);
                 now >>>= 8;
             }
 
-            // convert hash to byte array
-            p = hash.toByteArray();
-
-            int len = Math.min(buf.remaining(), p.length);
-            buf.put(p, p.length - len, len);
+            // Convert hash to byte array. Setting bit 256 makes the output one
+            // byte too long (33 bytes), but it ensures that the hash never has
+            // leading zeros and the sign bit is in the extra byte.
+            p = hash.setBit(256).toByteArray();
+            int len = Math.min(buf.remaining(), 32);
+            buf.put(p, 33 - len, len);
         }
 
         // Now get a "random" bit. It's the bit above the least significant
@@ -342,7 +397,6 @@ public class InstantEntropy implements Runnable {
 
         // Permute the bytes. This breaks up the blocks used to create the seed
         // and used by ISAAC to interpret it.
-        byte[] mask = new byte[1024];
         for(int i = 0;i < 1024;i++) {
             int j = RAND.nextInt(1024);
             byte ti = buf.get(i);
@@ -351,15 +405,7 @@ public class InstantEntropy implements Runnable {
             buf.put(j, ti);
         }
 
-        // Encrypt the bytes. This mixes the existing seed information with the
-        // new seed.
-        RAND.nextBytes(mask);
-        for(int i = 0;i < 1024;i++) {
-            byte ti = (byte) (buf.get(i) ^ mask[i]);
-            buf.put(i, ti);
-        }
-
-        // convert to ints
+        // convert to integers
         buf.position(0).limit(1024);
         IntBuffer ibuf = buf.asIntBuffer();
         int[] seed = new int[256];
@@ -391,6 +437,8 @@ public class InstantEntropy implements Runnable {
      *
      * @param id
      *            an ID
+     * @param latch
+     *            synchronization latch
      * @param output
      *            the output sink
      */

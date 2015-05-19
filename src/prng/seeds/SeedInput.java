@@ -173,8 +173,9 @@ public class SeedInput implements DataInput {
 
     /**
      * This method is not supported.
-     * 
+     * @return nothing - always throws exception
      * @throws UnsupportedOperationException
+     * @deprecated
      */
     @Deprecated
     @Override

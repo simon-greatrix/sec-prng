@@ -34,15 +34,9 @@ public class Quantum extends NetRandom {
     }
 
 
-    /** New instance */
-    public Quantum() {
-        super("qrng.anu.edu.au");
-    }
-
-
     /**
-     * Read data from the Australian National University Quantum Random
-     * Number Generator.
+     * Read data from the Australian National University Quantum Random Number
+     * Generator.
      * 
      * @return the bits
      * @throws IOException
@@ -59,11 +53,10 @@ public class Quantum extends NetRandom {
         try {
             // convert response to JSON
             Primitive result = SimpleJSONParser.parse(new InputStreamReader(
-                    new ByteArrayInputStream(data),
-                    StandardCharsets.ISO_8859_1));
+                    new ByteArrayInputStream(data), StandardCharsets.ISO_8859_1));
             if( result.getType() != Type.OBJECT ) {
-                throw new IOException(QRNG.getHost()
-                        + " returned JSON type: " + result.getType());
+                throw new IOException(QRNG.getHost() + " returned JSON type: "
+                        + result.getType());
             }
             JSONObject obj = result.getValueSafe(JSONObject.class);
 
@@ -76,8 +69,7 @@ public class Quantum extends NetRandom {
             // if successful, should contain data array
             JSONArray arr = obj.get(JSONArray.class, "data", null);
             if( arr == null ) {
-                throw new IOException(QRNG.getHost()
-                        + " did not return data");
+                throw new IOException(QRNG.getHost() + " did not return data");
             }
             if( arr.size() != 128 ) {
                 throw new IOException(QRNG.getHost() + " returned "

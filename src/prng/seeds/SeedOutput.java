@@ -57,11 +57,6 @@ public class SeedOutput implements DataOutput {
      * 
      * @param minCapacity
      *            the desired minimum capacity
-     * @throws OutOfMemoryError
-     *             if {@code minCapacity < 0}. This is interpreted as a request
-     *             for the unsatisfiably large capacity
-     *             {@code (long) Integer.MAX_VALUE + (minCapacity - Integer.MAX_VALUE)}
-     *             .
      */
     private void ensureCapacity(int minCapacity) {
         // overflow-conscious code

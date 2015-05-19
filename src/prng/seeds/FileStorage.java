@@ -8,6 +8,11 @@ package prng.seeds;
  *
  */
 public class FileStorage extends SeedStorage {
+    
+    
+    public FileStorage() {
+        
+    }
 
     @Override
     protected void putRaw(String name, byte[] data) throws StorageException {
@@ -27,6 +32,13 @@ public class FileStorage extends SeedStorage {
     protected void remove(String name) {
         // TODO Auto-generated method stub
 
+    }
+
+
+    @Override
+    public void close() {
+        // TODO Auto-generated method stub
+        super.close();
     }
 
 }

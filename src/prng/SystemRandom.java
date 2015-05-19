@@ -1,5 +1,7 @@
 package prng;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
 import java.security.Provider.Service;
@@ -25,6 +27,7 @@ import prng.collector.InstantEntropy;
 import prng.nist.HashSpec;
 import prng.nist.NistHashRandom;
 import prng.nist.SeedSource;
+import prng.seeds.SeedStorage;
 
 /**
  * System provided secure random sources. We assume there is at least one such
@@ -33,7 +36,7 @@ import prng.nist.SeedSource;
  * will be included in all outputs.
  * <p>
  * 
- * The sources are periodically cross-polinated with entropy from each other.
+ * The sources are periodically cross-pollinated with entropy from each other.
  * <p>
  * 
  * Note that since some system provided random sources will block whilst they
@@ -202,7 +205,9 @@ public class SystemRandom implements Runnable {
      * is drawn from the output of the system secure random number generators,
      * not their actual entropy sources.
      * 
-     * @param size number of seed bytes required
+     * @param size
+     *            number of seed bytes required
+     * @return the seed data
      */
     public static byte[] getSeed(int size) {
         byte[] data = new byte[size];
@@ -210,13 +215,13 @@ public class SystemRandom implements Runnable {
         for(int i = 0;i < size;i++) {
             // try for a byte
             boolean needByte = true;
-            for(int j=0;needByte && (j<SOURCE_LEN);j++) {
+            for(int j = 0;needByte && (j < SOURCE_LEN);j++) {
                 if( SOURCES[index].get(data, i) ) {
                     needByte = false;
                 }
-                index = (index+1) % SOURCE_LEN;
+                index = (index + 1) % SOURCE_LEN;
             }
-            
+
             // if no byte, get one from instant entropy
             if( needByte ) {
                 byte[] b = InstantEntropy.SOURCE.getSeed(1);
@@ -371,23 +376,32 @@ public class SystemRandom implements Runnable {
         if( prov == null ) {
             // request the strong instance
             LOG.info("Initialising System strong PRNG");
-            random_ = new SecureRandom();
-//            try {
-//                random_ = SecureRandom.getInstanceStrong();
-//            } catch (NoSuchAlgorithmException e) {
-//                // fallback to some instance
-//                LOG.error(
-//                        "System strong secure random generator is unavailable.",
-//                        e);
-//                random_ = new SecureRandom();
-//            }
+
+            // We use reflection so that we can support Java 7
+            try {
+                Class<?> cl = SecureRandom.class;
+                Method m = cl.getMethod("getInstanceStrong");
+                random_ = (SecureRandom) m.invoke(null);
+            } catch (NoSuchMethodException e) {
+                // Not Java 8
+                LOG.info("Need Java 8+ for strong system PRNG. Using default.");
+            } catch (IllegalAccessException e) {
+                LOG.error("Strong PRNG not accessible. Using default.", e);
+            } catch (IllegalArgumentException e) {
+                // not expected as we pass no arguments
+                LOG.error("Strong PRNG threw exception. Using default.", e);
+            } catch (InvocationTargetException e) {
+                // Could be a NoSuchAlgorithm exception
+                LOG.error("Strong PRNG could not be created. Using default.", e);
+            }
+            if( random_ == null ) random_ = new SecureRandom();
         } else {
             // get the specific instance
             LOG.info("Initialising System PRNG: {}:{}", prov.getName(), alg);
             try {
                 random_ = SecureRandom.getInstance(alg, prov);
             } catch (NoSuchAlgorithmException e) {
-                // fallback to some instance
+                // fall-back to some instance
                 LOG.error("Provider " + prov + " does not implement " + alg
                         + " after announcing it as a service");
                 random_ = new SecureRandom();
@@ -400,13 +414,17 @@ public class SystemRandom implements Runnable {
         // set when this reseeds
         reseed_ = RESEED.nextInt(SOURCE_LEN);
 
-        // enroll this algorithm with the seed maker
+        // enrol this algorithm with the seed maker
         SEED_MAKER.submit(new Seed(random_));
 
         // update the state
         synchronized (this) {
             available_ = BLOCK_LEN;
         }
+
+        // Now at least one System Random is initialised, the Seed Storage can
+        // start using SystemRandom for scrambling.
+        SeedStorage.upgradeScrambler();
     }
 
 

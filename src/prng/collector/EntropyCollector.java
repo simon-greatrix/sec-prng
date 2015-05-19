@@ -36,7 +36,7 @@ abstract public class EntropyCollector extends EntropySource implements
     private static ScheduledExecutorService SERVICE = Executors.newSingleThreadScheduledExecutor();
 
     /**
-     * List of all known collectors
+     * Set of all known collectors
      */
     private static Set<EntropyCollector> SOURCES = new HashSet<EntropyCollector>();
 
@@ -69,7 +69,7 @@ abstract public class EntropyCollector extends EntropySource implements
      * </dl>
      * 
      */
-    public static void initialiseStandard() {
+    private static void initialiseStandard() {
         Config config = Config.getConfig("collector");
         for(String cl:config) {
             // is collector active?
@@ -96,7 +96,7 @@ abstract public class EntropyCollector extends EntropySource implements
                     | IllegalAccessException e) {
                 LOG.error("Class " + cl + " could not be instantiated", e);
             } catch (NoSuchMethodException e) {
-                //
+                // It really should have a constructor :-)
                 LOG.error("Class " + cl + " does not have a constructor"
                         + " that takes an instance of Config", e);
             }
@@ -129,6 +129,11 @@ abstract public class EntropyCollector extends EntropySource implements
                 ses.cancel();
             }
         }
+    }
+    
+    
+    static {
+        initialiseStandard();
     }
 
     /** The future entropy collection */

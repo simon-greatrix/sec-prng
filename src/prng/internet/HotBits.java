@@ -26,14 +26,6 @@ public class HotBits extends NetRandom {
 
 
     /**
-     * Create new instance
-     */
-    public HotBits() {
-        super("www.fourmilab.ch");
-    }
-
-
-    /**
      * Read data from Fourmilab's Hot Bits service
      * 
      * @return the bits

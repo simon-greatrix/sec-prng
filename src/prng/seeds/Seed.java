@@ -13,7 +13,7 @@ import prng.BLOBPrint;
 public class Seed {
     
     /** Name of this seed datum */
-    private String name_;
+    protected String name_;
 
     /** The seed entropy */
     protected byte[] data_;
@@ -85,15 +85,7 @@ public class Seed {
     public byte[] getSeed() {
         return data_.clone();
     }
-    
-    
-    /**
-     * Save this seed to storage
-     */
-    public void save() {
-        SeedStorage store = SeedStorage.getInstance();
-        store.put(this);
-    }
+
 
 
     @Override

@@ -1,6 +1,8 @@
 package prng.seeds;
 
 import java.util.Random;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,17 +22,24 @@ public abstract class SeedStorage implements AutoCloseable {
     /** Logger for seed storage operations */
     public static final Logger LOG = LoggerFactory.getLogger(SeedStorage.class);
 
-    /** RNG used by the Scrambler */
+    /**
+     * RNG used by the Scrambler. Initially we use the InstantEntropy source,
+     * and then switch to SystemRandom once that is available.
+     */
     private static Random RAND = InstantEntropy.RAND;
+
+    private static Lock LOCK = new ReentrantLock();
 
 
     /**
-     * Get the seed file where seed information can be stored.
+     * Get the seed file where seed information can be stored. Only one thread
+     * can work with the storage at a time.
      * 
      * @return the seed file instance
      */
     public static SeedStorage getInstance() {
-        Config config = Config.getConfig("", SeedStorage.class);
+        LOCK.lock();
+        Config config = Config.getConfig("config", SeedStorage.class);
         String className = config.get("class", UserPrefsStorage.class.getName());
         SeedStorage store = null;
         try {
@@ -38,13 +47,17 @@ public abstract class SeedStorage implements AutoCloseable {
             Class<? extends SeedStorage> clStore = cl.asSubclass(SeedStorage.class);
             store = clStore.newInstance();
         } catch (ClassCastException e) {
+            // bad specification
             LOG.error("Specified class of " + className
                     + " is not a subclass of " + SeedStorage.class.getName());
         } catch (ClassNotFoundException e) {
+            // bad specification and classpath
             LOG.error("Specified class of " + className + " was not found");
         } catch (InstantiationException e) {
+            // something went wrong
             LOG.error("Specified class of " + className + " failed to load", e);
         } catch (IllegalAccessException e) {
+            // unexpected
             LOG.error(
                     "Specified class of " + className + " was not accessible",
                     e);
@@ -104,8 +117,8 @@ public abstract class SeedStorage implements AutoCloseable {
         byte[] data = output.toByteArray();
         try {
             putRaw(seed.getName(), data);
-        } catch ( StorageException se ) {
-            LOG.error("Failed to store seed\n{}.",seed,se);
+        } catch (StorageException se) {
+            LOG.error("Failed to store seed\n{}.", seed, se);
         }
     }
 
@@ -135,7 +148,7 @@ public abstract class SeedStorage implements AutoCloseable {
         try {
             data = getRaw(name);
         } catch (StorageException e1) {
-            LOG.error("Could not retrieve seed {}",name,e1);
+            LOG.error("Could not retrieve seed {}", name, e1);
             return null;
         }
         if( data == null ) {
@@ -148,7 +161,9 @@ public abstract class SeedStorage implements AutoCloseable {
         try {
             seed.initialize(input);
         } catch (Exception e) {
-            LOG.error("Seed data for {} was corrupt:\n", name, BLOBPrint.toString(data), e);
+            // log the details of the problem
+            LOG.error("Seed data for {} was corrupt:\n{}", name,
+                    BLOBPrint.toString(data), e);
             remove(name);
         }
         return seed;
@@ -172,7 +187,7 @@ public abstract class SeedStorage implements AutoCloseable {
         try {
             data = getRaw(name);
         } catch (StorageException e1) {
-            LOG.error("Could not retrieve seed {}",name,e1);
+            LOG.error("Could not retrieve seed {}", name, e1);
             return null;
         }
         if( data == null ) {
@@ -191,7 +206,8 @@ public abstract class SeedStorage implements AutoCloseable {
         try {
             seed.initialize(input);
         } catch (Exception e) {
-            LOG.error("Seed data for {} was corrupt:\n", name, BLOBPrint.toString(data), e);
+            LOG.error("Seed data for {} was corrupt:\n", name,
+                    BLOBPrint.toString(data), e);
             remove(name);
         }
         return seed;
@@ -219,9 +235,10 @@ public abstract class SeedStorage implements AutoCloseable {
 
 
     /**
-     * Flush any changes and close the storage
+     * Flush any changes and close the storage. Unlocks the thread lock so that
+     * other threads can access the storage.
      */
     public void close() {
-        // do nothing
+        LOCK.unlock();
     }
 }

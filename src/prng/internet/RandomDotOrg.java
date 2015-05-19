@@ -34,10 +34,10 @@ public class RandomDotOrg extends NetRandom {
             throw new Error("Impossible exception", e);
         }
 
-        Config config = Config.getConfig("",RandomDotOrg.class);        
+        Config config = Config.getConfig("", RandomDotOrg.class);
         String apiKey = config.get("apiKey");
         if( apiKey != null ) {
-            NetRandom.LOG.info("random.org RNG using API key :"+apiKey);
+            NetRandom.LOG.info("random.org RNG using API key :" + apiKey);
             JSONObject obj = new JSONObject();
             obj.put("jsonrpc", new Primitive(Type.STRING, "2.0"));
             obj.put("method", new Primitive(Type.STRING, "generateIntegers"));
@@ -56,12 +56,6 @@ public class RandomDotOrg extends NetRandom {
     }
 
 
-    /** New instance */
-    public RandomDotOrg() {
-        super("www.random.org");
-    }
-
-
     /**
      * Read data from random.org's service.
      * 
@@ -69,13 +63,12 @@ public class RandomDotOrg extends NetRandom {
      * @throws IOException
      */
     byte[] fetch() throws IOException {
-        if( RANDOM_REQUEST==null ) return new byte[0];
+        if( RANDOM_REQUEST == null ) return new byte[0];
         byte[] data = connectRPC(RANDOM_DOT_ORG, RANDOM_REQUEST);
 
         try {
             Primitive result = SimpleJSONParser.parse(new InputStreamReader(
-                    new ByteArrayInputStream(data),
-                    StandardCharsets.ISO_8859_1));
+                    new ByteArrayInputStream(data), StandardCharsets.ISO_8859_1));
             if( result.getType() != Type.OBJECT ) {
                 throw new IOException(RANDOM_DOT_ORG.getHost()
                         + " returned JSON type: " + result.getType());
@@ -101,8 +94,7 @@ public class RandomDotOrg extends NetRandom {
             res = res.get(JSONObject.class, "random", null);
             if( res == null ) {
                 throw new IOException(RANDOM_DOT_ORG.getHost()
-                        + ": no \"random\" in results\n"
-                        + result.toString());
+                        + ": no \"random\" in results\n" + result.toString());
             }
 
             // and the "random" object should contain the actual data
@@ -123,8 +115,8 @@ public class RandomDotOrg extends NetRandom {
                 Integer val = prim.getValue(Integer.class, null);
                 if( val == null ) {
                     throw new IOException(RANDOM_DOT_ORG.getHost()
-                            + " sent data of " + prim.getType() + ": "
-                            + prim + " which is not an integer");
+                            + " sent data of " + prim.getType() + ": " + prim
+                            + " which is not an integer");
                 }
                 bits[pos] = val.byteValue();
                 pos++;

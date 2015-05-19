@@ -45,7 +45,7 @@ public class Fortuna {
 
     static {
         INSTANCE = new Fortuna();
-        EntropyCollector.initialiseStandard();
+        EntropyCollector.restart();
     }
 
 
@@ -128,6 +128,7 @@ public class Fortuna {
             pool_[i] = new SecureRandomImpl(spi);
         }
         
+        // use our saved entropy for more buzz!
         try ( SeedStorage store = SeedStorage.getInstance() ) {
             for(int i=0;i<32;i++) {
                 Seed seed = store.get("fortuna."+i);
