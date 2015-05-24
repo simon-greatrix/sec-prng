@@ -30,29 +30,47 @@ import prng.seeds.SeedStorage;
  * @author Simon Greatrix
  */
 public class InstantEntropy implements Runnable {
-    
+    /**
+     * Count of ready entropy blocks
+     * @author Simon Greatrix
+     *
+     */
     static class Counter {
+        /** The current count of ready blocks */
         private int count_ = 0;
-        
+
+
+        /**
+         * Increment the count
+         */
         public void increment() {
-            synchronized( this ) {
-                count_ ++;
+            synchronized (this) {
+                count_++;
                 notifyAll();
             }
         }
-        
+
+
+        /**
+         * Decrement the count
+         */
         public void decrement() {
-            synchronized( this ) {
-                count_ --;
+            synchronized (this) {
+                count_--;
             }
         }
-        
+
+
+        /**
+         * Look for some ready entropy
+         * @throws InterruptedException
+         */
         public void lookFor() throws InterruptedException {
-            synchronized( this ) {
+            synchronized (this) {
                 if( count_ > 0 ) return;
                 wait();
             }
-            
+
         }
     }
 
@@ -89,8 +107,10 @@ public class InstantEntropy implements Runnable {
          */
         public void reset() {
             synchronized (this) {
-                COUNTER.decrement();
-                entropy_ = null;
+                if( entropy_ != null ) {
+                    COUNTER.decrement();
+                    entropy_ = null;
+                }
             }
             FUTURE_RUNNER.submit(this);
         }
@@ -104,6 +124,7 @@ public class InstantEntropy implements Runnable {
                 set(b);
                 isSet = true;
             } finally {
+                // if something went wrong, still set entropy
                 if( !isSet ) {
                     set(null);
                 }
@@ -118,11 +139,14 @@ public class InstantEntropy implements Runnable {
          *            the entropy.
          */
         public void set(byte[] entropy) {
-            if( entropy_ == null ) entropy_ = new byte[0];
+            if( entropy == null ) entropy = new byte[0];
             synchronized (this) {
+                byte[] oldEntropy = entropy_;
                 entropy_ = entropy;
-                COUNTER.increment();
-                notifyAll();
+                if( oldEntropy == null ) {
+                    COUNTER.increment();
+                    notifyAll();
+                }
             }
         }
 
@@ -191,7 +215,7 @@ public class InstantEntropy implements Runnable {
      */
     private static final int[] ADD_CONST = new int[] { 1, 7, 11, 13, 17, 19,
             23, 29 };
-    
+
     /** Count of ready sources */
     private static Counter COUNTER = new Counter();
 
@@ -256,7 +280,17 @@ public class InstantEntropy implements Runnable {
         for(int i = 0;i < 64;i++) {
             Holder h = new Holder();
             STORE[p[i]] = h;
-            h.reset();
+            if( seed!=null ) {
+                if( RAND.nextBoolean() ) {
+                    byte[] b = new byte[64];
+                    RAND.nextBytes(b);
+                    h.set(b);
+                } else{
+                    h.reset();
+                }
+            } else {
+                h.reset();
+            }
         }
 
         // Save the ISAAC entropy after doing most of the seed store
@@ -327,13 +361,15 @@ public class InstantEntropy implements Runnable {
         byte[] ret = null;
         try {
             synchronized (STORE) {
-                // First look for some ready entropy. This will try about 40 of
-                // the 64 slots.
+                // Look for some ready entropy.
                 do {
                     COUNTER.lookFor();
                     id = RAND.nextInt(64);
-                    ret = STORE[id].tryGet();
-                } while ( ret==null );
+                    for(int i=0;(ret==null) && (i<64);i++) {
+                        id = (id+1) & 63;
+                        ret = STORE[id].tryGet();
+                    }
+                } while( ret == null );
 
                 STORE[id].reset();
             }
@@ -527,9 +563,9 @@ public class InstantEntropy implements Runnable {
      * @return the prime number, or -1
      */
     int tryFindPrime() {
-        // Create a candidate that is not divisible by 2,3 or 5
-        // int v = 1 + RAND.nextInt(0x2000000);
-        int v = 1 + RAND.nextInt(0x2000);
+        // Create a candidate that is not divisible by 2,3 or 5. Approximately
+        // 1/3 of these candidates are prime.
+        int v = 1 + RAND.nextInt(0x10000);
         int p = 30 * (v >>> 3) + ADD_CONST[v & 0x7];
 
         // check it does not divide by any other prime <30

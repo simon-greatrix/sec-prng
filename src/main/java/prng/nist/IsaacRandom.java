@@ -44,6 +44,8 @@ public class IsaacRandom extends Random {
      * Create a starting seed. This seed can be considered to be
      * cryptographically very weak.
      * 
+     * @param o
+     *            an object to use as part of the seed
      * @return a seed
      */
     private static int[] createStartingSeed(Object o) {
@@ -74,9 +76,9 @@ public class IsaacRandom extends Random {
      */
     private static void mix(int[] s) {
         // @formatter:off
-        s[0] ^= s[1]  << 11; s[3] += s[0]; s[1] += s[2];
+        s[0] ^= s[1] <<  11; s[3] += s[0]; s[1] += s[2];
         s[1] ^= s[2] >>>  2; s[4] += s[1]; s[2] += s[3];
-        s[2] ^= s[3]  <<  8; s[5] += s[2]; s[3] += s[4];
+        s[2] ^= s[3] <<   8; s[5] += s[2]; s[3] += s[4];
         s[3] ^= s[4] >>> 16; s[6] += s[3]; s[4] += s[5];
         s[4] ^= s[5]  << 10; s[7] += s[4]; s[5] += s[6];
         s[5] ^= s[6] >>>  4; s[0] += s[5]; s[6] += s[7];

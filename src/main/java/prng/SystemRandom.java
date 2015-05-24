@@ -170,6 +170,7 @@ public class SystemRandom implements Runnable {
         for(Provider prov:provs) {
             // do not loop into our own provider
             if( prov instanceof SecureRandomProvider ) continue;
+            if( prov.getName().equals("SecureRandomProvider") ) continue;
 
             // check for offered secure random sources
             Set<Service> serv = prov.getServices();
@@ -244,9 +245,14 @@ public class SystemRandom implements Runnable {
     public static SecureRandom getRandom() {
         SecureRandom rand = RANDOM;
         if( rand == null ) {
-            rand = new SecureRandomImpl(new NistHashRandom(SOURCE,
-                    HashSpec.SPEC_SHA512, 0, null, null, null));
-            RANDOM = rand;
+            synchronized (SecureRandom.class) {
+                rand = RANDOM;
+                if( rand == null ) {
+                    rand = new SecureRandomImpl(new NistHashRandom(SOURCE,
+                            HashSpec.SPEC_SHA512, 0, null, null, null));
+                    RANDOM = rand;
+                }
+            }
         }
         return rand;
     }

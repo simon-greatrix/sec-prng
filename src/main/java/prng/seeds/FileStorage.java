@@ -1,11 +1,12 @@
 package prng.seeds;
 
-import java.io.EOFException;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.CharBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.file.StandardOpenOption;
@@ -37,23 +38,20 @@ public class FileStorage extends SeedStorage {
     FileChannel channel_ = null;
 
 
+    /**
+     * Create new file storage instance
+     */
     public FileStorage() {
         Config config = Config.getConfig("config", FileStorage.class);
         fileName_ = new File(Config.expand(config.get("file", "./seeds.db")));
     }
 
 
-    private void read(ByteBuffer buf, int len) throws IOException {
-        buf.position(0).limit(len);
-        while( len > 0 ) {
-            int r = channel_.read(buf);
-            if( r == -1 ) throw new EOFException();
-            len -= r;
-        }
-        buf.flip();
-    }
-
-
+    /**
+     * Initialse this instance, loading the stored seed data
+     * 
+     * @throws StorageException
+     */
     private void init() throws StorageException {
         if( lock_ != null ) return;
         try {
@@ -66,34 +64,31 @@ public class FileStorage extends SeedStorage {
             // this lock is automatically released when the channel is closed
             lock_ = channel_.lock();
 
-            ByteBuffer buf = ByteBuffer.allocate(0x10000);
-            buf.order(ByteOrder.BIG_ENDIAN);
-            CharBuffer chars = buf.asCharBuffer();
+            byte[] buf = new byte[(int) channel_.size()];
             storage_.clear();
-            channel_.position(0);
+            if( buf.length == 0 ) return;
 
-            // if the file is too small, assume empty
-            if( channel_.size() < 4 ) return;
+            ByteBuffer bbuf = ByteBuffer.wrap(buf);
+            channel_.position(0);
+            while( bbuf.hasRemaining() ) {
+                channel_.read(bbuf);
+            }
+
+            ByteArrayInputStream in = new ByteArrayInputStream(buf);
+            DataInputStream data = new DataInputStream(in);
 
             while( true ) {
-                read(buf, 1);
-                if( buf.get(0) == 0 ) break;
+                boolean flag = data.readBoolean();
+                if( flag ) break;
                 LOG.info("Reading item {}", Integer.valueOf(storage_.size()));
 
-                // get key length and key
-                chars.clear();
-                read(buf, 2);
-                int len = chars.get(0);
-                read(buf, len * 2);
-                String key = chars.position(0).limit(len).toString();
-                LOG.info("Reading entry {}", key);
+                // get the key
+                String key = data.readUTF();
 
-                // get value length and value
-                read(buf, 2);
-                len = chars.get(0);
-                read(buf, len);
+                int len = data.readUnsignedShort();
                 byte[] value = new byte[len];
-                buf.get(value, 0, len);
+                data.readFully(value);
+
                 if( LOG.isDebugEnabled() ) {
                     LOG.info("Value for {} is:\n{}", key,
                             BLOBPrint.toString(value));
@@ -139,51 +134,41 @@ public class FileStorage extends SeedStorage {
     }
 
 
-    private void write(ByteBuffer buf, int limit) throws IOException {
-        buf.position(0).limit(limit);
-        while( buf.hasRemaining() ) {
-            channel_.write(buf);
-        }
-    }
-
-
     @Override
     protected void closeRaw() throws StorageException {
         TreeSet<String> keys = new TreeSet<String>(storage_.keySet());
         IOException ioe = null;
         try {
-            LOG.info("Writing file {}", fileName_.getAbsolutePath());
-            channel_.position(0);
-            ByteBuffer buf = ByteBuffer.allocate(0x10000);
-            buf.order(ByteOrder.BIG_ENDIAN);
-            CharBuffer chars = buf.asCharBuffer();
-
+            ByteArrayOutputStream buf = new ByteArrayOutputStream(4000);
+            DataOutputStream data = new DataOutputStream(buf);
             for(String key:keys) {
+                // flag is false for not EOF
                 LOG.debug("Writing flag");
-                buf.put(0, (byte) -1);
-                write(buf,1);
+                data.writeBoolean(false);
 
-                LOG.info("Writing key \"{}\"",key);
-                chars.put(0, (char) key.length());
-                write(buf,2);
-                chars.clear();
-                chars.put(key);
-                buf.position(0).limit(2 * key.length());
-                channel_.write(buf);
+                // write the key
+                LOG.info("Writing key \"{}\"", key);
+                data.writeUTF(key);
 
+                // write the vlalue
                 byte[] value = storage_.get(key);
                 if( LOG.isDebugEnabled() ) {
-                    LOG.debug("Writing value:\n{}",BLOBPrint.toString(value));
+                    LOG.debug("Writing value:\n{}", BLOBPrint.toString(value));
                 }
-                chars.put(0, (char) value.length);
-                write(buf,2);
-                buf.clear();
-                buf.put(value);
-                write(buf,value.length);
+                data.writeShort(value.length);
+                data.write(value);
             }
+            // flag is true for EOF
             LOG.debug("Writing final flag");
-            buf.put(0, (byte) 0);
-            write(buf,1);
+            data.writeBoolean(true);
+
+            // convert to Buffer and write out in one write
+            ByteBuffer bbuf = ByteBuffer.wrap(buf.toByteArray());
+            LOG.info("Writing file {}", fileName_.getAbsolutePath());
+            channel_.position(0);
+            while( bbuf.hasRemaining() ) {
+                channel_.write(bbuf);
+            }
             channel_.force(true);
             LOG.info("Write complete");
         } catch (IOException ioe2) {
@@ -207,7 +192,7 @@ public class FileStorage extends SeedStorage {
 
         if( ioe != null ) {
             // delete bad file
-            LOG.warn("Deleting bad file \"{}\"",fileName_.getAbsolutePath());
+            LOG.warn("Deleting bad file \"{}\"", fileName_.getAbsolutePath());
             fileName_.delete();
 
             // rethrow exception
