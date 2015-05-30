@@ -76,7 +76,6 @@ abstract public class EntropyCollector extends EntropySource implements
      */
     private static void initialiseStandard() {        
         Config config = Config.getConfig("collector");
-        if( System.currentTimeMillis() > 0 ) return; // TODO REMOVE ME
         for(String cl:config) {
             // is collector active?
             if( !config.getBoolean(cl, true) ) continue;

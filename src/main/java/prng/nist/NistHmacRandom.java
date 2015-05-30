@@ -92,13 +92,15 @@ public class NistHmacRandom extends BaseRandom {
      * Create a new deterministic random number generator
      * 
      * @param source
-     *            Entropy source
+     *            entropy source (null means use the default source)
      * @param spec
      *            digest specification (required)
      * @param resistance
-     *            the number of operations between reseeds
+     *            number of operations between reseeds. Zero reseeds on every
+     *            operation, one reseeds on every alternate operation, and so
+     *            on.
      * @param entropy
-     *            the initial entropy
+     *            optional initial entropy
      * @param nonce
      *            an optional nonce
      * @param personalization

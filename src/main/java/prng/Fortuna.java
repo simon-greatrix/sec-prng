@@ -50,6 +50,21 @@ public class Fortuna {
 
 
     /**
+     * Add event data into the specified entropy pool
+     * 
+     * @param pool
+     *            the pool's ID
+     * @param data
+     *            the data
+     */
+    protected static void addEvent(int pool, byte[] data) {
+        Fortuna instance = Fortuna.INSTANCE;
+        synchronized (instance) {
+            instance.pool_[pool & 31].setSeed(data);
+        }
+    }
+
+    /**
      * Create a seed value
      * 
      * @param bytes
@@ -80,6 +95,7 @@ public class Fortuna {
 
     /** Entropy accumulators */
     private SecureRandomImpl[] pool_ = new SecureRandomImpl[32];
+
 
     /** Number of times this instance has been reseeded. */
     private int reseedCount_ = 0;
@@ -264,21 +280,5 @@ public class Fortuna {
 
         // increment counter
         incrementCounter();
-    }
-
-
-    /**
-     * Add event data into the specified entropy pool
-     * 
-     * @param pool
-     *            the pool's ID
-     * @param data
-     *            the data
-     */
-    protected static void addEvent(int pool, byte[] data) {
-        Fortuna instance = Fortuna.INSTANCE;
-        synchronized (instance) {
-            instance.pool_[pool].setSeed(data);
-        }
     }
 }

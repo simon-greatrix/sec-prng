@@ -1,6 +1,7 @@
 package prng.internet;
 
 import prng.Config;
+import prng.seeds.Seed;
 import prng.seeds.SeedStorage;
 
 /**
@@ -18,7 +19,7 @@ public class NetManager {
     }
     
     private static class WeightedSource {
-        Class<? extends NetRandom> source_;
+        NetRandom source_;
         double weight_;
         final WeightedSource next_;
         
@@ -26,8 +27,7 @@ public class NetManager {
             next_= prev;
             weight_ = weight;
             Class<?> cl = Class.forName(className);
-            source_ = cl.asSubclass(NetRandom.class);
-            source_.newInstance();
+            source_ = cl.asSubclass(NetRandom.class).newInstance();
         }
         
         void balance(double total) {
@@ -35,15 +35,15 @@ public class NetManager {
             if( next_ != null ) next_.balance(total);
         }
         
-        NetRandom newInstance(double rand) {
+        NetRandom getInstance(double rand) {
             if( rand > weight_ && next_!=null ) {
-                return next_.newInstance(rand-weight_);
+                return next_.getInstance(rand-weight_);
             }
-            return source_.newInstance();
+            return source_;
         }
     }
     
-    private final static NetSeed[] SEEDS = new NetSeed[64];
+    private final static Seed[] SEEDS = new Seed[64];
     
     private final static WeightedSource SOURCES;
     
@@ -71,12 +71,7 @@ public class NetManager {
         
         try ( SeedStorage store = SeedStorage.getInstance() ) {
             for(int i=0;i<64;i++) {
-                NetSeed seed = store.get(NetSeed.class, "NetRandom."+i);
-                if( seed==null || seed.isExpired() ) {
-                    SEEDS[i] = null;
-                } else {
-                    SEEDS[i] = seed;
-                }
+                SEEDS[i] = store.get("NetRandom."+i);
             }
         }
     }

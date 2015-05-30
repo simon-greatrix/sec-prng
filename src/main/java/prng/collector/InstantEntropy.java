@@ -32,12 +32,19 @@ import prng.seeds.SeedStorage;
 public class InstantEntropy implements Runnable {
     /**
      * Count of ready entropy blocks
+     * 
      * @author Simon Greatrix
      *
      */
     static class Counter {
         /** The current count of ready blocks */
         private int count_ = 0;
+
+        /** Number of entropy updates */
+        private int updates_ = 0;
+
+        /** Last time entropy was saved */
+        private long entropySaveTime_ = 0;
 
 
         /**
@@ -46,6 +53,32 @@ public class InstantEntropy implements Runnable {
         public void increment() {
             synchronized (this) {
                 count_++;
+
+                // every 64 updates, if at least a second has passed since the
+                // last save, save the new ISAAC entropy.
+                updates_++;
+                if( updates_ >= 64 ) {
+                    long now = System.currentTimeMillis();
+                    if( now - entropySaveTime_ > 1000 ) {
+                        entropySaveTime_ = now;
+                        updates_ = 0;
+
+                        // Save the ISAAC entropy.
+                        FUTURE_RUNNER.submit(new Runnable() {
+                            @Override
+                            public void run() {
+                                byte[] data = new byte[1024];
+                                RAND.nextBytes(data);
+                                Seed seed = new Seed("instant", data);
+                                try (SeedStorage storage = SeedStorage.getInstance()) {
+                                    storage.put(seed);
+                                }
+                            }
+                        });
+                    }
+                }
+                
+                // notify any waiting threads of new entropy
                 notifyAll();
             }
         }
@@ -63,6 +96,7 @@ public class InstantEntropy implements Runnable {
 
         /**
          * Look for some ready entropy
+         * 
          * @throws InterruptedException
          */
         public void lookFor() throws InterruptedException {
@@ -280,34 +314,18 @@ public class InstantEntropy implements Runnable {
         for(int i = 0;i < 64;i++) {
             Holder h = new Holder();
             STORE[p[i]] = h;
-            if( seed!=null ) {
+            if( seed != null ) {
                 if( RAND.nextBoolean() ) {
                     byte[] b = new byte[64];
                     RAND.nextBytes(b);
                     h.set(b);
-                } else{
+                } else {
                     h.reset();
                 }
             } else {
                 h.reset();
             }
         }
-
-        // Save the ISAAC entropy after doing most of the seed store
-        // initialisation. As there are two threads in the FUTURE_RUNNER
-        // executor, this will start to run just before the final holder
-        // finishes.
-        FUTURE_RUNNER.submit(new Runnable() {
-            @Override
-            public void run() {
-                byte[] data = new byte[1024];
-                RAND.nextBytes(data);
-                Seed seed = new Seed("instant", data);
-                try (SeedStorage storage = SeedStorage.getInstance()) {
-                    storage.put(seed);
-                }
-            }
-        });
     }
 
 
@@ -365,8 +383,8 @@ public class InstantEntropy implements Runnable {
                 do {
                     COUNTER.lookFor();
                     id = RAND.nextInt(64);
-                    for(int i=0;(ret==null) && (i<64);i++) {
-                        id = (id+1) & 63;
+                    for(int i = 0;(ret == null) && (i < 64);i++) {
+                        id = (id + 1) & 63;
                         ret = STORE[id].tryGet();
                     }
                 } while( ret == null );

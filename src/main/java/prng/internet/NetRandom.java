@@ -13,7 +13,8 @@ import prng.Config;
 import prng.seeds.SeedStorage;
 
 /**
- * Fetch random data from well known on-line sources. The web sources are:
+ * Fetch random data from well known on-line sources. Examples of web sources
+ * are:
  * 
  * <ol>
  * <li>www.random.org : Generates random data from radio static.

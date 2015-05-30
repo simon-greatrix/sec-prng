@@ -35,7 +35,7 @@ public class NetSeed extends Seed {
     private static final long MAX_AGE;
 
     /** Minimum number of uses before entropy is refreshed */
-    private static final int MIN_USAGE;
+    private static final int MAX_USAGE;
 
     static {
         Config config = Config.getConfig("network");
@@ -43,7 +43,7 @@ public class NetSeed extends Seed {
                 TimeUnit.MILLISECONDS.convert(1, TimeUnit.DAYS));
         MAX_AGE = config.getLong("maxAge",
                 TimeUnit.MILLISECONDS.convert(7, TimeUnit.DAYS));
-        MIN_USAGE = config.getInt("minUsage", 32);
+        MAX_USAGE = config.getInt("maxUsage", 32);
     }
 
     /**
@@ -142,6 +142,8 @@ public class NetSeed extends Seed {
 
     /**
      * Is this seed data too used or too old to continue with?
+     * 
+     * @return true if the seed should be retired
      */
     boolean isExpired() {
         // must refresh if no entropy
@@ -152,7 +154,7 @@ public class NetSeed extends Seed {
         if( age > MAX_AGE && usageCount_ > 1 ) return true;
 
         // must refresh if older than a day and used more than 32 times
-        if( (age > MIN_AGE) && (usageCount_ >= MIN_USAGE) ) return true;
+        if( (age > MIN_AGE) && (usageCount_ >= MAX_USAGE) ) return true;
 
         return false;
     }

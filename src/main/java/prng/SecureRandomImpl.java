@@ -13,7 +13,7 @@ import prng.nist.BaseRandom;
 class SecureRandomImpl extends SecureRandom {
     /** serial version UID */
     private static final long serialVersionUID = 2l;
-    
+
     /** The actual PRNG */
     private final BaseRandom base_;
 
@@ -28,10 +28,11 @@ class SecureRandomImpl extends SecureRandom {
         super(spi, SecureRandomProvider.PROVIDER);
         base_ = spi;
     }
-    
-    
+
+
     /**
      * Get some material that can be used to re-seed this PRNG.
+     * 
      * @return some seed material
      */
     public byte[] newSeed() {
