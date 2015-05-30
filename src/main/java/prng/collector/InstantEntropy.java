@@ -43,10 +43,6 @@ public class InstantEntropy implements Runnable {
         /** Number of entropy updates */
         private int updates_ = 0;
 
-        /** Last time entropy was saved */
-        private long entropySaveTime_ = 0;
-
-
         /**
          * Increment the count
          */
@@ -54,28 +50,21 @@ public class InstantEntropy implements Runnable {
             synchronized (this) {
                 count_++;
 
-                // every 64 updates, if at least a second has passed since the
-                // last save, save the new ISAAC entropy.
+                // every 64 updates, save the new ISAAC entropy.
                 updates_++;
                 if( updates_ >= 64 ) {
-                    long now = System.currentTimeMillis();
-                    if( now - entropySaveTime_ > 1000 ) {
-                        entropySaveTime_ = now;
-                        updates_ = 0;
+                    updates_ = 0;
 
-                        // Save the ISAAC entropy.
-                        FUTURE_RUNNER.submit(new Runnable() {
-                            @Override
-                            public void run() {
-                                byte[] data = new byte[1024];
-                                RAND.nextBytes(data);
-                                Seed seed = new Seed("instant", data);
-                                try (SeedStorage storage = SeedStorage.getInstance()) {
-                                    storage.put(seed);
-                                }
-                            }
-                        });
-                    }
+                    // Save the ISAAC entropy.
+                    FUTURE_RUNNER.submit(new Runnable() {
+                        @Override
+                        public void run() {
+                            byte[] data = new byte[1024];
+                            RAND.nextBytes(data);
+                            Seed seed = new Seed("instant", data);
+                            SeedStorage.enqueue(seed);
+                        }
+                    });
                 }
                 
                 // notify any waiting threads of new entropy
@@ -280,7 +269,7 @@ public class InstantEntropy implements Runnable {
      * A random number generator. This is a secure algorithm, but its seed
      * information is only the instant entropy we are able to create.
      */
-    public static final IsaacRandom RAND = IsaacRandom.getSharedInstance();
+    private static final IsaacRandom RAND = IsaacRandom.getSharedInstance();
 
     /** An "instant" entropy source */
     public static final SeedSource SOURCE = new Result();

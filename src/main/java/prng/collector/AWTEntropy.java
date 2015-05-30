@@ -8,10 +8,12 @@ import java.awt.Rectangle;
 import java.awt.Robot;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.Random;
 
 import prng.Config;
 import prng.DigestDataOutput;
 import prng.nist.HashSpec;
+import prng.nist.IsaacRandom;
 
 /**
  * An entropy collector that sample small random areas of the connected
@@ -60,12 +62,13 @@ public class AWTEntropy extends EntropyCollector {
             int scrWidth = mode.getWidth();
             width = Math.min(scrWidth, width);
             int xOff = scrWidth - width;
-            if( xOff > 0 ) xOff = InstantEntropy.RAND.nextInt(xOff);
+            Random rand = IsaacRandom.getSharedInstance();
+            if( xOff > 0 ) xOff = rand.nextInt(xOff);
 
             int scrHeight = mode.getHeight();
             height = Math.min(scrHeight, height);
             int yOff = scrHeight - height;
-            if( yOff > 0 ) yOff = InstantEntropy.RAND.nextInt(yOff);
+            if( yOff > 0 ) yOff = rand.nextInt(yOff);
 
             Rectangle rect = new Rectangle(xOff, yOff, width, height);
             try {
@@ -120,7 +123,8 @@ public class AWTEntropy extends EntropyCollector {
             try {
                 // create and test a sampler
                 Sampler samp = new Sampler(screens[i]);
-                samp.sample(sampleWidth_, sampleHeight_);
+                BufferedImage img = samp.sample(sampleWidth_, sampleHeight_);
+                if( img==null ) continue;
 
                 // all OK
                 list.add(samp);
@@ -147,7 +151,7 @@ public class AWTEntropy extends EntropyCollector {
         // select a screen
         int s = samplers_.length;
         if( s > 1 ) {
-            s = InstantEntropy.RAND.nextInt(s);
+            s = IsaacRandom.getSharedInstance().nextInt(s);
         } else {
             s = 0;
         }
@@ -159,6 +163,7 @@ public class AWTEntropy extends EntropyCollector {
         // compute digest of screen image
         DigestDataOutput output = new DigestDataOutput(
                 HashSpec.SPEC_SHA256.getInstance());
+        output.writeLong(System.nanoTime());
         int w = image.getWidth();
         int h = image.getHeight();
         for(int x = 0;x < w;x++) {

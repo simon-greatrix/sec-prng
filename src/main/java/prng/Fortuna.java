@@ -3,17 +3,20 @@ package prng;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
+import java.util.concurrent.Callable;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 
 import prng.collector.EntropyCollector;
+import prng.internet.NetManager;
 import prng.nist.BaseRandom;
 import prng.nist.HashSpec;
 import prng.nist.NistCipherRandom;
 import prng.nist.NistHashRandom;
 import prng.nist.NistHmacRandom;
 import prng.nist.SeedSource;
+import prng.seeds.DeferredSeed;
 import prng.seeds.Seed;
 import prng.seeds.SeedStorage;
 
@@ -46,6 +49,35 @@ public class Fortuna {
     static {
         INSTANCE = new Fortuna();
         EntropyCollector.restart();
+        NetManager.load();
+    }
+
+    /**
+     * Get a seed from a random implementation
+     * 
+     * @author Simon Greatrix
+     *
+     */
+    private static class SeedMaker implements Callable<byte[]> {
+        /** The random implementation to make a seed for */
+        final SecureRandomImpl impl_;
+
+
+        /**
+         * New seed maker
+         * 
+         * @param impl
+         *            the random implementation
+         */
+        SeedMaker(SecureRandomImpl impl) {
+            impl_ = impl;
+        }
+
+
+        @Override
+        public byte[] call() {
+            return impl_.newSeed();
+        }
     }
 
 
@@ -58,11 +90,16 @@ public class Fortuna {
      *            the data
      */
     protected static void addEvent(int pool, byte[] data) {
+        pool = pool & 31;
         Fortuna instance = Fortuna.INSTANCE;
         synchronized (instance) {
-            instance.pool_[pool & 31].setSeed(data);
+            SecureRandomImpl impl = instance.pool_[pool];
+            impl.setSeed(data);
+            SeedStorage.enqueue(new DeferredSeed("Fortuna." + pool,
+                    new SeedMaker(impl)));
         }
     }
+
 
     /**
      * Create a seed value
@@ -95,7 +132,6 @@ public class Fortuna {
 
     /** Entropy accumulators */
     private SecureRandomImpl[] pool_ = new SecureRandomImpl[32];
-
 
     /** Number of times this instance has been reseeded. */
     private int reseedCount_ = 0;
@@ -143,19 +179,20 @@ public class Fortuna {
             }
             pool_[i] = new SecureRandomImpl(spi);
         }
-        
+
         // use our saved entropy for more buzz!
-        try ( SeedStorage store = SeedStorage.getInstance() ) {
-            for(int i=0;i<32;i++) {
-                Seed seed = store.get("fortuna."+i);
-                if( seed!=null ) {
+        try (SeedStorage store = SeedStorage.getInstance()) {
+            for(int i = 0;i < 32;i++) {
+                Seed seed = store.get("Fortuna." + i);
+                if( seed != null ) {
                     pool_[i].setSeed(seed.getSeed());
                 }
             }
-            for(int i=0;i<32;i++) {
-                Seed seed = new Seed("fortuna."+i,pool_[i].newSeed());
-                store.put(seed);
-            }
+        }
+
+        for(int i = 0;i < 32;i++) {
+            SeedStorage.enqueue(new DeferredSeed("Fortuna." + i, new SeedMaker(
+                    pool_[i])));
         }
     }
 
@@ -180,7 +217,7 @@ public class Fortuna {
         }
         for(int pos = 0;pos < len;) {
             try {
-                pos += cipher_.update(counter_,0,16,output,pos);
+                pos += cipher_.update(counter_, 0, 16, output, pos);
                 pos += cipher_.doFinal(output, pos);
             } catch (GeneralSecurityException e) {
                 throw new Error("Cipher failed", e);

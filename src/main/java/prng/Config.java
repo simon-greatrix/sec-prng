@@ -37,40 +37,6 @@ public class Config implements Iterable<String> {
 
 
     /**
-     * Get the configuration for a specified prefix.
-     * 
-     * @param prefix
-     *            the prefix
-     * @return the configuration associated with that prefix
-     */
-    public static Config getConfig(String prefix) {
-        if( prefix.length() > 0 && !prefix.endsWith(".") ) {
-            prefix = prefix + ".";
-        }
-        return new Config(prefix);
-    }
-
-
-    /**
-     * Get the configuration for a specified prefix in the context of a given
-     * class
-     * 
-     * @param prefix
-     *            the prefix
-     * @param context
-     *            the class
-     * @return the configuration
-     */
-    public static Config getConfig(String prefix, Class<?> context) {
-        if( prefix.length() > 0 && !prefix.endsWith(".") ) {
-            prefix = prefix + ".";
-        }
-        prefix += context.getName() + ".";
-        return new Config(prefix);
-    }
-
-
-    /**
      * Expand any system properties or environment variables in the input. A
      * system property or environment variable is enclosed in braces (i.e.
      * {variable}).
@@ -128,6 +94,40 @@ public class Config implements Iterable<String> {
 
 
     /**
+     * Get the configuration for a specified prefix.
+     * 
+     * @param prefix
+     *            the prefix
+     * @return the configuration associated with that prefix
+     */
+    public static Config getConfig(String prefix) {
+        if( prefix.length() > 0 && !prefix.endsWith(".") ) {
+            prefix = prefix + ".";
+        }
+        return new Config(prefix);
+    }
+
+
+    /**
+     * Get the configuration for a specified prefix in the context of a given
+     * class
+     * 
+     * @param prefix
+     *            the prefix
+     * @param context
+     *            the class
+     * @return the configuration
+     */
+    public static Config getConfig(String prefix, Class<?> context) {
+        if( prefix.length() > 0 && !prefix.endsWith(".") ) {
+            prefix = prefix + ".";
+        }
+        prefix += context.getName() + ".";
+        return new Config(prefix);
+    }
+
+
+    /**
      * Load configuration data from the
      * <code>/prng/secure-prng.properties</code> files.
      */
@@ -146,7 +146,7 @@ public class Config implements Iterable<String> {
         CONFIG.clear();
         while( resources.hasMoreElements() ) {
             URL url = resources.nextElement();
-            LOG.info("Loading configuration from {}",url.toExternalForm());
+            LOG.info("Loading configuration from {}", url.toExternalForm());
             Properties props = new Properties();
             try (InputStream in = url.openStream()) {
                 props.load(in);
@@ -199,26 +199,6 @@ public class Config implements Iterable<String> {
             if( !k.startsWith(prefix) ) continue;
             config_.put(k.substring(len), e.getValue());
         }
-    }
-
-
-    /**
-     * An iterator over the keys of this configuration
-     * 
-     * @return an iterator.
-     */
-    public Iterator<String> iterator() {
-        return keySet().iterator();
-    }
-
-
-    /**
-     * Get the set of all keys in this configuration.
-     * 
-     * @return the keys
-     */
-    public Set<String> keySet() {
-        return Collections.unmodifiableSet(config_.keySet());
     }
 
 
@@ -409,5 +389,35 @@ public class Config implements Iterable<String> {
     public long getLong(String key, long dflt) {
         Long v = getLong(key);
         return (v == null) ? dflt : v.longValue();
+    }
+
+
+    /**
+     * An iterator over the keys of this configuration
+     * 
+     * @return an iterator.
+     */
+    public Iterator<String> iterator() {
+        return keySet().iterator();
+    }
+
+
+    /**
+     * Get the set of all keys in this configuration.
+     * 
+     * @return the keys
+     */
+    public Set<String> keySet() {
+        return Collections.unmodifiableSet(config_.keySet());
+    }
+
+
+    /**
+     * Get the number of entries in this configuration
+     * 
+     * @return the number of entries
+     */
+    public int size() {
+        return config_.size();
     }
 }

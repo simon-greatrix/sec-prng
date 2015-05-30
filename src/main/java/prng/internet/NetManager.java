@@ -1,79 +1,184 @@
 package prng.internet;
 
+import java.util.Random;
+
 import prng.Config;
+import prng.EntropySource;
+import prng.nist.IsaacRandom;
 import prng.seeds.Seed;
 import prng.seeds.SeedStorage;
 
 /**
  * Internet random source manager.
  * 
- * 
- * 
- * @author Simon
+ * @author Simon Greatrix
  *
  */
-public class NetManager {
-    
-    public static interface Callback {
-        public void setSeed(byte[] data);
+public class NetManager implements Runnable {
+
+    /**
+     * Load data from internet sources
+     */
+    public static void load() {
+        NetManager instance = new NetManager();
+        Thread thread = new Thread(instance, "PRNG-NetRandom");
+        thread.start();
     }
-    
-    private static class WeightedSource {
-        NetRandom source_;
-        double weight_;
-        final WeightedSource next_;
-        
-        WeightedSource(WeightedSource prev, String className, double weight) throws Exception {
-            next_= prev;
-            weight_ = weight;
-            Class<?> cl = Class.forName(className);
-            source_ = cl.asSubclass(NetRandom.class).newInstance();
-        }
-        
-        void balance(double total) {
-            weight_ /= total;
-            if( next_ != null ) next_.balance(total);
-        }
-        
-        NetRandom getInstance(double rand) {
-            if( rand > weight_ && next_!=null ) {
-                return next_.getInstance(rand-weight_);
-            }
-            return source_;
-        }
-    }
-    
-    private final static Seed[] SEEDS = new Seed[64];
-    
-    private final static WeightedSource SOURCES;
-    
-    static {
+
+    /** Number of times a network seed is expected to be used */
+    private double expectedUsage_;
+
+    /** Number of seeds injected into Fortuna */
+    private int seedsUsed_;
+
+    /** Available network sources */
+    private NetRandom[] sources_;
+
+    /** Seed data drawn from network sources */
+    private Seed[] seeds_ = new Seed[64];
+
+    /** Preference weighting for network sources */
+    private double[] weights_;
+
+
+    /**
+     * Initialise the network data
+     * 
+     * @return true if initialization went well
+     */
+    private boolean init() {
         Config config = Config.getConfig("network");
-        double total = 0;
+        expectedUsage_ = 1.0 / config.getInt("expectedUsage", 32);
+        seedsUsed_ = Math.min(32, config.getInt("seedsUsed", 4));
+
+        // load configuration for sources
         config = Config.getConfig("network.source");
-        WeightedSource prev = null;
+        int count = 0;
+        int size = config.size();
+        double total = 0;
+        double[] weights = new double[size];
+        NetRandom[] sources = new NetRandom[size];
+
+        // create source instances
         for(String cl:config) {
             double weight = config.getDouble(cl, 0);
             if( weight <= 0 ) continue;
+            NetRandom source;
             try {
-                prev = new WeightedSource(prev,cl,weight);
-            } catch ( Exception e ) {
-                NetRandom.LOG.error("Failed to create internet source \"{}\"",cl,e);
+                Class<?> cls = Class.forName(cl);
+                source = cls.asSubclass(NetRandom.class).newInstance();
+            } catch (Exception e) {
+                NetRandom.LOG.error("Failed to create internet source \"{}\"",
+                        cl, e);
                 continue;
             }
+            weights[count] = weight;
+            sources[count] = source;
+            count++;
             total += weight;
         }
-        
-        SOURCES = prev;
-        if( prev!=null ) {
-            prev.balance(total);
+
+        if( count == 0 ) return false;
+
+        // All sources found, store in arrays
+        sources_ = new NetRandom[count];
+        System.arraycopy(sources, 0, sources_, 0, count);
+        weights_ = new double[count];
+        System.arraycopy(weights, 0, weights_, 0, count);
+        for(int i = 0;i < count;i++) {
+            weights_[i] /= total;
         }
-        
-        try ( SeedStorage store = SeedStorage.getInstance() ) {
-            for(int i=0;i<64;i++) {
-                SEEDS[i] = store.get("NetRandom."+i);
+
+        // load current seeds
+        try (SeedStorage store = SeedStorage.getInstance()) {
+            for(int i = 0;i < 64;i++) {
+                seeds_[i] = store.get("NetRandom." + i);
+            }
+        }
+
+        return true;
+    }
+
+
+    /**
+     * Get data for the i'th seed from a new network source
+     * @param i the seed to fetch data for
+     * @return the data fetched
+     */
+    private byte[] getSource(int i) {
+        double r = IsaacRandom.getSharedInstance().nextDouble();
+        int source = 0;
+        do {
+            r -= weights_[source];
+            if( r <= 0 ) break;
+            source++;
+        } while( source < weights_.length );
+
+        NetRandom nr = sources_[source];
+        System.out.println("Fetching data from "+nr.getClass());
+        byte[] data = nr.load();
+        Seed seed = new Seed("NetRandom." + i, data);
+        seeds_[i] = seed;
+        SeedStorage.enqueue(seed);
+        return data;
+    }
+
+
+    /**
+     * Inject data into Fortuna
+     */
+    private void inject() {
+        EntropySource entropy = new EntropySource();
+        Random rand = IsaacRandom.getSharedInstance();
+        byte[] indexes = new byte[seedsUsed_];
+        rand.nextBytes(indexes);
+        for(int i = 0;i < indexes.length;i++) {
+            // pick a seed at random
+            int index = indexes[i] & 63;
+            Seed seed = seeds_[index];
+            
+            // get data from the seed
+            byte[] data;
+            double r = rand.nextDouble();
+            if( seed == null || seed.isEmpty() || r < expectedUsage_ ) {
+                data = getSource(index);
+            } else {
+                data = seed.getSeed();
+            }
+
+            // if no data, skip
+            if( data.length == 0 ) continue;
+
+            // inject some data into Fortuna
+            byte[] event = new byte[16];
+            rand.nextBytes(event);
+            for(int j = 0;j < 16;j++) {
+                event[j] = data[event[j] & 127];
+            }
+            entropy.setEvent(event);
+        }
+    }
+
+
+    /**
+     * Fetch any missing network data
+     */
+    private void fetch() {
+        for(int i = 0;i < 64;i++) {
+            Seed seed = seeds_[i];
+            if( seed == null || seed.isEmpty() ) {
+                getSource(i);
             }
         }
     }
 
+
+    /**
+     * Process the network random data
+     */
+    public void run() {
+        if( !init() ) return;
+        inject();
+        fetch();
+    }
 }

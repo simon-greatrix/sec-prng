@@ -1,0 +1,79 @@
+package prng.seeds;
+
+import java.util.concurrent.Callable;
+
+/**
+ * A seed whose data is only derrived when it is actually needed.
+ * 
+ * @author Simon Greatrix
+ *
+ */
+public class DeferredSeed extends Seed {
+
+    /** Source of the seed for when it is needed */
+    private final Callable<byte[]> source_;
+
+
+    /**
+     * Create a deferred seed
+     * 
+     * @param name
+     *            the name of the seed
+     * @param source
+     *            the source of the seed data
+     */
+    public DeferredSeed(String name, Callable<byte[]> source) {
+        name_ = name;
+        data_ = null;
+        source_ = source;
+    }
+
+
+    /**
+     * Initialise this seed with actual data
+     */
+    private void init() {
+        if( data_ != null ) return;
+        try {
+            data_ = source_.call();
+        } catch (Exception e) {
+            SeedStorage.LOG.error("Failed to create seed \"{}\" from {}",
+                    name_, source_.getClass().getName(), e);
+            data_ = new byte[0];
+        }
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void save(SeedOutput output) {
+        init();
+        super.save(output);
+    }
+
+
+    /**
+     * Derive the seed and return a copy of it
+     */
+    @Override
+    public byte[] getSeed() {
+        init();
+        return super.getSeed();
+    }
+
+
+    /**
+     * This should never be saved, so it cannot be initialized from input. This
+     * method throws an UnsupportedOperationException.
+     * 
+     * @param input
+     *            ignored
+     */
+    @Override
+    public void initialize(SeedInput input) throws Exception {
+        throw new UnsupportedOperationException();
+    }
+
+}

@@ -36,6 +36,9 @@ public class FileStorage extends SeedStorage {
 
     /** Channel for store whilst it is open */
     FileChannel channel_ = null;
+    
+    /** Is the store modified? */
+    boolean isModified_ = false;
 
 
     /**
@@ -54,6 +57,7 @@ public class FileStorage extends SeedStorage {
      */
     private void init() throws StorageException {
         if( lock_ != null ) return;
+
         try {
             File file = fileName_;
             LOG.info("Opening file \"{}\"", file.getAbsolutePath());
@@ -95,6 +99,7 @@ public class FileStorage extends SeedStorage {
                 }
                 storage_.put(key, value);
             }
+            isModified_ = false;
 
             LOG.info("File read finised");
         } catch (IOException ioe) {
@@ -117,6 +122,7 @@ public class FileStorage extends SeedStorage {
                     + data.length, new IllegalArgumentException(
                     "Parameter too long"));
         }
+        isModified_ = true;
         storage_.put(name, data);
     }
 
@@ -136,9 +142,14 @@ public class FileStorage extends SeedStorage {
 
     @Override
     protected void closeRaw() throws StorageException {
+        if( channel_==null || !channel_.isOpen() ) return;
+        
         TreeSet<String> keys = new TreeSet<String>(storage_.keySet());
         IOException ioe = null;
         try {
+            // if not modified, skip straight to the finally block to close the channel
+            if( ! isModified_ ) return;
+
             ByteArrayOutputStream buf = new ByteArrayOutputStream(4000);
             DataOutputStream data = new DataOutputStream(buf);
             for(String key:keys) {
@@ -150,7 +161,7 @@ public class FileStorage extends SeedStorage {
                 LOG.info("Writing key \"{}\"", key);
                 data.writeUTF(key);
 
-                // write the vlalue
+                // write the value
                 byte[] value = storage_.get(key);
                 if( LOG.isDebugEnabled() ) {
                     LOG.debug("Writing value:\n{}", BLOBPrint.toString(value));

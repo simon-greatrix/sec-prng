@@ -187,12 +187,10 @@ abstract public class EntropyCollector extends EntropySource implements
 
 
     /**
-     * Generate entropy. The default implementation does nothing.
+     * Generate entropy.
      */
     @Override
-    public void run() {
-        // do nothing
-    }
+    abstract public void run();
 
 
     /**

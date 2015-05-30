@@ -2,7 +2,6 @@ package prng.seeds;
 
 import prng.BLOBPrint;
 
-
 /**
  * Storable seed data. Every seed must have a unique name by which it is
  * referenced.
@@ -11,7 +10,7 @@ import prng.BLOBPrint;
  *
  */
 public class Seed {
-    
+
     /** Name of this seed datum */
     protected String name_;
 
@@ -56,6 +55,16 @@ public class Seed {
 
 
     /**
+     * Is this seed empty?
+     * 
+     * @return true if this seed contains no data
+     */
+    public boolean isEmpty() {
+        return data_ == null || data_.length == 0;
+    }
+
+
+    /**
      * Save this seed
      * 
      * @param output
@@ -87,9 +96,27 @@ public class Seed {
     }
 
 
+    @Override
+    public int hashCode() {
+        return ((name_ == null) ? 0 : name_.hashCode());
+    }
+
+
+    @Override
+    public boolean equals(Object obj) {
+        if( this == obj ) return true;
+        if( obj == null ) return false;
+        if( getClass() != obj.getClass() ) return false;
+        Seed other = (Seed) obj;
+        if( name_ == null ) {
+            return (other.name_ == null);
+        }
+        return name_.equals(other.name_);
+    }
+
 
     @Override
     public String toString() {
-        return "Seed( "+name_+" ) [\n"+BLOBPrint.toString(data_)+"]";
+        return "Seed( " + name_ + " ) [\n" + BLOBPrint.toString(data_) + "]";
     }
 }
