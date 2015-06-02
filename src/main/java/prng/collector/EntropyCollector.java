@@ -74,7 +74,7 @@ abstract public class EntropyCollector extends EntropySource implements
      * </dl>
      * 
      */
-    private static void initialiseStandard() {        
+    private static void initialiseStandard() {
         Config config = Config.getConfig("collector");
         for(String cl:config) {
             // is collector active?
@@ -107,6 +107,23 @@ abstract public class EntropyCollector extends EntropySource implements
             }
         }
     }
+    
+    /**
+     * Time of the last speed reset
+     */
+    private static long RESET_TIME = System.currentTimeMillis();
+    
+    /**
+     * Period over which entropy collection slows down.
+     */
+    private static final long SLOW_DOWN_PERIOD;
+    
+    /**
+     * Reset the collection speed
+     */
+    public static void resetSpeed() {
+        RESET_TIME = System.currentTimeMillis();
+    }
 
 
     /**
@@ -138,6 +155,9 @@ abstract public class EntropyCollector extends EntropySource implements
 
     static {
         initialiseStandard();
+        
+        Config config = Config.getConfig("",EntropyCollector.class);
+        SLOW_DOWN_PERIOD = config.getLong("slowDownPeriod", 5000);
     }
 
     /** The future entropy collection */
@@ -173,7 +193,7 @@ abstract public class EntropyCollector extends EntropySource implements
      * 
      * @return requested delay
      */
-    protected int getDelay() {
+    protected final int getDelay() {
         return delay_;
     }
 
@@ -187,10 +207,29 @@ abstract public class EntropyCollector extends EntropySource implements
 
 
     /**
-     * Generate entropy.
+     * Collect some entropy and schedule the next collection.
      */
     @Override
-    abstract public void run();
+    public void run() {
+        try {
+            runImpl();
+        } catch ( RuntimeException re ) {
+            LOG.error("Error during entropy collection",re);
+        }
+
+        int delay = getDelay();
+        long time = System.currentTimeMillis() - RESET_TIME;
+        if( time>SLOW_DOWN_PERIOD ) {
+            delay = (int) ((double) time / SLOW_DOWN_PERIOD);
+        }
+        SERVICE.schedule(this, delay, TimeUnit.MILLISECONDS);
+    }
+
+
+    /**
+     * Generate entropy.
+     */
+    abstract protected void runImpl();
 
 
     /**
@@ -201,8 +240,7 @@ abstract public class EntropyCollector extends EntropySource implements
         if( !isOK ) return;
 
         cancel();
-        future_ = SERVICE.scheduleWithFixedDelay(this, getDelay(), getDelay(),
-                TimeUnit.MILLISECONDS);
+        future_ = SERVICE.schedule(this, getDelay(), TimeUnit.MILLISECONDS);
     }
 
 

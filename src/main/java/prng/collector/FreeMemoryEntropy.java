@@ -29,7 +29,7 @@ public class FreeMemoryEntropy extends EntropyCollector {
 
 
     @Override
-    public void run() {
+    protected void runImpl() {
         long memory = Runtime.getRuntime().freeMemory() >> 2;
         setEvent((short) memory);
     }

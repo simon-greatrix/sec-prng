@@ -46,7 +46,7 @@ public class GarbageCollectorEntropy extends EntropyCollector {
 
 
     @Override
-    public void run() {
+    protected void runImpl() {
         long sum = 0;
         for(GarbageCollectorMXBean garbageCollectorMXBean:gcBeans_) {
             long l = garbageCollectorMXBean.getCollectionCount();

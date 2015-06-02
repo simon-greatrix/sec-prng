@@ -44,7 +44,7 @@ public class ThreadTimeEntropy extends EntropyCollector {
 
 
     @Override
-    public void run() {
+    protected void runImpl() {
         ThreadMXBean bean = ManagementFactory.getThreadMXBean();
         if( !bean.isThreadCpuTimeEnabled() ) return;
         long[] ids = bean.getAllThreadIds();

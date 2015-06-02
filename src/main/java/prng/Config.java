@@ -29,7 +29,7 @@ public class Config implements Iterable<String> {
     private static final Map<String, String> CONFIG = new TreeMap<String, String>();
 
     /** Logger for configuration related matters */
-    private static final Logger LOG = LoggerFactory.getLogger(Config.class);
+    static final Logger LOG = LoggerFactory.getLogger(Config.class);
 
     static {
         init();

@@ -25,19 +25,13 @@ public class SchedulingEntropy extends EntropyCollector {
 
 
     @Override
-    protected int getDelay() {
-        return 50;
-    }
-
-
-    @Override
     protected boolean initialise() {
         return true;
     }
 
 
     @Override
-    public void run() {
+    protected void runImpl() {
         long now = System.nanoTime();
         long diff = now - lastTime_;
         lastTime_ = now;

@@ -26,7 +26,7 @@ public class HeapEntropy extends EntropyCollector {
     }
 
     @Override
-    public void run() {
+    protected void runImpl() {
         setEvent(System.identityHashCode(new Object()));
     }
 }

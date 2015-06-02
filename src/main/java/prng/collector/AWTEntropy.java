@@ -147,7 +147,7 @@ public class AWTEntropy extends EntropyCollector {
 
 
     @Override
-    public void run() {
+    protected void runImpl() {
         // select a screen
         int s = samplers_.length;
         if( s > 1 ) {
