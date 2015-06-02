@@ -111,6 +111,7 @@ public class Fortuna {
     public static byte[] getSeed(int bytes) {
         Fortuna instance = INSTANCE;
         synchronized (instance) {
+            EntropyCollector.resetSpeed();
             return instance.randomData(bytes);
         }
     }

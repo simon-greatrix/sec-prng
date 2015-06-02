@@ -122,6 +122,16 @@ abstract public class EntropyCollector extends EntropySource implements
      * Reset the collection speed
      */
     public static void resetSpeed() {
+        long time = System.currentTimeMillis() - RESET_TIME;
+        double factor = 1.0;
+        if( time>SLOW_DOWN_PERIOD ) {
+            factor = (double) time / SLOW_DOWN_PERIOD;
+        }
+        if( factor>2 ) {
+            suspend();
+            restart();
+        }
+
         RESET_TIME = System.currentTimeMillis();
     }
 
