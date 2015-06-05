@@ -12,8 +12,8 @@ import prng.SecureRandomProvider;
  * new seed is combined with the existing state so that entropy is augmented,
  * not reset.
  * 
- * @see http://en.wikipedia.org/wiki/ISAAC_%28cipher%29
- * @see http://eprint.iacr.org/2006/438.pdf
+ * @see <a href="http://en.wikipedia.org/wiki/ISAAC_%28cipher%29">ISAAC on Wikipedia</a>
+ * @see <a href="http://eprint.iacr.org/2006/438.pdf">ISAAC+ algorithm</a>
  *
  */
 public class IsaacRandom extends Random {
