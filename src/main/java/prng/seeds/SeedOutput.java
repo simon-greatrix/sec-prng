@@ -90,8 +90,6 @@ public class SeedOutput implements DataOutput {
      * zero, so that all currently accumulated output in the output stream is
      * discarded. The output stream can be used again, reusing the already
      * allocated buffer space.
-     * 
-     * @see java.io.ByteArrayInputStream#count_
      */
     public void reset() {
         count_ = 0;
