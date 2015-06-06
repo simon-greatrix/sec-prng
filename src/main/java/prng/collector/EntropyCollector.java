@@ -12,8 +12,8 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import prng.Config;
 import prng.EntropySource;
+import prng.util.Config;
 
 /**
  * Entropy source that can pull entropy from some source on a regular basis

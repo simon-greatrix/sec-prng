@@ -9,8 +9,8 @@ import java.net.URL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import prng.Config;
 import prng.seeds.SeedStorage;
+import prng.util.Config;
 
 /**
  * Fetch random data from well known on-line sources. Examples of web sources

@@ -1,4 +1,4 @@
-package prng;
+package prng.util;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,7 +29,7 @@ public class Config implements Iterable<String> {
     private static final Map<String, String> CONFIG = new TreeMap<String, String>();
 
     /** Logger for configuration related matters */
-    static final Logger LOG = LoggerFactory.getLogger(Config.class);
+    public static final Logger LOG = LoggerFactory.getLogger(Config.class);
 
     static {
         init();
@@ -329,7 +329,7 @@ public class Config implements Iterable<String> {
      * 
      * @param key
      *            the lookup key
-     * @return the value or nullt if missing
+     * @return the value or null if missing
      */
     public Integer getInt(String key) {
         String txt = config_.get(key);

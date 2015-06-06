@@ -1,6 +1,6 @@
 package prng.collector;
 
-import prng.Config;
+import prng.util.Config;
 
 /**
  * Use the amount of free memory available to the VM at a given time as a source

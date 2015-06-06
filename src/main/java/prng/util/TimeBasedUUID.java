@@ -1,4 +1,4 @@
-package prng;
+package prng.util;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -12,6 +12,8 @@ import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import prng.SystemRandom;
 
 /**
  * Implementation of UUID generator that uses time/location based generation

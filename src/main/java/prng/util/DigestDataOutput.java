@@ -1,4 +1,4 @@
-package prng;
+package prng.util;
 
 import java.io.DataOutput;
 import java.security.MessageDigest;
@@ -10,7 +10,7 @@ import java.security.Provider;
  * robust, the input to this class should be such that if the bytes were stored
  * and later read back, the original data could be reconstructed.
  * 
- * @author Simon
+ * @author Simon Greatrix
  *
  */
 public class DigestDataOutput implements DataOutput {

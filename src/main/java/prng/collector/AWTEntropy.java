@@ -10,10 +10,10 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Random;
 
-import prng.Config;
-import prng.DigestDataOutput;
 import prng.nist.HashSpec;
 import prng.nist.IsaacRandom;
+import prng.util.Config;
+import prng.util.DigestDataOutput;
 
 /**
  * An entropy collector that sample small random areas of the connected

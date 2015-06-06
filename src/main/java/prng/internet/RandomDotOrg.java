@@ -7,12 +7,12 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
-import prng.BLOBPrint;
-import prng.Config;
 import prng.internet.SimpleJSONParser.JSONArray;
 import prng.internet.SimpleJSONParser.JSONObject;
 import prng.internet.SimpleJSONParser.Primitive;
 import prng.internet.SimpleJSONParser.Type;
+import prng.util.BLOBPrint;
+import prng.util.Config;
 
 /**
  * Source that fetches from the Random.Org service

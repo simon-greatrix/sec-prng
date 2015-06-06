@@ -3,7 +3,7 @@ package prng.collector;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 
-import prng.Config;
+import prng.util.Config;
 
 /**
  * Use current thread CPU time and User time as a source of entropy

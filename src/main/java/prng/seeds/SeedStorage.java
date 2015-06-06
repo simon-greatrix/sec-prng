@@ -9,10 +9,10 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import prng.BLOBPrint;
-import prng.Config;
 import prng.SystemRandom;
 import prng.nist.IsaacRandom;
+import prng.util.BLOBPrint;
+import prng.util.Config;
 
 /**
  * Storage for PRNG seed information.

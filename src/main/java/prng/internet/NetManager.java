@@ -2,11 +2,11 @@ package prng.internet;
 
 import java.util.Random;
 
-import prng.Config;
 import prng.EntropySource;
 import prng.nist.IsaacRandom;
 import prng.seeds.Seed;
 import prng.seeds.SeedStorage;
+import prng.util.Config;
 
 /**
  * Internet random source manager.

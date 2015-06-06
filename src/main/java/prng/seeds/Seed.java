@@ -1,6 +1,6 @@
 package prng.seeds;
 
-import prng.BLOBPrint;
+import prng.util.BLOBPrint;
 
 /**
  * Storable seed data. Every seed must have a unique name by which it is

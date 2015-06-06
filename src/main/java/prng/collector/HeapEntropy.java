@@ -1,6 +1,6 @@
 package prng.collector;
 
-import prng.Config;
+import prng.util.Config;
 
 /**
  * Collect entropy from how objects are allocated on the heap.

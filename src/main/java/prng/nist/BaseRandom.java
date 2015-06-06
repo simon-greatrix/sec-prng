@@ -3,7 +3,7 @@ package prng.nist;
 import java.security.SecureRandomSpi;
 
 import prng.Fortuna;
-import prng.NonceFactory;
+import prng.util.NonceFactory;
 
 /**
  * Common NIST secure random number functionality.

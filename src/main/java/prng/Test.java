@@ -7,6 +7,7 @@ import java.nio.IntBuffer;
 
 import prng.collector.InstantEntropy;
 import prng.nist.IsaacRandom;
+import prng.util.BLOBPrint;
 
 public class Test {
 

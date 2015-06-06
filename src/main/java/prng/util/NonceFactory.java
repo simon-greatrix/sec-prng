@@ -1,4 +1,4 @@
-package prng;
+package prng.util;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
@@ -21,7 +21,7 @@ import java.util.UUID;
  * the required values before repetition on a particular network address.
  * <p>
  * In order to create nonces that are unique across different processes on the
- * same machime, it is necessary to combine the type 1 UUID with a process
+ * same machine, it is necessary to combine the type 1 UUID with a process
  * identifier.
  * <p>
  */

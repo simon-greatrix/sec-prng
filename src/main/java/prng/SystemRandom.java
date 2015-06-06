@@ -29,6 +29,7 @@ import prng.nist.HashSpec;
 import prng.nist.NistHashRandom;
 import prng.nist.SeedSource;
 import prng.seeds.SeedStorage;
+import prng.util.DigestDataOutput;
 
 /**
  * System provided secure random sources. We assume there is at least one such

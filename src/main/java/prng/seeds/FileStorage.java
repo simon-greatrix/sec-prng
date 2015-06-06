@@ -14,8 +14,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeSet;
 
-import prng.BLOBPrint;
-import prng.Config;
+import prng.util.BLOBPrint;
+import prng.util.Config;
 
 /**
  * Store all seed information in a single file and load it all into memory when
