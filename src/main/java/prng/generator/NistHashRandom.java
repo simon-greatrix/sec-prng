@@ -1,4 +1,4 @@
-package prng.nist;
+package prng.generator;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

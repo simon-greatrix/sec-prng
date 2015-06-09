@@ -3,10 +3,10 @@ package prng;
 import java.security.Provider;
 import java.security.Security;
 
-import prng.nist.NistCipherRandom;
-import prng.nist.NistHashRandom;
-import prng.nist.NistHmacRandom;
-import prng.util.Config;
+import prng.generator.NistCipherRandom;
+import prng.generator.NistHashRandom;
+import prng.generator.NistHmacRandom;
+import prng.utility.Config;
 
 /**
  * Security service provider

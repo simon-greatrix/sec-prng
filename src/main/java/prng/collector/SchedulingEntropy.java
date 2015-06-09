@@ -1,6 +1,6 @@
 package prng.collector;
 
-import prng.util.Config;
+import prng.utility.Config;
 
 /**
  * Use the amount of time between calls as a source of entropy

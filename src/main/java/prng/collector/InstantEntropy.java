@@ -14,13 +14,13 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import prng.SystemRandom;
-import prng.nist.HashSpec;
-import prng.nist.IsaacRandom;
-import prng.nist.SeedSource;
+import prng.generator.HashSpec;
+import prng.generator.IsaacRandom;
+import prng.generator.SeedSource;
 import prng.seeds.Seed;
 import prng.seeds.SeedStorage;
-import prng.util.DigestDataOutput;
-import prng.util.NonceFactory;
+import prng.utility.DigestDataOutput;
+import prng.utility.NonceFactory;
 
 /**
  * Attempts to create useful entropy from nothing. It should be assumed that

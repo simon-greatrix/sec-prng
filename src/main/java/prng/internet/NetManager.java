@@ -3,10 +3,10 @@ package prng.internet;
 import java.util.Random;
 
 import prng.EntropySource;
-import prng.nist.IsaacRandom;
+import prng.generator.IsaacRandom;
 import prng.seeds.Seed;
 import prng.seeds.SeedStorage;
-import prng.util.Config;
+import prng.utility.Config;
 
 /**
  * Internet random source manager.

@@ -12,10 +12,12 @@ import prng.internet.SimpleJSONParser.JSONArray;
 import prng.internet.SimpleJSONParser.JSONObject;
 import prng.internet.SimpleJSONParser.Primitive;
 import prng.internet.SimpleJSONParser.Type;
-import prng.util.BLOBPrint;
+import prng.utility.BLOBPrint;
 
 /**
- * Source that fetches from the ANU QRNG service
+ * Source that fetches from the ANU QRNG service. Note that although the ANU
+ * QRNG service offers an HTTPS API, the HTTPS certificates contain forbidden
+ * extensions and therefore do not validate.
  * 
  * @author Simon Greatrix
  *

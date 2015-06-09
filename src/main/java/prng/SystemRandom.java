@@ -25,11 +25,11 @@ import org.slf4j.LoggerFactory;
 
 import prng.collector.DaemonThreadFactory;
 import prng.collector.InstantEntropy;
-import prng.nist.HashSpec;
-import prng.nist.NistHashRandom;
-import prng.nist.SeedSource;
+import prng.generator.HashSpec;
+import prng.generator.NistHashRandom;
+import prng.generator.SeedSource;
 import prng.seeds.SeedStorage;
-import prng.util.DigestDataOutput;
+import prng.utility.DigestDataOutput;
 
 /**
  * System provided secure random sources. We assume there is at least one such

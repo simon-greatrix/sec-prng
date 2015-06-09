@@ -5,7 +5,7 @@ import java.lang.management.ManagementFactory;
 import java.util.Iterator;
 import java.util.List;
 
-import prng.util.Config;
+import prng.utility.Config;
 
 /**
  * Use the amount of time spent collecting garbage as a source of entropy

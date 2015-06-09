@@ -3,7 +3,7 @@ package prng.seeds;
 import java.util.concurrent.Callable;
 
 /**
- * A seed whose data is only derrived when it is actually needed.
+ * A seed whose data is only derived when it is actually needed.
  * 
  * @author Simon Greatrix
  *

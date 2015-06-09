@@ -11,8 +11,8 @@ import prng.internet.SimpleJSONParser.JSONArray;
 import prng.internet.SimpleJSONParser.JSONObject;
 import prng.internet.SimpleJSONParser.Primitive;
 import prng.internet.SimpleJSONParser.Type;
-import prng.util.BLOBPrint;
-import prng.util.Config;
+import prng.utility.BLOBPrint;
+import prng.utility.Config;
 
 /**
  * Source that fetches from the Random.Org service

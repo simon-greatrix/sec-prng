@@ -1,4 +1,4 @@
-package prng.nist;
+package prng.generator;
 
 /**
  * Something that can provide seed bytes on demand to a PRNG.

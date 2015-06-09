@@ -2,7 +2,7 @@ package prng;
 
 import java.security.SecureRandom;
 
-import prng.nist.BaseRandom;
+import prng.generator.BaseRandom;
 
 /**
  * Implementation of a SecureRandom using a given SPI.

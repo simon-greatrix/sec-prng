@@ -1,9 +1,9 @@
-package prng.nist;
+package prng.generator;
 
 import java.security.SecureRandomSpi;
 
 import prng.Fortuna;
-import prng.util.NonceFactory;
+import prng.utility.NonceFactory;
 
 /**
  * Common NIST secure random number functionality.

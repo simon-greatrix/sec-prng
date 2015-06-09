@@ -1,4 +1,4 @@
-package prng.util;
+package prng.utility;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;

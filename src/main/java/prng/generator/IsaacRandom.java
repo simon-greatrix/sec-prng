@@ -1,4 +1,4 @@
-package prng.nist;
+package prng.generator;
 
 import java.util.Arrays;
 import java.util.Random;

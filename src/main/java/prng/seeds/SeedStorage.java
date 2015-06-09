@@ -10,9 +10,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import prng.SystemRandom;
-import prng.nist.IsaacRandom;
-import prng.util.BLOBPrint;
-import prng.util.Config;
+import prng.generator.IsaacRandom;
+import prng.utility.BLOBPrint;
+import prng.utility.Config;
 
 /**
  * Storage for PRNG seed information.

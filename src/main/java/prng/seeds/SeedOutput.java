@@ -6,7 +6,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import prng.util.BLOBPrint;
+import prng.utility.BLOBPrint;
 
 /**
  * Write data to a byte array, prior to saving it.

@@ -6,8 +6,8 @@ import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 
 import prng.collector.InstantEntropy;
-import prng.nist.IsaacRandom;
-import prng.util.BLOBPrint;
+import prng.generator.IsaacRandom;
+import prng.utility.BLOBPrint;
 
 public class Test {
 

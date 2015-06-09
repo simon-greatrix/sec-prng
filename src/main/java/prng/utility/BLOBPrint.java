@@ -1,4 +1,4 @@
-package prng.util;
+package prng.utility;
 
 
 /**

@@ -1,4 +1,4 @@
-package prng.nist;
+package prng.generator;
 
 import java.security.GeneralSecurityException;
 import java.security.MessageDigest;

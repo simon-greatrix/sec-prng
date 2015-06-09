@@ -1,4 +1,4 @@
-package prng.util;
+package prng.utility;
 
 import java.io.IOException;
 import java.io.InputStream;
