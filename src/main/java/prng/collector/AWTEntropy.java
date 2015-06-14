@@ -7,6 +7,11 @@ import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
 import java.awt.Robot;
 import java.awt.image.BufferedImage;
+import java.lang.reflect.UndeclaredThrowableException;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -17,7 +22,8 @@ import prng.utility.DigestDataOutput;
 
 /**
  * An entropy collector that sample small random areas of the connected
- * graphical devices.
+ * graphical devices. If a security manager is in use this collector may require
+ * the "createRobot" and "readDisplayPixels" privileges.
  * 
  * @author Simon Greatrix
  *
@@ -28,10 +34,10 @@ public class AWTEntropy extends EntropyCollector {
      */
     private static class Sampler {
         /** The graphics device */
-        GraphicsDevice device_;
+        final GraphicsDevice device_;
 
         /** The robot */
-        Robot robot_;
+        final Robot robot_;
 
 
         /**
@@ -44,7 +50,26 @@ public class AWTEntropy extends EntropyCollector {
          */
         Sampler(GraphicsDevice d) throws AWTException, SecurityException {
             device_ = d;
-            robot_ = new Robot(d);
+            try {
+                robot_ = AccessController.doPrivileged(new PrivilegedExceptionAction<Robot>() {
+                    @Override
+                    public Robot run() throws AWTException, SecurityException {
+                        return new Robot(device_);
+                    }
+                });
+            } catch (PrivilegedActionException e) {
+                Exception cause = e.getException();
+                if( cause instanceof AWTException ) {
+                    throw (AWTException) cause;
+                }
+
+                // SecurityException and RuntimeException are not checked
+                // exceptions so whilst they may happen, they should not come
+                // here.
+                EntropyCollector.LOG.error(
+                        "Undeclared throwable in AWTEntropy", e.getCause());
+                throw new UndeclaredThrowableException(e.getCause());
+            }
         }
 
 
@@ -72,8 +97,15 @@ public class AWTEntropy extends EntropyCollector {
 
             Rectangle rect = new Rectangle(xOff, yOff, width, height);
             try {
-                return robot_.createScreenCapture(rect);
-            } catch (SecurityException se) {
+                // use privileges to read the screen
+                return AccessController.doPrivileged(new PrivilegedAction<BufferedImage>() {
+                    @Override
+                    public BufferedImage run() {
+                        return robot_.createScreenCapture(rect);
+                    }
+                });
+            } catch (SecurityException e) {
+                // expected
                 return null;
             }
         }
@@ -124,7 +156,7 @@ public class AWTEntropy extends EntropyCollector {
                 // create and test a sampler
                 Sampler samp = new Sampler(screens[i]);
                 BufferedImage img = samp.sample(sampleWidth_, sampleHeight_);
-                if( img==null ) continue;
+                if( img == null ) continue;
 
                 // all OK
                 list.add(samp);

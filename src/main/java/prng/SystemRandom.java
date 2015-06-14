@@ -1,7 +1,5 @@
 package prng;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
 import java.security.Provider.Service;
@@ -183,7 +181,7 @@ public class SystemRandom implements Runnable {
         }
 
         // Now we know how many services we have, initialise arrays
-        int len = 1 + servs.size();
+        int len = servs.size();
         SOURCE_LEN = len;
         SOURCES = new SystemRandom[len];
         EXECUTOR = new ThreadPoolExecutor(0, 2 * len, 0, TimeUnit.NANOSECONDS,
@@ -192,15 +190,12 @@ public class SystemRandom implements Runnable {
         SEED_MAKER = new ExecutorCompletionService<Seed>(EXECUTOR);
 
         // create the PRNGs
-        for(int i = 0;i < (len - 1);i++) {
+        for(int i = 0;i < len;i++) {
             Service s = servs.get(i);
             LOG.debug("Found system PRNG " + s.getProvider().getName() + ":"
                     + s.getAlgorithm());
             SOURCES[i] = new SystemRandom(s.getProvider(), s.getAlgorithm());
         }
-
-        // always include the "strong" algorithm
-        SOURCES[len - 1] = new SystemRandom(null, null);
     }
 
 
@@ -382,39 +377,16 @@ public class SystemRandom implements Runnable {
      *            the algorithm
      */
     void init(Provider prov, String alg) {
-        if( prov == null ) {
-            // request the strong instance
-            LOG.info("Initialising System strong PRNG");
-
-            // We use reflection so that we can support Java 7
-            try {
-                Class<?> cl = SecureRandom.class;
-                Method m = cl.getMethod("getInstanceStrong");
-                random_ = (SecureRandom) m.invoke(null);
-            } catch (NoSuchMethodException e) {
-                // Not Java 8
-                LOG.info("Need Java 8+ for strong system PRNG. Using default.");
-            } catch (IllegalAccessException e) {
-                LOG.error("Strong PRNG not accessible. Using default.", e);
-            } catch (IllegalArgumentException e) {
-                // not expected as we pass no arguments
-                LOG.error("Strong PRNG threw exception. Using default.", e);
-            } catch (InvocationTargetException e) {
-                // Could be a NoSuchAlgorithm exception
-                LOG.error("Strong PRNG could not be created. Using default.", e);
-            }
-            if( random_ == null ) random_ = new SecureRandom();
-        } else {
-            // get the specific instance
-            LOG.info("Initialising System PRNG: {}:{}", prov.getName(), alg);
-            try {
-                random_ = SecureRandom.getInstance(alg, prov);
-            } catch (NoSuchAlgorithmException e) {
-                // fall-back to some instance
-                LOG.error("Provider " + prov + " does not implement " + alg
-                        + " after announcing it as a service");
-                random_ = new SecureRandom();
-            }
+        // get the specific instance
+        LOG.info("Initialising System PRNG: {}:{}", prov.getName(), alg);
+        try {
+            random_ = SecureRandom.getInstance(alg, prov);
+        } catch (NoSuchAlgorithmException e) {
+            // Instance not available.
+            LOG.error("Provider " + prov + " does not implement " + alg
+                    + " after announcing it as a service");
+            random_ = null;
+            return;
         }
 
         // load the first block

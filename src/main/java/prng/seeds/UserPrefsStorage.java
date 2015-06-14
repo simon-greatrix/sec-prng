@@ -1,6 +1,7 @@
 package prng.seeds;
 
-import java.util.prefs.BackingStoreException;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.prefs.Preferences;
 
 /**
@@ -9,40 +10,19 @@ import java.util.prefs.Preferences;
  * @author Simon Greatrix
  *
  */
-public class UserPrefsStorage extends SeedStorage {
+public class UserPrefsStorage extends PreferenceStorage {
 
     @Override
-    protected void putRaw(String name, byte[] data) throws StorageException {
+    protected Preferences getPreferences() throws StorageException {
         try {
-            Preferences prefs = Preferences.userNodeForPackage(SeedStorage.class);
-            prefs.putByteArray(name, data);
-            prefs.flush();
-        } catch (BackingStoreException e) {
-            throw new StorageException("User preference storage failed", e);
-        }
-    }
-
-
-    @Override
-    public byte[] getRaw(String name) throws StorageException {
-        byte[] data;
-        try {
-            Preferences prefs = Preferences.userNodeForPackage(SeedStorage.class);
-            prefs.sync();
-            data = prefs.getByteArray(name, null);
-        } catch (BackingStoreException e) {
-            throw new StorageException("User preference storage failed", e);
-        }
-        return data;
-    }
-    @Override
-    protected void remove(String name) {
-        try {
-            Preferences prefs = Preferences.userNodeForPackage(SeedStorage.class);
-            prefs.remove(name);
-            prefs.flush();
-        } catch (BackingStoreException e) {
-            LOG.error("Failed to remove {} from storage",name,e);
+            return AccessController.doPrivileged(new PrivilegedAction<Preferences>() {
+                public Preferences run() {
+                    return Preferences.userNodeForPackage(SeedStorage.class);
+                }
+            });
+        } catch (SecurityException e) {
+            throw new StorageException(
+                    "Privilege 'preferences' is required to use preferences", e);
         }
     }
 

@@ -51,7 +51,7 @@ public class BLOBPrint {
         StringBuilder bufChars = new StringBuilder();
         for(int i = 0;i < len;i++) {
             int v = 0xff & buf[i + off];
-            bufBytes.append(HEX[v >> 4]).append(HEX[v & 0xf]);
+            bufBytes.append(HEX[v >> 4]).append(HEX[v & 0xf]).append(' ');
             bufChars.append(((32 <= v) && (v <= 126)) ? ((char) v) : '.');
             if( (i % 16) == 7 ) {
                 // half way break
