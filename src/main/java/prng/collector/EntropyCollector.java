@@ -50,6 +50,7 @@ abstract public class EntropyCollector extends EntropySource implements
      *            the entropy source
      */
     public static void initialise(EntropyCollector es) {
+        LOG.info("Initialising entropy collector {}",es.getClass().getName());
         synchronized (SOURCES) {
             SOURCES.add(es);
             if( IS_SUSPENDED ) return;
@@ -140,6 +141,7 @@ abstract public class EntropyCollector extends EntropySource implements
      * Restart all EntropyCollectors
      */
     public static void restart() {
+        LOG.info("Entropy collection has been restarted");
         synchronized (SOURCES) {
             if( !IS_SUSPENDED ) return;
 
@@ -155,6 +157,7 @@ abstract public class EntropyCollector extends EntropySource implements
      * Suspend all EntropyCollectors
      */
     public static void suspend() {
+        LOG.info("Entropy collection has been suspended");
         synchronized (SOURCES) {
             IS_SUSPENDED = true;
             for(EntropyCollector ses:SOURCES) {

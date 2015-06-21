@@ -1,7 +1,12 @@
 package prng;
 
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.security.Provider;
 import java.security.Security;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import prng.generator.NistCipherRandom;
 import prng.generator.NistHashRandom;
@@ -15,6 +20,12 @@ import prng.utility.Config;
  *
  */
 public class SecureRandomProvider extends Provider {
+    /** The name of this provider */
+    public static final String NAME = "SecureRandomProvider";
+
+    /** Logger for instantiating this provider */
+    public static final Logger LOG = LoggerFactory.getLogger(SecureRandomProvider.class);
+
     /** The provider instance */
     static final Provider PROVIDER;
 
@@ -43,6 +54,7 @@ public class SecureRandomProvider extends Provider {
         // Allow for the SHA1PRNG algorithm to be over-ridden with another
         Config config = Config.getConfig("", SecureRandomProvider.class);
         String replace = config.get("replaceSHA1PRNG");
+        LOG.info("Replacing SHA1PRNG with {}",replace);
         if( replace != null ) {
             Service s = prov.getService("SecureRandom", replace);
             if( s != null ) {
@@ -50,11 +62,35 @@ public class SecureRandomProvider extends Provider {
                         s.getClassName(), null, null);
                 prov.putService(s2);
             } else {
-                Config.LOG.warn(
-                        "Cannot replace SHA1PRNG with unknown algorithm {}",
+                LOG.error("Cannot replace SHA1PRNG with unknown algorithm {}",
                         replace);
             }
         }
+
+        String strongAlg = config.get("strongAlgorithm", "Nist-HmacSHA512")
+                + ":" + NAME;
+        LOG.info("Installing {} as a strong algorithm",strongAlg);
+        try {
+            AccessController.doPrivileged(new PrivilegedAction<Void>() {
+                @Override
+                public Void run() {
+                    String algs = Security.getProperty("securerandom.strongAlgorithms");
+                    if( algs == null || algs.trim().length() == 0 ) {
+                        algs = strongAlg;
+                    } else {
+                        algs = strongAlg + "," + algs;
+                    }
+                    Security.setProperty("securerandom.strongAlgorithms", algs);
+
+                    return null;
+                }
+            });
+        } catch (SecurityException se) {
+            LOG.error(
+                    "Cannot install {} as a strong algorithm as lacking privilege \"getProperty.securerandom.strongAlgorithms\" or \"setProperty.securerandom.strongAlgorithms\"",
+                    strongAlg, se);
+        }
+
         PROVIDER = prov;
     }
 
@@ -67,13 +103,48 @@ public class SecureRandomProvider extends Provider {
      *            for secure random number generators.
      */
     public static void install(boolean isPrimary) {
+        final int position;
         if( isPrimary ) {
-            Security.insertProviderAt(SecureRandomProvider.PROVIDER, 1);
+            LOG.info("Installing provider as primary secure random provider");
+            position = 1;
         } else {
             Provider[] provs = Security.getProviders();
-            Security.insertProviderAt(SecureRandomProvider.PROVIDER,
-                    provs.length);
+            position = provs.length;
+            LOG.info("Installing provider as preference {}",Integer.valueOf(position));
         }
+
+        
+        try {
+            AccessController.doPrivileged(new PrivilegedAction<Void>() {
+                @Override
+                public Void run() {
+                    Security.insertProviderAt(SecureRandomProvider.PROVIDER, position);
+                    return null;
+                }
+            });
+        } catch (SecurityException se) {
+            LOG.error(
+                    "Cannot install security provider as lacking privilege \"insertProvider\" or \"insertProvider.SecureRandomProvider\"",se);
+        }
+    }
+
+
+    /**
+     * Premain argument which allows this provider to be activated via a
+     * command-line option
+     * 
+     * @param args
+     *            command line argument for this agent
+     */
+    public static void premain(String args) {
+        LOG.info("Installing provider via agent");
+        boolean isPrimary = true;
+        if( args!=null ) {
+            if( args.matches("\\s*sprimary\\s*=\\s*false\\s*") ) {
+                isPrimary=false;
+            }
+        }
+        install(isPrimary);
     }
 
 
@@ -81,6 +152,6 @@ public class SecureRandomProvider extends Provider {
      * Create instance
      */
     protected SecureRandomProvider() {
-        super("SecureRandomProvider", 1.0, "Provides Secure PRNGs");
+        super(NAME, 1.0, "Provides Secure PRNGs");
     }
 }

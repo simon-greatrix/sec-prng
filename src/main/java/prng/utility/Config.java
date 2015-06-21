@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.net.URL;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -68,12 +70,19 @@ public class Config implements Iterable<String> {
             }
 
             // get key and advance
-            String key = value.substring(0, e);
+            final String key = value.substring(0, e);
             value = value.substring(e + 1);
-            String env = System.getProperty(key);
-            if( env == null ) {
-                env = System.getenv(key);
-            }
+            String env = AccessController.doPrivileged(new PrivilegedAction<String>() {
+
+                @Override
+                public String run() {
+                    String env = System.getProperty(key); 
+                    if( env == null ) {
+                        env = System.getenv(key);
+                    }
+                    return env;
+                }
+            });
 
             // did we get a replacement?
             if( env == null ) {

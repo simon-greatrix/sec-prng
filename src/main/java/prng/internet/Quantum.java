@@ -13,6 +13,7 @@ import prng.internet.SimpleJSONParser.JSONObject;
 import prng.internet.SimpleJSONParser.Primitive;
 import prng.internet.SimpleJSONParser.Type;
 import prng.utility.BLOBPrint;
+import prng.utility.Config;
 
 /**
  * Source that fetches from the ANU QRNG service. Note that although the ANU
@@ -27,9 +28,12 @@ public class Quantum extends NetRandom {
     private static final URL QRNG;
 
     static {
+        Config config = Config.getConfig("", Quantum.class);
+        boolean useHttps = config.getBoolean("useHTTPS",false);
         try {
             QRNG = new URL(
-                    "http://qrng.anu.edu.au/API/jsonI.php?length=128&size=1&type=uint8");
+                    (useHttps ? "https" : "http") +
+                    "://qrng.anu.edu.au/API/jsonI.php?length=128&size=1&type=uint8");
         } catch (MalformedURLException e) {
             throw new Error("Impossible exception", e);
         }
