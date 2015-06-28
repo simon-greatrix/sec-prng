@@ -15,6 +15,7 @@ import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Random;
 
+import prng.SecureRandomProvider;
 import prng.generator.HashSpec;
 import prng.generator.IsaacRandom;
 import prng.utility.Config;
@@ -168,6 +169,7 @@ public class AWTEntropy extends EntropyCollector {
                 // also expected
                 LOG.debug("Security blocked entropy collection from "
                         + screens[i].getIDstring());
+                SecureRandomProvider.LOG.warn("Lacking permission \"AWTPermission createRobot\" or \"AWTPermission readDisplayPixels\" - cannot access display entropy");                
             }
         }
 

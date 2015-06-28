@@ -104,4 +104,10 @@ public class Quantum extends NetRandom {
             throw ioe;
         }
     }
+
+
+    @Override
+    URL url() {
+        return QRNG;
+    }
 }

@@ -129,4 +129,10 @@ public class RandomDotOrg extends NetRandom {
         }
     }
 
+
+    @Override
+    URL url() {
+        return RANDOM_DOT_ORG;
+    }
+
 }

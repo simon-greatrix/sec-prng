@@ -5,10 +5,14 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.security.AccessController;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import prng.SecureRandomProvider;
 import prng.seeds.SeedStorage;
 import prng.utility.Config;
 
@@ -167,6 +171,14 @@ abstract public class NetRandom {
 
 
     /**
+     * The URL this service connects to.
+     * 
+     * @return the URL
+     */
+    abstract URL url();
+
+
+    /**
      * Load some new entropy.
      * 
      * @return the entropy, or an empty byte array
@@ -174,14 +186,33 @@ abstract public class NetRandom {
     public byte[] load() {
         byte[] newData;
         try {
-            newData = fetch();
-            if( newData == null || newData.length != 128 )
-                throw new IOException("Invalid data returned");
-        } catch (IOException ioe) {
+            newData = AccessController.doPrivileged(new PrivilegedExceptionAction<byte[]>() {
+                @Override
+                public byte[] run() throws IOException {
+                    return fetch();
+                }
+            });
+            if( newData == null || newData.length != 128 ) {
+                // Failed to fetch data. It happens.
+                LOG.warn(
+                        "Invalid data received. Got {} bytes instead of 128",
+                        newData == null ? "null"
+                                : Integer.toString(newData.length));
+
+                // blank the entropy to indicate it is no good
+                newData = new byte[0];
+            }
+        } catch (PrivilegedActionException e) {
+            Exception ioe = e.getException();
             // Failed to fetch data. It happens.
             LOG.warn("External entropy service failed", ioe);
 
             // blank the entropy to indicate it is no good
+            newData = new byte[0];
+        } catch (SecurityException e) {
+            SecureRandomProvider.LOG.warn(
+                    "Lacking permission \"SocketPermission {} resolve,connect\" or \"URLPermission {} GET,POST\". Cannot access to internet entropy source",
+                    url(), url());
             newData = new byte[0];
         }
 

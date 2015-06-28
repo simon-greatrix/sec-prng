@@ -55,9 +55,12 @@
  * 
  * <hr>
  * <h2>Permissions</h2>
- * The library requires permission to use unlimited strength cryptography. Consult the JCE documentation for how to configure that.<p>
+ * The library requires permission to use unlimited strength cryptography.
+ * Consult the JCE documentation for how to configure that.
+ * <p>
  * 
- * The library uses the following JRE security permissions:<p>
+ * The library uses the following JRE security permissions:
+ * <p>
  * 
  * <dl>
  * <dt>SecurityPermission insertProvider (JDK8+)</dt>
@@ -72,24 +75,36 @@
  * <dd>Required for storing seed data in user or system preferences</dd>
  * 
  * <dt>PropertyPermission * read,write</dt>
- * <dd>Required to resolve properties mentioned in the configuration file. Required to create nonce factory. Note: the "write" permission is never used, but <code>System.getProperties()</code> method requires it.</dd>
-
+ * <dd>Required to resolve properties mentioned in the configuration file. Used
+ * in creating nonce factory. Note: the "write" permission is never used, but
+ * <code>System.getProperties()</code> method requires it.</dd>
+ * 
  * <dt>RuntimePermission getenv.*</dt>
- * <dd>Required to environment variables mentioned in the configuration file. Required to create nonce factory.</dd>
+ * <dd>Required to environment variables mentioned in the configuration file.
+ * Used in creating nonce factory.</dd>
  * 
  * <dt>ManagementPermission monitor</dt>
- * <dd>Required to create nonce factory.</dd>
+ * <dd>Used in creating nonce factory.</dd>
+ * 
+ * <dt>NetPermission getNetworkInformation</dt>
+ * <dd>The Type-1 UUIDs include the local MAC address. This permission is
+ * required to retrieve that.</dd>
  * 
  * <dt>SocketPermission * connect,resolve</dt>
- * <dd>Required for local host and internet entropy URLs. Local host is used in creating the Type 1 UUIDs.</dd>
+ * <dd>Required for local host and internet entropy URLs. Local host is used in
+ * creating the Type 1 UUIDs. A restricted alternative to '*' is in the example
+ * policy file.</dd>
  * 
  * <dt>URLPermission * get,post</dt>
- * <dd>Required for internet entropy URLs.</dd>
+ * <dd>Required for internet entropy URLs. A restricted alternative to '*' is in
+ * the example policy file.</dd>
  * 
  * 
  * <dt>AWTPermission createRobot</dt>
  * <dt>AWTPermission readDisplayPixels</dt>
- * <dd>Used to collect entropy from the current display. The pixels of a random section of the display are passed into a secure hash, and the hash is used as entropy.</dd>
+ * <dd>Used to collect entropy from the current display. The pixels of a random
+ * section of the display are passed into a secure hash, and the hash is used as
+ * entropy.</dd>
  * </dl>
  * 
  * <hr>
@@ -105,7 +120,7 @@
  * following loggers are defined:
  * <dl>
  * <dt>prng.SecureRandomProvider</dt>
- * <dd>Messages related to activating the provider.
+ * <dd>Messages related to activating the provider and security privileges.</dd>
  * <dt>prng.SystemRandom</dt>
  * <dd>Messages related to use of the standard JRE SecureRandom instances</dd>
  * 

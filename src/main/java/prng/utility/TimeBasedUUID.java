@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.security.SecureRandom;
 import java.util.Enumeration;
 import java.util.LinkedList;
@@ -13,6 +15,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import prng.SecureRandomProvider;
 import prng.SystemRandom;
 
 /**
@@ -37,7 +40,7 @@ import prng.SystemRandom;
 public class TimeBasedUUID {
     /** Logger for this class */
     private static final Logger LOG = LoggerFactory.getLogger(TimeBasedUUID.class);
-    
+
     /** Default instance */
     private static TimeBasedUUID INSTANCE = null;
 
@@ -64,6 +67,38 @@ public class TimeBasedUUID {
      * @return the MAC address
      */
     private static byte[] getAddress() {
+        try {
+            byte[] data = AccessController.doPrivileged(new PrivilegedAction<byte[]>() {
+                @Override
+                public byte[] run() {
+                    return getAddressWithPrivilege();
+                }
+            });
+            if( data != null ) return data;
+        } catch (SecurityException e) {
+            SecureRandomProvider.LOG.warn("Cannot get MAC for local host. Require permission \"NetPermission getNetworkInformation\" and \"SocketPermission localhost, resolve\".");
+        }
+
+        // Must create random multi-cast address. We will create one from an
+        // unused block in the CF range. The CF range is currently closed but
+        // was intended for when there is no appropriate regular organizational
+        // unit identifier (OUI) which would normally constitute the first three
+        // bytes of the MAC address.
+        byte[] data = new byte[6];
+        RANDOM.nextBytes(data);
+        data[0] = (byte) 0xcf;
+        data[1] = (byte) (data[1] | 0x80);
+        return data;
+    }
+
+
+    /**
+     * Attempt to get the local MAC address after privilege has been asserted
+     * 
+     * @return the MAC address or null.
+     * @throws SecurityException
+     */
+    private static byte[] getAddressWithPrivilege() throws SecurityException {
         try {
             // first try local host
             InetAddress localHost = InetAddress.getLocalHost();
@@ -114,23 +149,14 @@ public class TimeBasedUUID {
                 }
             } catch (SocketException se) {
                 // ignore this interface
-                LOG.warn("Failed to get localhost hardware address or sub-interfaces for "
+                LOG.warn(
+                        "Failed to get localhost hardware address or sub-interfaces for "
                                 + nint.getDisplayName(), se);
             }
         }
 
-        // Must create random multi-cast address. We will create one from an
-        // unused block in the CF range. The CF range is currently closed but
-        // was intended for when there is no appropriate regular organizational
-        // unit identifier (OUI) which would normally constitute the first three
-        // bytes of the MAC address.
-        byte[] data = new byte[6];
-        RANDOM.nextBytes(data);
-        data[0] = (byte) 0xcf;
-        data[1] = (byte) (data[1] | 0x80);
-        return data;
+        return null;
     }
-
 
     /** The Ethernet address this generator is associated with */
     protected final long ethernetAddress_;

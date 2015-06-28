@@ -67,6 +67,7 @@ public class SecureRandomProvider extends Provider {
             }
         }
 
+        // Set the strong algorithm (a privileged action)
         String strongAlg = config.get("strongAlgorithm", "Nist-HmacSHA512")
                 + ":" + NAME;
         LOG.info("Installing {} as a strong algorithm",strongAlg);
@@ -113,7 +114,7 @@ public class SecureRandomProvider extends Provider {
             LOG.info("Installing provider as preference {}",Integer.valueOf(position));
         }
 
-        
+        // Inserting a provider is a privileged action
         try {
             AccessController.doPrivileged(new PrivilegedAction<Void>() {
                 @Override

@@ -2,10 +2,14 @@ package prng.utility;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
+
+import prng.SecureRandomProvider;
 
 /**
  * A factory for nonces where 256-bit security is required.
@@ -27,16 +31,16 @@ import java.util.UUID;
  */
 
 public class NonceFactory {
-    /** Identifier for this JVM instance (256 bits/32 bytes)*/
+    /** Identifier for this JVM instance (256 bits/32 bytes) */
     private static final byte[] IDENTIFIER;
 
-    /** Personalization string (256 bit/32 bytes)*/
+    /** Personalization string (256 bit/32 bytes) */
     private static final byte[] PERSONALIZATION;
 
     static {
         DigestDataOutput dig = new DigestDataOutput("SHA-256");
 
-        RuntimeMXBean runBean = ManagementFactory.getRuntimeMXBean();
+        final RuntimeMXBean runBean = ManagementFactory.getRuntimeMXBean();
 
         // The "name" often contains the process ID, making name and start time
         // a unique identifier for this VM.
@@ -60,30 +64,77 @@ public class NonceFactory {
         dig.writeInt(System.identityHashCode(NonceFactory.class.getClassLoader()));
         dig.writeLong(System.nanoTime());
         dig.writeLong(Thread.currentThread().getId());
-        
-        // now the class path
-        dig.writeUTF(runBean.getClassPath());
-        
+
         // input arguments to this instance
-        List<String> args = runBean.getInputArguments();
-        dig.writeInt(args.size());
-        for(String s:args) {
-            dig.writeUTF(s);
+        List<String> args;
+        try {
+            // requires ManagementPermission monitor
+            args = AccessController.doPrivileged(new PrivilegedAction<List<String>>() {
+                @Override
+                public List<String> run() {
+                    return runBean.getInputArguments();
+                }
+            });
+        } catch ( SecurityException e ) {
+            SecureRandomProvider.LOG.warn("Lacking permission \"ManagementPermission monitor\" - cannot fully personalize nonce factory");
+            args=null;
+        }
+        
+        if( args==null ) {
+            dig.writeInt(-1);
+        } else {
+            dig.writeInt(args.size());
+            for(String s:args) {
+                dig.writeUTF(s);
+            }
         }
 
         // system and environment properties
-        Map<String, String> env = runBean.getSystemProperties();
-        dig.writeInt(env.size());
-        for(Entry<String, String> e:env.entrySet()) {
-            dig.writeUTF(e.getKey());
-            dig.writeUTF(e.getValue());
+        Map<String, String> env;
+        try {
+            // requires PropertyPermission * read,write
+            env = AccessController.doPrivileged(new PrivilegedAction<Map<String, String>>() {
+                @Override
+                public Map<String, String> run() {
+                    return runBean.getSystemProperties();
+                }
+            });
+        } catch (SecurityException se) {
+            SecureRandomProvider.LOG.warn("Lacking permission \"PropertyPermisson * read,write\" - cannot fully personalize nonce factory");
+            env = null;
+        }
+        
+        if( env == null ) {
+            dig.writeInt(-1);
+        } else {
+            dig.writeInt(env.size());
+            for(Entry<String, String> e:env.entrySet()) {
+                dig.writeUTF(e.getKey());
+                dig.writeUTF(e.getValue());
+            }
         }
 
-        env = System.getenv();
-        dig.writeInt(env.size());
-        for(Entry<String, String> e:env.entrySet()) {
-            dig.writeUTF(e.getKey());
-            dig.writeUTF(e.getValue());
+        try {
+            // requires RuntimePermission getenv.*
+            env = AccessController.doPrivileged(new PrivilegedAction<Map<String, String>>() {
+                @Override
+                public Map<String, String> run() {
+                    return System.getenv();
+                }
+            });
+        } catch (SecurityException se) {
+            SecureRandomProvider.LOG.warn("Lacking permission \"RuntimePermission getenv.*\" - cannot fully personalize nonce factory");
+            env = null;
+        }
+
+        if( env == null ) {
+            dig.writeInt(-1);
+        } else {
+            dig.writeInt(env.size());
+            for(Entry<String, String> e:env.entrySet()) {
+                dig.writeUTF(e.getKey());
+                dig.writeUTF(e.getValue());
+            }
         }
 
         PERSONALIZATION = dig.digest();

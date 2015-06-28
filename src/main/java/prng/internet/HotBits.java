@@ -44,4 +44,10 @@ public class HotBits extends NetRandom {
         }
     }
 
+
+    @Override
+    URL url() {
+        return HOT_BITS;
+    }
+
 }

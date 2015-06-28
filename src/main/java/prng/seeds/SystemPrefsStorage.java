@@ -4,6 +4,8 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.prefs.Preferences;
 
+import prng.SecureRandomProvider;
+
 /**
  * Store seed data in the JVM's system preferences storage
  * 
@@ -21,6 +23,7 @@ public class SystemPrefsStorage extends PreferenceStorage {
                 }
             });
         } catch (SecurityException e) {
+            SecureRandomProvider.LOG.warn("Lacking permission \"RuntimePermission preferences\" or access to system preferences - cannot access seed data in system preferences");
             throw new StorageException(
                     "Privilege 'preferences' is required to use preferences", e);
         }
