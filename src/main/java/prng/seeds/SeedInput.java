@@ -40,7 +40,8 @@ public class SeedInput implements DataInput {
      * Read a seed from the input. The seed bits will be scrambled on read.
      * 
      * @return the seed bits
-     * @throws IOException
+     * @throws EOFException
+     *             if the seed data is incomplete
      */
     public byte[] readSeed() throws EOFException {
         int len = readUnsignedShort();
@@ -173,9 +174,12 @@ public class SeedInput implements DataInput {
 
     /**
      * This method is not supported.
+     * 
      * @return nothing - always throws exception
      * @throws UnsupportedOperationException
-     * @deprecated
+     *             always as this is not supported
+     * @deprecated Just don't write lines in the first place, use writeUTF() and
+     *             readUTF()
      */
     @Deprecated
     @Override
@@ -246,7 +250,7 @@ public class SeedInput implements DataInput {
                             "Malformed input. Saw bytes was 0x"
                                     + Integer.toHexString((x << 8) | y)
                                     + " at position " + (p - 1));
-                
+
                 // check 3rd byte
                 p++;
                 if( p == endPos )
@@ -270,7 +274,7 @@ public class SeedInput implements DataInput {
                         + Integer.toHexString(x) + " at position " + p);
             }
         }
-        
+
         position_ = endPos;
 
         // The number of chars produced may be less than utflen

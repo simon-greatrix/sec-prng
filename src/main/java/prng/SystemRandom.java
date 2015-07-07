@@ -14,7 +14,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -185,7 +184,7 @@ public class SystemRandom implements Runnable {
         SOURCE_LEN = len;
         SOURCES = new SystemRandom[len];
         EXECUTOR = new ThreadPoolExecutor(0, 2 * len, 0, TimeUnit.NANOSECONDS,
-                new SynchronousQueue<Runnable>(), new DaemonThreadFactory(
+                new LinkedBlockingQueue<Runnable>(), new DaemonThreadFactory(
                         "PRNG-SystemRandom"));
         SEED_MAKER = new ExecutorCompletionService<Seed>(EXECUTOR);
 

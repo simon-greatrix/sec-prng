@@ -35,7 +35,6 @@ import prng.SystemRandom;
  * In order to create nonces that are unique across different processes on the
  * same machine, it is necessary to combine the type 1 UUID with a process
  * identifier.
- * <p>
  */
 public class TimeBasedUUID {
     /** Logger for this class */

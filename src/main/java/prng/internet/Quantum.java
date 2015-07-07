@@ -29,11 +29,11 @@ public class Quantum extends NetRandom {
 
     static {
         Config config = Config.getConfig("", Quantum.class);
-        boolean useHttps = config.getBoolean("useHTTPS",false);
+        boolean useHttps = config.getBoolean("useHTTPS", false);
         try {
             QRNG = new URL(
-                    (useHttps ? "https" : "http") +
-                    "://qrng.anu.edu.au/API/jsonI.php?length=128&size=1&type=uint8");
+                    (useHttps ? "https" : "http")
+                            + "://qrng.anu.edu.au/API/jsonI.php?length=128&size=1&type=uint8");
         } catch (MalformedURLException e) {
             throw new Error("Impossible exception", e);
         }
@@ -46,6 +46,7 @@ public class Quantum extends NetRandom {
      * 
      * @return the bits
      * @throws IOException
+     *             if communication with the service fails
      */
     byte[] fetch() throws IOException {
         HttpURLConnection conn = connect(QRNG);

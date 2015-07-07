@@ -29,7 +29,7 @@ public class HotBits extends NetRandom {
      * Read data from Fourmilab's Hot Bits service
      * 
      * @return the bits
-     * @throws IOException
+     * @throws IOException if communication with the service goes wrong
      */
     byte[] fetch() throws IOException {
         HttpURLConnection conn = connect(HOT_BITS);

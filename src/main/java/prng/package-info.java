@@ -1,44 +1,48 @@
 /**
  * Secure Random Number Generation in Java.
- * <p>
+ * 
  * <h2>Installation</h2>
  * 
- * To use this library in an application, you should do one of the following:
  * <p>
+ * To use this library in an application, you should do one of the following:
+ * </p>
  * 
  * <h3>As a normal security Provider</h3>
  * <p>
  * <code>
  * SecureRandom rand = new SecureRandom("Nist-SHA256",new prng.SecureRandomProvider());
  * </code>
- * <p>
+ * </p>
  * 
  * <h3>As a default security Provider</h3>
  * <p>
  * <code>
  * prng.SecureRandomProvider.install(true);
  * </code>
+ * </p>
  * <p>
  * Installs the secure random provider as the default secure random provider, so
  * calls to <code>new SecureRandom()</code> will use on of its algorithms.
- * <p>
+ * </p>
  * 
  * <h3>As an application override</h3>
  * <p>
  * <code>
  * java -javaagent:prng-1.0.0.jar <i>...rest of command line</i>
  * </code>
+ * </p>
  * <p>
  * Install the secure random provider and the default secure random number
  * generator implementation prior to invoking the application's
  * <code>main</code> method.
- * <p>
+ * </p>
  * 
  * <h3>As a platform extension</h3>
  * 
  * <p>
  * The provider may be made a standard provider for all applications using a
  * given Java Runtime Environment.
+ * </p>
  * 
  * <ol>
  * <li>Copy <code>prng-1.0.0.jar</code> to
@@ -55,12 +59,14 @@
  * 
  * <hr>
  * <h2>Permissions</h2>
+ * <p>
  * The library requires permission to use unlimited strength cryptography.
  * Consult the JCE documentation for how to configure that.
- * <p>
+ * </p>
  * 
- * The library uses the following JRE security permissions:
  * <p>
+ * The library uses the following JRE security permissions:
+ * </p>
  * 
  * <dl>
  * <dt>SecurityPermission insertProvider (JDK8+)</dt>
@@ -109,15 +115,18 @@
  * 
  * <hr>
  * <h2>Configuration</h2>
+ * <p>
  * The library is configured via the <code>prng/secure-prng.properties</code>
  * file. See the comments in the file itself for what options are available. All
  * options are described in the file.
- * <p>
+ * </p>
  * 
  * <hr>
  * <h2>Logging</h2>
+ * <p>
  * This library uses the <a href="www.slf4j.org">SLF4J</a> for logging. The
  * following loggers are defined:
+ * </p>
  * <dl>
  * <dt>prng.SecureRandomProvider</dt>
  * <dd>Messages related to activating the provider and security privileges.</dd>
@@ -128,8 +137,7 @@
  * <dd>Messages related to creating the entropy collectors, and collecting
  * entropy.</dd>
  * 
- * <dt>prng.internet.NetRandom
- * <dt>
+ * <dt>prng.internet.NetRandom</dt>
  * <dd>Messages related to internet sources entropy.</dd>
  * 
  * <dt>prng.seeds.SeedStorage</dt>

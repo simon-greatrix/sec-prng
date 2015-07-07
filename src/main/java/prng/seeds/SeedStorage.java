@@ -79,7 +79,7 @@ public abstract class SeedStorage implements AutoCloseable {
      *            the updated seed
      */
     public static void enqueue(Seed seed) {
-        LOG.debug("Enqueued {}",seed.getName());
+        LOG.debug("Enqueued {}", seed.getName());
         synchronized (QUEUE) {
             QUEUE.add(seed);
             long now = System.currentTimeMillis();
@@ -181,7 +181,7 @@ public abstract class SeedStorage implements AutoCloseable {
      * other threads can access the storage.
      */
     public void close() {
-        synchronized( QUEUE ) {
+        synchronized (QUEUE) {
             SAVE_TIME = System.currentTimeMillis();
             for(Seed s:QUEUE) {
                 put(s);
@@ -202,6 +202,7 @@ public abstract class SeedStorage implements AutoCloseable {
      * Close the actual storage
      * 
      * @throws StorageException
+     *             if the storage cannot be flushed and closed
      */
     protected void closeRaw() throws StorageException {
         // do nothing
@@ -294,6 +295,7 @@ public abstract class SeedStorage implements AutoCloseable {
      *            the seed's name
      * @return the raw data
      * @throws StorageException
+     *             if the storage cannot be read
      */
     abstract protected byte[] getRaw(String name) throws StorageException;
 
@@ -325,6 +327,7 @@ public abstract class SeedStorage implements AutoCloseable {
      * @param data
      *            the seed's raw data
      * @throws StorageException
+     *             if the storage cannot be written to
      */
     abstract protected void putRaw(String name, byte[] data) throws StorageException;
 

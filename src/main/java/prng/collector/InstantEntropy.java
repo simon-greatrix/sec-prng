@@ -43,6 +43,7 @@ public class InstantEntropy implements Runnable {
         /** Number of entropy updates */
         private int updates_ = 0;
 
+
         /**
          * Increment the count
          */
@@ -66,7 +67,7 @@ public class InstantEntropy implements Runnable {
                         }
                     });
                 }
-                
+
                 // notify any waiting threads of new entropy
                 notifyAll();
             }
@@ -87,6 +88,8 @@ public class InstantEntropy implements Runnable {
          * Look for some ready entropy
          * 
          * @throws InterruptedException
+         *             if the current thread is interrupted before entropy
+         *             arrives
          */
         public void lookFor() throws InterruptedException {
             synchronized (this) {
@@ -114,6 +117,9 @@ public class InstantEntropy implements Runnable {
          * @param millis
          *            maximum time to wait for entropy
          * @return the entropy
+         * @throws InterruptedException
+         *             if the current thread is interrupted before the entropy
+         *             arrives
          */
         public byte[] get(long millis) throws InterruptedException {
             synchronized (this) {

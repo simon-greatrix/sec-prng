@@ -56,6 +56,7 @@ abstract public class NetRandom {
      *            the url to connect to
      * @return the connection
      * @throws IOException
+     *             if connecting to the server fails
      */
     protected static HttpURLConnection connect(URL url) throws IOException {
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -83,6 +84,7 @@ abstract public class NetRandom {
      *            the JSON-RPC request
      * @return the connection
      * @throws IOException
+     *             if connecting to the server or reading the response fails
      */
     protected static byte[] connectRPC(URL url, byte[] request) throws IOException {
         // create the connection to post json-rpc
@@ -137,6 +139,7 @@ abstract public class NetRandom {
      *            the connection
      * @return the response
      * @throws IOException
+     *             if communicating with the service fails
      */
     protected static byte[] read(HttpURLConnection conn) throws IOException {
         byte[] buffer = new byte[1024];

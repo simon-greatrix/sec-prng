@@ -27,7 +27,7 @@ import prng.SecureRandomProvider;
  * In order to create nonces that are unique across different processes on the
  * same machine, it is necessary to combine the type 1 UUID with a process
  * identifier.
- * <p>
+ *
  */
 
 public class NonceFactory {
@@ -75,12 +75,12 @@ public class NonceFactory {
                     return runBean.getInputArguments();
                 }
             });
-        } catch ( SecurityException e ) {
+        } catch (SecurityException e) {
             SecureRandomProvider.LOG.warn("Lacking permission \"ManagementPermission monitor\" - cannot fully personalize nonce factory");
-            args=null;
+            args = null;
         }
-        
-        if( args==null ) {
+
+        if( args == null ) {
             dig.writeInt(-1);
         } else {
             dig.writeInt(args.size());
@@ -103,7 +103,7 @@ public class NonceFactory {
             SecureRandomProvider.LOG.warn("Lacking permission \"PropertyPermisson * read,write\" - cannot fully personalize nonce factory");
             env = null;
         }
-        
+
         if( env == null ) {
             dig.writeInt(-1);
         } else {

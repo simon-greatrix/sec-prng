@@ -61,6 +61,7 @@ public class RandomDotOrg extends NetRandom {
      * 
      * @return the bits
      * @throws IOException
+     *             if communicating with the service fails
      */
     byte[] fetch() throws IOException {
         if( RANDOM_REQUEST == null ) return new byte[0];

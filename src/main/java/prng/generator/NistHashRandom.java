@@ -101,7 +101,6 @@ public class NistHashRandom extends BaseRandom {
      *            an optional nonce
      * @param personalization
      *            an optional personalization value
-     * @throws NoSuchAlgorithmException
      */
     public NistHashRandom(SeedSource source, HashSpec spec, int resistance,
             byte[] entropy, byte[] nonce, byte[] personalization) {

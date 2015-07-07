@@ -105,7 +105,6 @@ public class NistHmacRandom extends BaseRandom {
      *            an optional nonce
      * @param personalization
      *            an optional personalization value
-     * @throws NoSuchAlgorithmException
      */
     public NistHmacRandom(SeedSource source, HashSpec spec, int resistance,
             byte[] entropy, byte[] nonce, byte[] personalization) {

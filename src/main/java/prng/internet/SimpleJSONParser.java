@@ -208,19 +208,19 @@ public class SimpleJSONParser {
     static public enum Type {
         /** A JSON [...] construct */
         ARRAY(JSONArray.class),
-        
+
         /** A true or a false */
         BOOLEAN(Boolean.class),
-        
+
         /** A null */
         NULL(Void.class),
-        
+
         /** Any number */
         NUMBER(Number.class),
-        
+
         /** A JSON { ... } construct */
         OBJECT(JSONObject.class),
-        
+
         /** A string */
         STRING(String.class);
 
@@ -340,12 +340,14 @@ public class SimpleJSONParser {
      * 
      * @param args
      *            the file name
-     * @throws Exception
+     * @throws IOException
+     *             if the file cannot be read
      */
-    public static void main(String[] args) throws Exception {
-        FileReader reader = new FileReader(args[0]);
-        Primitive prim = parse(reader);
-        reader.close();
+    public static void main(String[] args) throws IOException {
+        Primitive prim;
+        try (FileReader reader = new FileReader(args[0])) {
+            prim = parse(reader);
+        }
         System.out.println("Type = " + prim.getType());
         System.out.println("Value = " + prim.getValue());
     }
@@ -380,6 +382,7 @@ public class SimpleJSONParser {
      *            the input
      * @return the next primitive
      * @throws IOException
+     *             if the input cannot be read, or there is invalid JSON data
      */
     public static Primitive parse(Reader input) throws IOException {
         if( !(input instanceof PushbackReader) ) {
@@ -396,6 +399,7 @@ public class SimpleJSONParser {
      *            the input
      * @return the next primitive
      * @throws IOException
+     *             if the input cannot be read, or there is invalid JSON data
      */
     private static Primitive parseAny(PushbackReader input) throws IOException {
         int r = skipWhite(input);

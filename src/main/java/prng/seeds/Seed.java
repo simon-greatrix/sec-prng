@@ -47,6 +47,7 @@ public class Seed {
      * @param input
      *            input data to initialize with
      * @throws Exception
+     *             if something goes wrong initializing the seed
      */
     public void initialize(SeedInput input) throws Exception {
         name_ = input.readUTF();
