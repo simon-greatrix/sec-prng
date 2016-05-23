@@ -31,6 +31,7 @@ public class HotBits extends NetRandom {
      * @return the bits
      * @throws IOException if communication with the service goes wrong
      */
+    @Override
     byte[] fetch() throws IOException {
         HttpURLConnection conn = connect(HOT_BITS);
         try {

@@ -63,6 +63,7 @@ public class RandomDotOrg extends NetRandom {
      * @throws IOException
      *             if communicating with the service fails
      */
+    @Override
     byte[] fetch() throws IOException {
         if( RANDOM_REQUEST == null ) return new byte[0];
         byte[] data = connectRPC(RANDOM_DOT_ORG, RANDOM_REQUEST);

@@ -97,7 +97,7 @@ public class TimeBasedUUID {
      * @return the MAC address or null.
      * @throws SecurityException
      */
-    private static byte[] getAddressWithPrivilege() throws SecurityException {
+    static byte[] getAddressWithPrivilege() throws SecurityException {
         try {
             // first try local host
             InetAddress localHost = InetAddress.getLocalHost();

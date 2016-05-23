@@ -76,11 +76,11 @@ public class Config implements Iterable<String> {
 
                 @Override
                 public String run() {
-                    String env = System.getProperty(key); 
-                    if( env == null ) {
-                        env = System.getenv(key);
+                    String env0 = System.getProperty(key); 
+                    if( env0 == null ) {
+                        env0 = System.getenv(key);
                     }
-                    return env;
+                    return env0;
                 }
             });
 
@@ -406,6 +406,7 @@ public class Config implements Iterable<String> {
      * 
      * @return an iterator.
      */
+    @Override
     public Iterator<String> iterator() {
         return keySet().iterator();
     }

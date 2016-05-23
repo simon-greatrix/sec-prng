@@ -252,20 +252,20 @@ public class SimpleJSONParser {
     /**
      * Letters for the "false" literal
      */
-    private static final char[] FALSE = new char[] { 'A', 'a', 'L', 'l', 'S',
-            's', 'E', 'e' };
+    private static final char[] LITERAL_FALSE = new char[] { 'A', 'a', 'L', 'l',
+            'S', 's', 'E', 'e' };
 
     /** Hexidecimal digits */
     private static char[] HEX = new char[] { '0', '1', '2', '3', '4', '5', '6',
             '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
-
+ 
     /** Letters for the "null" literal */
-    private static final char[] NULL = new char[] { 'U', 'u', 'L', 'l', 'L',
-            'l' };
+    private static final char[] LITERAL_NULL = new char[] { 'U', 'u', 'L', 'l',
+            'L', 'l' };
 
     /** Letters for the "true" literal */
-    private static final char[] TRUE = new char[] { 'R', 'r', 'U', 'u', 'E',
-            'e' };
+    private static final char[] LITERAL_TRUE = new char[] { 'R', 'r', 'U', 'u',
+            'E', 'e' };
 
 
     /**
@@ -275,7 +275,7 @@ public class SimpleJSONParser {
      *            the string
      * @return the escaped and quotes string
      */
-    static private String escapeString(String val) {
+    static String escapeString(String val) {
         StringBuilder buf = new StringBuilder();
         buf.append('\"');
         for(int i = 0;i < val.length();i++) {
@@ -309,13 +309,12 @@ public class SimpleJSONParser {
                 if( 32 <= ch && ch < 127 ) {
                     buf.append(ch);
                     break;
-                } else {
-                    buf.append("\\u");
-                    buf.append(HEX[(ch >>> 12) & 0xf]);
-                    buf.append(HEX[(ch >>> 8) & 0xf]);
-                    buf.append(HEX[(ch >>> 4) & 0xf]);
-                    buf.append(HEX[ch & 0xf]);
                 }
+                buf.append("\\u");
+                buf.append(HEX[(ch >>> 12) & 0xf]);
+                buf.append(HEX[(ch >>> 8) & 0xf]);
+                buf.append(HEX[(ch >>> 4) & 0xf]);
+                buf.append(HEX[ch & 0xf]);
             }
         }
         buf.append('\"');
@@ -363,14 +362,14 @@ public class SimpleJSONParser {
      * @throws IOException
      *             if literal is not matched
      */
-    private static void matchLiteral(char[] literal, Reader input) throws IOException {
+    private static void matchLiteral(char[] literal, Reader input)
+            throws IOException {
         for(int i = 0;i < literal.length;i += 2) {
             int r = input.read();
             if( r == -1 ) throw new EOFException();
-            if( r != literal[i] && r != literal[i + 1] )
-                throw new IOException("Invalid character in literal "
-                        + Integer.toHexString(r) + " when expecting '"
-                        + literal[i] + "'");
+            if( r != literal[i] && r != literal[i + 1] ) throw new IOException(
+                    "Invalid character in literal " + Integer.toHexString(r)
+                            + " when expecting '" + literal[i] + "'");
         }
     }
 
@@ -423,7 +422,8 @@ public class SimpleJSONParser {
      * @return the array
      * @throws IOException
      */
-    private static Primitive parseArray(PushbackReader input) throws IOException {
+    private static Primitive parseArray(PushbackReader input)
+            throws IOException {
         JSONArray arr = new JSONArray();
         Primitive prim = new Primitive(Type.ARRAY, arr);
         while( true ) {
@@ -449,9 +449,10 @@ public class SimpleJSONParser {
      * @return the boolean
      * @throws IOException
      */
-    private static Primitive parseBoolean(Reader input, int r) throws IOException {
+    private static Primitive parseBoolean(Reader input, int r)
+            throws IOException {
         Boolean val = Boolean.valueOf(r == 'T' || r == 't');
-        matchLiteral(val.booleanValue() ? TRUE : FALSE, input);
+        matchLiteral(val.booleanValue() ? LITERAL_TRUE : LITERAL_FALSE, input);
         return new Primitive(Type.BOOLEAN, val);
     }
 
@@ -465,7 +466,7 @@ public class SimpleJSONParser {
      * @throws IOException
      */
     private static Primitive parseNull(Reader input) throws IOException {
-        matchLiteral(NULL, input);
+        matchLiteral(LITERAL_NULL, input);
         return new Primitive(Type.NULL, null);
     }
 
@@ -480,7 +481,8 @@ public class SimpleJSONParser {
      * @return the number
      * @throws IOException
      */
-    private static Primitive parseNumber(PushbackReader input, int r) throws IOException {
+    private static Primitive parseNumber(PushbackReader input, int r)
+            throws IOException {
         StringBuilder buf = new StringBuilder();
         int s = 1;
         if( r == '-' ) {
@@ -599,7 +601,8 @@ public class SimpleJSONParser {
      * @throws IOException
      */
 
-    private static Primitive parseObject(PushbackReader input) throws IOException {
+    private static Primitive parseObject(PushbackReader input)
+            throws IOException {
         JSONObject obj = new JSONObject();
         Primitive prim = new Primitive(Type.OBJECT, obj);
         while( true ) {
@@ -694,8 +697,8 @@ public class SimpleJSONParser {
                     s = 2;
                     break;
                 default:
-                    throw new IOException("Invalid escape sequence \"\\"
-                            + ((char) r) + "\"");
+                    throw new IOException(
+                            "Invalid escape sequence \"\\" + ((char) r) + "\"");
                 }
                 if( s == 1 ) s = 0;
                 break;
@@ -713,7 +716,8 @@ public class SimpleJSONParser {
                 } else if( 'A' <= r && r <= 'F' ) {
                     u += r - 'A' + 10;
                 } else {
-                    throw new IOException("Invalid hex character in \\u escape");
+                    throw new IOException(
+                            "Invalid hex character in \\u escape");
                 }
                 s++;
                 if( s == 6 ) {

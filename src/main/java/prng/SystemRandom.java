@@ -126,7 +126,7 @@ public class SystemRandom implements Runnable {
             100);
 
     /** Logger for this class */
-    private static final Logger LOG = LoggerFactory.getLogger(SystemRandom.class);
+    static final Logger LOG = LoggerFactory.getLogger(SystemRandom.class);
 
     /**
      * Random number generator that draws from the System random number sources
@@ -144,7 +144,7 @@ public class SystemRandom implements Runnable {
      * Fetching seed data may block. To prevent waits on re-seeding we use this
      * completion service.
      */
-    private static final ExecutorCompletionService<Seed> SEED_MAKER;
+    static final ExecutorCompletionService<Seed> SEED_MAKER;
 
     /**
      * Source for getting entropy from the system
@@ -323,6 +323,7 @@ public class SystemRandom implements Runnable {
      */
     SystemRandom(final Provider prov, final String alg) {
         EXECUTOR.execute(new Runnable() {
+            @Override
             public void run() {
                 SystemRandom.this.init(prov, alg);
             }
@@ -411,6 +412,7 @@ public class SystemRandom implements Runnable {
     /**
      * Get more data from the system random number generator
      */
+    @Override
     public void run() {
         // use injected seeds immediately
         byte[] s = INJECTED.poll();

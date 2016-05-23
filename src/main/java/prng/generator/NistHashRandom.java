@@ -1,7 +1,6 @@
 package prng.generator;
 
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 
 /**
  * An implementation of the NIST Hash-based Deterministic Random Number

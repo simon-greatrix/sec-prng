@@ -48,6 +48,7 @@ public class Quantum extends NetRandom {
      * @throws IOException
      *             if communication with the service fails
      */
+    @Override
     byte[] fetch() throws IOException {
         HttpURLConnection conn = connect(QRNG);
         byte[] data;

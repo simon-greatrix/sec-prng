@@ -45,6 +45,16 @@ public class InstantEntropy implements Runnable {
 
 
         /**
+         * Decrement the count
+         */
+        public void decrement() {
+            synchronized (this) {
+                count_--;
+            }
+        }
+
+
+        /**
          * Increment the count
          */
         public void increment() {
@@ -70,16 +80,6 @@ public class InstantEntropy implements Runnable {
 
                 // notify any waiting threads of new entropy
                 notifyAll();
-            }
-        }
-
-
-        /**
-         * Decrement the count
-         */
-        public void decrement() {
-            synchronized (this) {
-                count_--;
             }
         }
 
@@ -246,7 +246,7 @@ public class InstantEntropy implements Runnable {
             23, 29 };
 
     /** Count of ready sources */
-    private static Counter COUNTER = new Counter();
+    final static Counter COUNTER = new Counter();
 
     /** Thread pool for generating entropy */
     private static ExecutorService ENTROPY_RUNNER = new ThreadPoolExecutor(20,
@@ -267,7 +267,7 @@ public class InstantEntropy implements Runnable {
             "374144419156711147060143317175368453031918731002211");
 
     /** Thread pool for handling requests for entropy */
-    private static ExecutorService FUTURE_RUNNER = new ThreadPoolExecutor(2, 2,
+    static final ExecutorService FUTURE_RUNNER = new ThreadPoolExecutor(2, 2,
             100, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(),
             new DaemonThreadFactory("PRNG-SeedGenerator"));
 
@@ -275,7 +275,7 @@ public class InstantEntropy implements Runnable {
      * A random number generator. This is a secure algorithm, but its seed
      * information is only the instant entropy we are able to create.
      */
-    private static final IsaacRandom RAND = IsaacRandom.getSharedInstance();
+    static final IsaacRandom RAND = IsaacRandom.getSharedInstance();
 
     /** An "instant" entropy source */
     public static final SeedSource SOURCE = new Result();
@@ -494,6 +494,42 @@ public class InstantEntropy implements Runnable {
     }
 
     /**
+     * Try to find a prime number. This is simply an operation that takes a
+     * hard-to-predict amount of time with a hard-to-predict output.
+     *
+     * @return the prime number, or -1
+     */
+    static int tryFindPrime() {
+        // Create a candidate that is not divisible by 2,3 or 5. Approximately
+        // 1/3 of these candidates are prime.
+        int v = 1 + RAND.nextInt(0x10000);
+        int p = 30 * (v >>> 3) + ADD_CONST[v & 0x7];
+
+        // check it does not divide by any other prime <30
+        for(int i = 1;i < 8;i++) {
+            if( (p % ADD_CONST[i]) == 0 ) {
+                // not a prime
+                return -1;
+            }
+        }
+
+        // check up to square root
+        int m = (int) (Math.sqrt(p) / 30);
+        for(int j = 1;j < m;j++) {
+            for(int i = 0;i < 8;i++) {
+                int d = 30 * j + ADD_CONST[i];
+                if( (p % d) == 0 ) {
+                    // not a prime
+                    return -1;
+                }
+            }
+        }
+
+        // found a prime
+        return p;
+    }
+
+    /**
      * This generator's ID
      */
     private final int id_;
@@ -503,6 +539,7 @@ public class InstantEntropy implements Runnable {
 
     /** The entropy output sink */
     private final DigestDataOutput output_;
+
 
     /**
      * Time this generator started
@@ -566,42 +603,5 @@ public class InstantEntropy implements Runnable {
             output_.writeInt((int) e);
         }
         latch_.countDown();
-    }
-
-
-    /**
-     * Try to find a prime number. This is simply an operation that takes a
-     * hard-to-predict amount of time with a hard-to-predict output.
-     *
-     * @return the prime number, or -1
-     */
-    int tryFindPrime() {
-        // Create a candidate that is not divisible by 2,3 or 5. Approximately
-        // 1/3 of these candidates are prime.
-        int v = 1 + RAND.nextInt(0x10000);
-        int p = 30 * (v >>> 3) + ADD_CONST[v & 0x7];
-
-        // check it does not divide by any other prime <30
-        for(int i = 1;i < 8;i++) {
-            if( (p % ADD_CONST[i]) == 0 ) {
-                // not a prime
-                return -1;
-            }
-        }
-
-        // check up to square root
-        int m = (int) (Math.sqrt(p) / 30);
-        for(int j = 1;j < m;j++) {
-            for(int i = 0;i < 8;i++) {
-                int d = 30 * j + ADD_CONST[i];
-                if( (p % d) == 0 ) {
-                    // not a prime
-                    return -1;
-                }
-            }
-        }
-
-        // found a prime
-        return p;
     }
 }

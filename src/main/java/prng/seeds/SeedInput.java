@@ -203,7 +203,7 @@ public class SeedInput implements DataInput {
         int c = 0;
 
         while( p < endPos ) {
-            int x = (int) input_[p] & 0xff;
+            int x = input_[p] & 0xff;
 
             if( x == 0 ) {
                 // modified UTF-8 stores zero as 0xC0 0x80
@@ -227,7 +227,7 @@ public class SeedInput implements DataInput {
                             "Missing byte at end of input. Last byte was 0x"
                                     + Integer.toHexString(x) + " at position "
                                     + (p - 1));
-                int y = (int) input_[p] & 0xff;
+                int y = input_[p] & 0xff;
                 if( y < 0b1000_0000 || 0b1100_000 <= y )
                     throw new UTFDataFormatException(
                             "Malformed input. Saw bytes was 0x"
@@ -244,7 +244,7 @@ public class SeedInput implements DataInput {
                             "Missing bytes at end of input. Last byte was 0x"
                                     + Integer.toHexString(x) + " at position "
                                     + (p - 1));
-                int y = (int) input_[p] & 0xff;
+                int y = input_[p] & 0xff;
                 if( y < 0b1000_0000 || 0b1100_000 <= y )
                     throw new UTFDataFormatException(
                             "Malformed input. Saw bytes was 0x"
@@ -258,7 +258,7 @@ public class SeedInput implements DataInput {
                             "Missing byte at end of input. Last bytes were 0x"
                                     + Integer.toHexString((x << 8) | y)
                                     + " at position " + (p - 1));
-                int z = (int) input_[p] & 0xff;
+                int z = input_[p] & 0xff;
                 if( z < 0b1000_0000 || 0b1100_000 <= z )
                     throw new UTFDataFormatException(
                             "Malformed input. Saw bytes was 0x"

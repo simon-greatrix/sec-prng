@@ -176,6 +176,7 @@ public class NetManager implements Runnable {
     /**
      * Process the network random data
      */
+    @Override
     public void run() {
         if( !init() ) return;
         inject();

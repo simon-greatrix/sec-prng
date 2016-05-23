@@ -18,6 +18,7 @@ public class SystemPrefsStorage extends PreferenceStorage {
     protected Preferences getPreferences() throws StorageException {
         try {
             return AccessController.doPrivileged(new PrivilegedAction<Preferences>() {
+                @Override
                 public Preferences run() {
                     return Preferences.systemNodeForPackage(SeedStorage.class);
                 }

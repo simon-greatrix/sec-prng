@@ -33,7 +33,7 @@ public abstract class SeedStorage implements AutoCloseable {
     /**
      * Set of queued seeds to be written at the next scheduled storage update.
      */
-    private static Set<Seed> QUEUE = new HashSet<Seed>();
+    final static Set<Seed> QUEUE = new HashSet<Seed>();
 
     /**
      * RNG used by the Scrambler. Initially we use the InstantEntropy source,
@@ -180,6 +180,7 @@ public abstract class SeedStorage implements AutoCloseable {
      * Flush any changes and close the storage. Unlocks the thread lock so that
      * other threads can access the storage.
      */
+    @Override
     public void close() {
         synchronized (QUEUE) {
             SAVE_TIME = System.currentTimeMillis();
