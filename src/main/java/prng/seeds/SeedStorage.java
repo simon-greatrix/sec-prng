@@ -42,13 +42,50 @@ public abstract class SeedStorage implements AutoCloseable {
     private static Random RAND = IsaacRandom.getSharedInstance();
 
     /**
-     * Number of milliseconds between storage saves.
+     * Number of milliseconds between storage saves. Takes the value of
+     * "savePeriod" from the "config" section and defaults to 5000 milliseconds.
      */
-    private static final int SAVE_PERIOD = Config.getConfig("config",
-            SeedStorage.class).getInt("savePeriod", 5000);
+    private static final int SAVE_PERIOD = Math.max(
+            Config.getConfig("config", SeedStorage.class).getInt("savePeriod",
+                    5000),
+            100);
+
+    /**
+     * Multiplicative increase in the time between successive saves. For
+     * example, if this was set to 2, the time between saves in seconds would be
+     * 5, 10, 20, 40, 80 and so on. Takes the value of "savePeriodMultiplier"
+     * from the "config" section and default to 1.
+     */
+    private static final double SAVE_MULTIPLY = Math.max(
+            Config.getConfig("config", SeedStorage.class).getDouble(
+                    "savePeriodMultiplier", 1),
+            1);
+
+    /**
+     * Additive increase in the milliseconds between successive saves. For
+     * example, if this was set to 5000 the the time between saves in seconds
+     * would be 5, 10, 15, 20, 25, 30 and so on. Takes the value of
+     * "savePeriodAdd" from the "config" section and defaults to 0.
+     */
+    private static final int SAVE_ADD = Math.max(
+            Config.getConfig("config", SeedStorage.class).getInt(
+                    "savePeriodAdd", 0),
+            0);
+
+    /**
+     * The maximum amount of time between saves. Takes the value of
+     * "savePeriodMax" from the "config" section and defaults to 24 hours.
+     */
+    private static final int SAVE_MAX = Math.max(
+            Config.getConfig("config", SeedStorage.class).getInt(
+                    "savePeriodMax", 1000 * 60 * 60 * 24),
+            1000);
 
     /** Last time entropy was saved */
-    private static long SAVE_TIME = 0;
+    private static long SAVE_DUE = 0;
+
+    /** Last time entropy was saved */
+    private static long SAVE_WAIT = 5000;
 
     static {
         // save any unsaved seeds at shutdown
@@ -68,6 +105,8 @@ public abstract class SeedStorage implements AutoCloseable {
                 }
             }
         });
+        SAVE_WAIT = SAVE_PERIOD;
+        SAVE_DUE = System.currentTimeMillis() + SAVE_WAIT;
     }
 
 
@@ -83,7 +122,7 @@ public abstract class SeedStorage implements AutoCloseable {
         synchronized (QUEUE) {
             QUEUE.add(seed);
             long now = System.currentTimeMillis();
-            if( now - SAVE_TIME < SAVE_PERIOD ) return;
+            if( now < SAVE_DUE ) return;
 
             SeedStorage storage = null;
             try {
@@ -104,11 +143,13 @@ public abstract class SeedStorage implements AutoCloseable {
     public static SeedStorage getInstance() {
         LOCK.lock();
         Config config = Config.getConfig("config", SeedStorage.class);
-        String className = config.get("class", UserPrefsStorage.class.getName());
+        String className = config.get("class",
+                UserPrefsStorage.class.getName());
         SeedStorage store = null;
         try {
             Class<?> cl = Class.forName(className);
-            Class<? extends SeedStorage> clStore = cl.asSubclass(SeedStorage.class);
+            Class<? extends SeedStorage> clStore = cl.asSubclass(
+                    SeedStorage.class);
             store = clStore.newInstance();
         } catch (ClassCastException e) {
             // bad specification
@@ -122,8 +163,7 @@ public abstract class SeedStorage implements AutoCloseable {
             LOG.error("Specified class of " + className + " failed to load", e);
         } catch (IllegalAccessException e) {
             // unexpected
-            LOG.error(
-                    "Specified class of " + className + " was not accessible",
+            LOG.error("Specified class of " + className + " was not accessible",
                     e);
         }
         if( store == null ) store = new UserPrefsStorage();
@@ -183,7 +223,21 @@ public abstract class SeedStorage implements AutoCloseable {
     @Override
     public void close() {
         synchronized (QUEUE) {
-            SAVE_TIME = System.currentTimeMillis();
+            long saveTime = System.currentTimeMillis();
+            if( saveTime >= SAVE_DUE ) {
+                // calculate new wait time as a double to avoid overflow
+                double saveWait = (SAVE_WAIT * SAVE_MULTIPLY) + SAVE_ADD;
+                if( saveWait < SAVE_MAX ) {
+                    SAVE_WAIT = (int) saveWait;
+                } else {
+                    SAVE_WAIT = SAVE_MAX;
+                }
+            }
+            
+            // set time for next save
+            SAVE_DUE = saveTime + SAVE_WAIT;
+
+            // put all the seed updates into this
             for(Seed s:QUEUE) {
                 put(s);
             }
@@ -330,7 +384,8 @@ public abstract class SeedStorage implements AutoCloseable {
      * @throws StorageException
      *             if the storage cannot be written to
      */
-    abstract protected void putRaw(String name, byte[] data) throws StorageException;
+    abstract protected void putRaw(String name, byte[] data)
+            throws StorageException;
 
 
     /**
