@@ -233,7 +233,7 @@ final class UUIDTime {
      * Sequence number for a given clock value. The RFC requires it be
      * initialised from a secure random source.
      */
-    private static int CLOCK_SEQUENCE = 0;
+    private static short CLOCK_SEQUENCE = 0;
 
     /**
      * Initial time which may be negative. Used to ensure we get a positive time
@@ -268,7 +268,7 @@ final class UUIDTime {
         if( random == null ) {
             random = new SecureRandom();
         }
-        CLOCK_SEQUENCE = random.nextInt();
+        CLOCK_SEQUENCE = (short) random.nextInt(0x10000);
         IS_INIT_DONE = true;
     }
 
@@ -288,16 +288,19 @@ final class UUIDTime {
             sysTime = LAST_USED_TIMESTAMP;
         }
 
+        // Get the sequence
+        short seq = CLOCK_SEQUENCE;
         if( sysTime == LAST_USED_TIMESTAMP ) {
-            CLOCK_SEQUENCE++;
-            if( CLOCK_SEQUENCE == 0 ) {
+            seq++;
+            CLOCK_SEQUENCE = seq;
+            if( seq == 0 ) {
                 sysTime++;
             }
         }
 
         LAST_USED_TIMESTAMP = sysTime;
 
-        return new UUIDTime(sysTime, CLOCK_SEQUENCE);
+        return new UUIDTime(sysTime, seq);
     }
 
     /**
@@ -320,7 +323,7 @@ final class UUIDTime {
      * @param sequence
      *            the sequence
      */
-    private UUIDTime(long timeStamp, int sequence) {
+    private UUIDTime(long timeStamp, short sequence) {
         timeStamp_ = timeStamp;
         sequence_ = sequence & 0xffff;
     }
