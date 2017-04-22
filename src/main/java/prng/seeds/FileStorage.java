@@ -51,7 +51,7 @@ public class FileStorage extends SeedStorage {
 
 
     /**
-     * Initialse this instance, loading the stored seed data
+     * Initialise this instance, loading the stored seed data
      * 
      * @throws StorageException
      */
