@@ -233,7 +233,8 @@ abstract public class EntropyCollector extends EntropySource implements
         int delay = getDelay();
         long time = System.currentTimeMillis() - RESET_TIME;
         if( time>SLOW_DOWN_PERIOD ) {
-            delay = (int) ((double) time / SLOW_DOWN_PERIOD);
+            double factor = (double) time / SLOW_DOWN_PERIOD;
+            delay *= factor;
         }
         SERVICE.schedule(this, delay, TimeUnit.MILLISECONDS);
     }
