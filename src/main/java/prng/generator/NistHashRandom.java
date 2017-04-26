@@ -77,6 +77,9 @@ public class NistHashRandom extends BaseRandom {
     /** Algorithm parameters */
     private final HashSpec spec_;
 
+    /** Maximum number of bytes to generate in one iteration */
+    private final int maxLength_;
+
     /**
      * The "V" Value parameter as defined in the specification.
      */
@@ -103,7 +106,7 @@ public class NistHashRandom extends BaseRandom {
      */
     public NistHashRandom(SeedSource source, HashSpec spec, int resistance,
             byte[] entropy, byte[] nonce, byte[] personalization) {
-        super(source, resistance, spec.seedLength_);
+        super(source, resistance, spec.seedLength_, spec.outputLength_);
         spec_ = spec;
         digest_ = spec.getInstance();
         byte[] seedMaterial = combineMaterials(entropy, nonce, personalization,
@@ -111,6 +114,16 @@ public class NistHashRandom extends BaseRandom {
 
         value_ = hashDF(false, seedMaterial);
         constant_ = hashDF(true, value_);
+
+        // The maximum bytes per request is 512Kb. To avoid getting close to
+        // that we break up large requests into 128Kb sections. Or at least as
+        // close to 128Kb as we can get with complete output blocks.
+        int max = 1024 * 128;
+        int overflow = max % spec.outputLength_;
+        if( overflow != 0 ) {
+            max += spec.outputLength_ - overflow;
+        }
+        maxLength_ = overflow;
     }
 
 
@@ -156,12 +169,12 @@ public class NistHashRandom extends BaseRandom {
 
 
     @Override
-    protected void implNextBytes(byte[] output) {
+    protected void implNextBytes(int off, byte[] output) {
         // The maximum bytes per request is 512Kb. To avoid getting close to
         // that we break up large requests into 128Kb sections.
-        final int maxLength = 131072;
-        int pos = 0;
-        int required = output.length;
+        final int maxLength = maxLength_;
+        int pos = off;
+        int required = output.length - off;
         while( required > maxLength ) {
             implNextBytes(output, pos, maxLength);
             pos += maxLength;
@@ -209,6 +222,7 @@ public class NistHashRandom extends BaseRandom {
         if( lastSize > 0 ) {
             byte[] hash = digest_.digest(data);
             System.arraycopy(hash, 0, output, off, lastSize);
+            setSpares(hash,lastSize,hash.length-lastSize);
         }
 
         // now update this generator's state

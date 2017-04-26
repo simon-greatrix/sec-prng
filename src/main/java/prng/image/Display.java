@@ -1,4 +1,5 @@
 package prng.image;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -14,18 +15,20 @@ import javax.swing.SwingUtilities;
 import prng.SecureRandomProvider;
 
 public class Display extends JFrame {
-    
+
     class Updater extends Thread implements DoubleConsumer {
         public void run() {
             painter.create(this);
             doRepaint();
         }
 
+
         @Override
         public void accept(double value) {
             doRepaint();
         }
-        
+
+
         private void doRepaint() {
             SwingUtilities.invokeLater(new Runnable() {
                 public void run() {
@@ -34,6 +37,7 @@ public class Display extends JFrame {
             });
         }
     }
+
     /**
      *
      */
@@ -57,9 +61,11 @@ public class Display extends JFrame {
     }
 
 
-    public static void main(String[] args) throws NoSuchAlgorithmException, NoSuchProviderException {
+    public static void main(String[] args)
+            throws NoSuchAlgorithmException, NoSuchProviderException {
         SecureRandomProvider.install(false);
-        Random rand = SecureRandom.getInstance("Nist-SHA256",SecureRandomProvider.NAME);
+        Random rand = SecureRandom.getInstance("Nist-SHA256",
+                SecureRandomProvider.NAME);
         Painter p = new Combined(rand);
         new Display(p);
     }

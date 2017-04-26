@@ -13,8 +13,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import prng.SecureRandomProvider;
+import prng.config.Config;
 import prng.seeds.SeedStorage;
-import prng.utility.Config;
 
 /**
  * Fetch random data from well known on-line sources. Examples of web sources
@@ -34,7 +34,8 @@ import prng.utility.Config;
  */
 abstract public class NetRandom {
     /** Logger for this class */
-    protected static final Logger LOG = LoggerFactory.getLogger(NetRandom.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(
+            NetRandom.class);
 
     /** Number of milliseconds before a connection attempt times out */
     private static final int CONNECT_TIMEOUT;
@@ -86,7 +87,8 @@ abstract public class NetRandom {
      * @throws IOException
      *             if connecting to the server or reading the response fails
      */
-    protected static byte[] connectRPC(URL url, byte[] request) throws IOException {
+    protected static byte[] connectRPC(URL url, byte[] request)
+            throws IOException {
         // create the connection to post json-rpc
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setConnectTimeout(120000);
@@ -189,16 +191,16 @@ abstract public class NetRandom {
     public byte[] load() {
         byte[] newData;
         try {
-            newData = AccessController.doPrivileged(new PrivilegedExceptionAction<byte[]>() {
-                @Override
-                public byte[] run() throws IOException {
-                    return fetch();
-                }
-            });
+            newData = AccessController.doPrivileged(
+                    new PrivilegedExceptionAction<byte[]>() {
+                        @Override
+                        public byte[] run() throws IOException {
+                            return fetch();
+                        }
+                    });
             if( newData == null || newData.length != 128 ) {
                 // Failed to fetch data. It happens.
-                LOG.warn(
-                        "Invalid data received. Got {} bytes instead of 128",
+                LOG.warn("Invalid data received. Got {} bytes instead of 128",
                         newData == null ? "null"
                                 : Integer.toString(newData.length));
 

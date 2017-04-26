@@ -1,4 +1,5 @@
 package prng.image;
+
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.geom.AffineTransform;
@@ -22,8 +23,6 @@ public abstract class BasePainter implements Painter {
     BasePainter(Random rand) {
         this.rand = rand;
     }
-    
-    
 
 
     @Override
@@ -31,8 +30,8 @@ public abstract class BasePainter implements Painter {
         create();
         progress.accept(1d);
     }
-    
-    
+
+
     abstract public void create();
 
 

@@ -3,10 +3,10 @@ package prng.internet;
 import java.util.Random;
 
 import prng.EntropySource;
+import prng.config.Config;
 import prng.generator.IsaacRandom;
 import prng.seeds.Seed;
 import prng.seeds.SeedStorage;
-import prng.utility.Config;
 
 /**
  * Internet random source manager.
@@ -102,7 +102,9 @@ public class NetManager implements Runnable {
 
     /**
      * Get data for the i'th seed from a new network source
-     * @param i the seed to fetch data for
+     * 
+     * @param i
+     *            the seed to fetch data for
      * @return the data fetched
      */
     private byte[] getSource(int i) {
@@ -115,7 +117,7 @@ public class NetManager implements Runnable {
         } while( source < weights_.length );
 
         NetRandom nr = sources_[source];
-        System.out.println("Fetching data from "+nr.getClass());
+        System.out.println("Fetching data from " + nr.getClass());
         byte[] data = nr.load();
         Seed seed = new Seed("NetRandom." + i, data);
         seeds_[i] = seed;
@@ -136,7 +138,7 @@ public class NetManager implements Runnable {
             // pick a seed at random
             int index = indexes[i] & 63;
             Seed seed = seeds_[index];
-            
+
             // get data from the seed
             byte[] data;
             double r = rand.nextDouble();

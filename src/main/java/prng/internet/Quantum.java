@@ -8,12 +8,12 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
+import prng.config.Config;
 import prng.internet.SimpleJSONParser.JSONArray;
 import prng.internet.SimpleJSONParser.JSONObject;
 import prng.internet.SimpleJSONParser.Primitive;
 import prng.internet.SimpleJSONParser.Type;
 import prng.utility.BLOBPrint;
-import prng.utility.Config;
 
 /**
  * Source that fetches from the ANU QRNG service. Note that although the ANU
@@ -28,12 +28,8 @@ public class Quantum extends NetRandom {
     private static final URL QRNG;
 
     static {
-        Config config = Config.getConfig("", Quantum.class);
-        boolean useHttps = config.getBoolean("useHTTPS", false);
         try {
-            QRNG = new URL(
-                    (useHttps ? "https" : "http")
-                            + "://qrng.anu.edu.au/API/jsonI.php?length=128&size=1&type=uint8");
+            QRNG = new URL("https://qrng.anu.edu.au/API/jsonI.php?length=128&size=1&type=uint8");
         } catch (MalformedURLException e) {
             throw new Error("Impossible exception", e);
         }
@@ -60,8 +56,9 @@ public class Quantum extends NetRandom {
 
         try {
             // convert response to JSON
-            Primitive result = SimpleJSONParser.parse(new InputStreamReader(
-                    new ByteArrayInputStream(data), StandardCharsets.ISO_8859_1));
+            Primitive result = SimpleJSONParser.parse(
+                    new InputStreamReader(new ByteArrayInputStream(data),
+                            StandardCharsets.ISO_8859_1));
             if( result.getType() != Type.OBJECT ) {
                 throw new IOException(QRNG.getHost() + " returned JSON type: "
                         + result.getType());
@@ -69,9 +66,10 @@ public class Quantum extends NetRandom {
             JSONObject obj = result.getValueSafe(JSONObject.class);
 
             // response will indicate success
-            if( !obj.get(Boolean.class, "success", Boolean.FALSE).booleanValue() ) {
-                throw new IOException(QRNG.getHost()
-                        + " did not indicate success");
+            if( !obj.get(Boolean.class, "success",
+                    Boolean.FALSE).booleanValue() ) {
+                throw new IOException(
+                        QRNG.getHost() + " did not indicate success");
             }
 
             // if successful, should contain data array
@@ -80,8 +78,8 @@ public class Quantum extends NetRandom {
                 throw new IOException(QRNG.getHost() + " did not return data");
             }
             if( arr.size() != 128 ) {
-                throw new IOException(QRNG.getHost() + " returned "
-                        + arr.size() + " bytes not 128");
+                throw new IOException(QRNG.getHost() + " returned " + arr.size()
+                        + " bytes not 128");
             }
 
             // load data into array
@@ -90,9 +88,9 @@ public class Quantum extends NetRandom {
             for(Primitive prim:arr) {
                 Integer val = prim.getValue(Integer.class, null);
                 if( val == null ) {
-                    throw new IOException(QRNG.getHost() + " sent data of "
-                            + prim.getType() + ": " + prim
-                            + " which is not an integer");
+                    throw new IOException(
+                            QRNG.getHost() + " sent data of " + prim.getType()
+                                    + ": " + prim + " which is not an integer");
                 }
                 bits[pos] = val.byteValue();
                 pos++;

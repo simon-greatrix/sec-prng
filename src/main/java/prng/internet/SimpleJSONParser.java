@@ -258,7 +258,7 @@ public class SimpleJSONParser {
     /** Hexidecimal digits */
     private static char[] HEX = new char[] { '0', '1', '2', '3', '4', '5', '6',
             '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
- 
+
     /** Letters for the "null" literal */
     private static final char[] LITERAL_NULL = new char[] { 'U', 'u', 'L', 'l',
             'L', 'l' };

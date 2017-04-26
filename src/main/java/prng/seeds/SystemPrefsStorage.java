@@ -13,20 +13,24 @@ import prng.SecureRandomProvider;
  *
  */
 public class SystemPrefsStorage extends PreferenceStorage {
-    
+
     @Override
     protected Preferences getPreferences() throws StorageException {
         try {
-            return AccessController.doPrivileged(new PrivilegedAction<Preferences>() {
-                @Override
-                public Preferences run() {
-                    return Preferences.systemNodeForPackage(SeedStorage.class);
-                }
-            });
+            return AccessController.doPrivileged(
+                    new PrivilegedAction<Preferences>() {
+                        @Override
+                        public Preferences run() {
+                            return Preferences.systemNodeForPackage(
+                                    SeedStorage.class);
+                        }
+                    });
         } catch (SecurityException e) {
-            SecureRandomProvider.LOG.warn("Lacking permission \"RuntimePermission preferences\" or access to system preferences - cannot access seed data in system preferences");
+            SecureRandomProvider.LOG.warn(
+                    "Lacking permission \"RuntimePermission preferences\" or access to system preferences - cannot access seed data in system preferences");
             throw new StorageException(
-                    "Privilege 'preferences' is required to use preferences", e);
+                    "Privilege 'preferences' is required to use preferences",
+                    e);
         }
     }
 }

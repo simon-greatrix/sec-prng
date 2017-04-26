@@ -8,10 +8,10 @@ import java.security.Security;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import prng.config.Config;
 import prng.generator.NistCipherRandom;
 import prng.generator.NistHashRandom;
 import prng.generator.NistHmacRandom;
-import prng.utility.Config;
 
 /**
  * Security service provider
@@ -24,7 +24,8 @@ public class SecureRandomProvider extends Provider {
     public static final String NAME = "SecureRandomProvider";
 
     /** Logger for instantiating this provider */
-    public static final Logger LOG = LoggerFactory.getLogger(SecureRandomProvider.class);
+    public static final Logger LOG = LoggerFactory.getLogger(
+            SecureRandomProvider.class);
 
     /** The provider instance */
     static final Provider PROVIDER;
@@ -54,7 +55,7 @@ public class SecureRandomProvider extends Provider {
         // Allow for the SHA1PRNG algorithm to be over-ridden with another
         Config config = Config.getConfig("", SecureRandomProvider.class);
         String replace = config.get("replaceSHA1PRNG");
-        LOG.info("Replacing SHA1PRNG with {}",replace);
+        LOG.info("Replacing SHA1PRNG with {}", replace);
         if( replace != null ) {
             Service s = prov.getService("SecureRandom", replace);
             if( s != null ) {
@@ -70,12 +71,13 @@ public class SecureRandomProvider extends Provider {
         // Set the strong algorithm (a privileged action)
         String strongAlg = config.get("strongAlgorithm", "Nist-HmacSHA512")
                 + ":" + NAME;
-        LOG.info("Installing {} as a strong algorithm",strongAlg);
+        LOG.info("Installing {} as a strong algorithm", strongAlg);
         try {
             AccessController.doPrivileged(new PrivilegedAction<Void>() {
                 @Override
                 public Void run() {
-                    String algs = Security.getProperty("securerandom.strongAlgorithms");
+                    String algs = Security.getProperty(
+                            "securerandom.strongAlgorithms");
                     if( algs == null || algs.trim().length() == 0 ) {
                         algs = strongAlg;
                     } else {
@@ -111,7 +113,8 @@ public class SecureRandomProvider extends Provider {
         } else {
             Provider[] provs = Security.getProviders();
             position = provs.length;
-            LOG.info("Installing provider as preference {}",Integer.valueOf(position));
+            LOG.info("Installing provider as preference {}",
+                    Integer.valueOf(position));
         }
 
         // Inserting a provider is a privileged action
@@ -119,13 +122,15 @@ public class SecureRandomProvider extends Provider {
             AccessController.doPrivileged(new PrivilegedAction<Void>() {
                 @Override
                 public Void run() {
-                    Security.insertProviderAt(SecureRandomProvider.PROVIDER, position);
+                    Security.insertProviderAt(SecureRandomProvider.PROVIDER,
+                            position);
                     return null;
                 }
             });
         } catch (SecurityException se) {
             LOG.error(
-                    "Cannot install security provider as lacking privilege \"insertProvider\" or \"insertProvider.SecureRandomProvider\"",se);
+                    "Cannot install security provider as lacking privilege \"insertProvider\" or \"insertProvider.SecureRandomProvider\"",
+                    se);
         }
     }
 
@@ -140,9 +145,9 @@ public class SecureRandomProvider extends Provider {
     public static void premain(String args) {
         LOG.info("Installing provider via agent");
         boolean isPrimary = true;
-        if( args!=null ) {
+        if( args != null ) {
             if( args.matches("\\s*sprimary\\s*=\\s*false\\s*") ) {
-                isPrimary=false;
+                isPrimary = false;
             }
         }
         install(isPrimary);

@@ -38,7 +38,8 @@ import prng.SystemRandom;
  */
 public class TimeBasedUUID {
     /** Logger for this class */
-    private static final Logger LOG = LoggerFactory.getLogger(TimeBasedUUID.class);
+    private static final Logger LOG = LoggerFactory.getLogger(
+            TimeBasedUUID.class);
 
     /** Default instance */
     private static TimeBasedUUID INSTANCE = null;
@@ -67,15 +68,17 @@ public class TimeBasedUUID {
      */
     private static byte[] getAddress() {
         try {
-            byte[] data = AccessController.doPrivileged(new PrivilegedAction<byte[]>() {
-                @Override
-                public byte[] run() {
-                    return getAddressWithPrivilege();
-                }
-            });
+            byte[] data = AccessController.doPrivileged(
+                    new PrivilegedAction<byte[]>() {
+                        @Override
+                        public byte[] run() {
+                            return getAddressWithPrivilege();
+                        }
+                    });
             if( data != null ) return data;
         } catch (SecurityException e) {
-            SecureRandomProvider.LOG.warn("Cannot get MAC for local host. Require permission \"NetPermission getNetworkInformation\" and \"SocketPermission localhost, resolve\".");
+            SecureRandomProvider.LOG.warn(
+                    "Cannot get MAC for local host. Require permission \"NetPermission getNetworkInformation\" and \"SocketPermission localhost, resolve\".");
         }
 
         // Must create random multi-cast address. We will create one from an
@@ -102,7 +105,8 @@ public class TimeBasedUUID {
             // first try local host
             InetAddress localHost = InetAddress.getLocalHost();
             if( !localHost.isLoopbackAddress() ) {
-                NetworkInterface nint = NetworkInterface.getByInetAddress(localHost);
+                NetworkInterface nint = NetworkInterface.getByInetAddress(
+                        localHost);
                 if( nint != null ) {
                     byte[] data = nint.getHardwareAddress();
                     if( data != null && data.length == 6 ) {
@@ -150,7 +154,8 @@ public class TimeBasedUUID {
                 // ignore this interface
                 LOG.warn(
                         "Failed to get localhost hardware address or sub-interfaces for "
-                                + nint.getDisplayName(), se);
+                                + nint.getDisplayName(),
+                        se);
             }
         }
 

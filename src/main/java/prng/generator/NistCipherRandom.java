@@ -99,7 +99,7 @@ public class NistCipherRandom extends BaseRandom {
      */
     public NistCipherRandom(SeedSource source, int resistance, byte[] entropy,
             byte[] nonce, byte[] personalization) {
-        super(source, resistance, 48);
+        super(source, resistance, 48, 16);
 
         try {
             cipher_ = Cipher.getInstance("AES/ECB/NoPadding");
@@ -119,9 +119,8 @@ public class NistCipherRandom extends BaseRandom {
 
 
     @Override
-    protected void implNextBytes(byte[] bytes) {
-        int off = 0;
-        int len = bytes.length;
+    protected void implNextBytes(int off, byte[] bytes) {
+        int len = bytes.length - off;
         int fullLoops = len / 16;
         int lastSize = len - (fullLoops * 16);
 
@@ -137,6 +136,7 @@ public class NistCipherRandom extends BaseRandom {
                 incr();
                 cipher_.update(value_, 0, 16, buffer_, 0);
                 System.arraycopy(buffer_, 0, bytes, off, lastSize);
+                setSpares(buffer_, lastSize, 16-lastSize);
             }
         } catch (GeneralSecurityException e) {
             throw new Error("Cyryptographic failure", e);

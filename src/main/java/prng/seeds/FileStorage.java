@@ -14,8 +14,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeSet;
 
+import prng.config.Config;
 import prng.utility.BLOBPrint;
-import prng.utility.Config;
 
 /**
  * Store all seed information in a single file and load it all into memory when
@@ -36,7 +36,7 @@ public class FileStorage extends SeedStorage {
 
     /** Channel for store whilst it is open */
     FileChannel channel_ = null;
-    
+
     /** Is the store modified? */
     boolean isModified_ = false;
 
@@ -61,6 +61,35 @@ public class FileStorage extends SeedStorage {
         try {
             File file = fileName_;
             LOG.info("Opening file \"{}\"", file.getAbsolutePath());
+            // create the file and folder if needed
+            if( !file.exists() ) {
+                if( file.getParentFile().mkdirs() ) {
+                    LOG.info("Created folder \""
+                            + file.getParentFile().getAbsolutePath() + "\"");
+                }
+                if( file.createNewFile() ) {
+                    LOG.info("Created file \"" + file.getAbsolutePath() + "\"");
+                }
+                if( !file.exists() ) {
+                    throw new StorageException("Failed to create file \""
+                            + file.getAbsolutePath() + "\"", null);
+                }
+            }
+
+            // check file is usable
+            if( !file.isFile() ) {
+                throw new StorageException("File \"" + file.getAbsolutePath()
+                        + "\" is not a file.", null);
+            }
+            if( !file.canWrite() ) {
+                throw new StorageException("File \"" + file.getAbsolutePath()
+                        + "\" is not writable.", null);
+            }
+            if( !file.canRead() ) {
+                throw new StorageException("File \"" + file.getAbsolutePath()
+                        + "\" is not readable.", null);
+            }
+
             channel_ = FileChannel.open(file.toPath(),
                     StandardOpenOption.CREATE, StandardOpenOption.READ,
                     StandardOpenOption.WRITE, StandardOpenOption.DSYNC);
@@ -102,7 +131,9 @@ public class FileStorage extends SeedStorage {
             isModified_ = false;
 
             LOG.info("File read finised");
-        } catch (IOException ioe) {
+        } catch (
+
+        IOException ioe) {
             throw new StorageException("Loading storage from "
                     + fileName_.getAbsolutePath() + " failed", ioe);
         }
@@ -113,14 +144,14 @@ public class FileStorage extends SeedStorage {
     protected void putRaw(String name, byte[] data) throws StorageException {
         init();
         if( name.length() > 0x8000 ) {
-            throw new StorageException("Maximum key length is 32768, not "
-                    + name.length(), new IllegalArgumentException(
-                    "Parameter too long"));
+            throw new StorageException(
+                    "Maximum key length is 32768, not " + name.length(),
+                    new IllegalArgumentException("Parameter too long"));
         }
         if( data.length > 0x10000 ) {
-            throw new StorageException("Maximum data length is 65536, not "
-                    + data.length, new IllegalArgumentException(
-                    "Parameter too long"));
+            throw new StorageException(
+                    "Maximum data length is 65536, not " + data.length,
+                    new IllegalArgumentException("Parameter too long"));
         }
         isModified_ = true;
         storage_.put(name, data);
@@ -142,13 +173,14 @@ public class FileStorage extends SeedStorage {
 
     @Override
     protected void closeRaw() throws StorageException {
-        if( channel_==null || !channel_.isOpen() ) return;
-        
+        if( channel_ == null || !channel_.isOpen() ) return;
+
         TreeSet<String> keys = new TreeSet<String>(storage_.keySet());
         IOException ioe = null;
         try {
-            // if not modified, skip straight to the finally block to close the channel
-            if( ! isModified_ ) return;
+            // if not modified, skip straight to the finally block to close the
+            // channel
+            if( !isModified_ ) return;
 
             ByteArrayOutputStream buf = new ByteArrayOutputStream(4000);
             DataOutputStream data = new DataOutputStream(buf);
@@ -207,8 +239,8 @@ public class FileStorage extends SeedStorage {
             fileName_.delete();
 
             // rethrow exception
-            throw new StorageException("Failed to save "
-                    + fileName_.getAbsolutePath(), ioe);
+            throw new StorageException(
+                    "Failed to save " + fileName_.getAbsolutePath(), ioe);
         }
     }
 

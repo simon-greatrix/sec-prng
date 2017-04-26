@@ -44,8 +44,8 @@ public class DigestDataOutput implements DataOutput {
         try {
             digest_ = MessageDigest.getInstance(name);
         } catch (NoSuchAlgorithmException e) {
-            throw new Error("Digest algorithm \"" + name
-                    + "\" is not supported.");
+            throw new Error(
+                    "Digest algorithm \"" + name + "\" is not supported.");
         }
     }
 

@@ -1,6 +1,6 @@
 /**
  * Tools for collecting entropy from the JVM's runtime environment.
  * 
- * @author Simon Greatrix 
+ * @author Simon Greatrix
  */
 package prng.collector;

@@ -95,8 +95,8 @@ public class Fortuna {
         synchronized (instance) {
             SecureRandomImpl impl = instance.pool_[pool];
             impl.setSeed(data);
-            SeedStorage.enqueue(new DeferredSeed("Fortuna." + pool,
-                    new SeedMaker(impl)));
+            SeedStorage.enqueue(
+                    new DeferredSeed("Fortuna." + pool, new SeedMaker(impl)));
         }
     }
 
@@ -192,8 +192,8 @@ public class Fortuna {
         }
 
         for(int i = 0;i < 32;i++) {
-            SeedStorage.enqueue(new DeferredSeed("Fortuna." + i, new SeedMaker(
-                    pool_[i])));
+            SeedStorage.enqueue(
+                    new DeferredSeed("Fortuna." + i, new SeedMaker(pool_[i])));
         }
     }
 
@@ -213,8 +213,8 @@ public class Fortuna {
         try {
             cipher_.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key_, "AES"));
         } catch (InvalidKeyException e) {
-            throw new Error("AES cipher rejected key of " + key_.length * 8
-                    + " bits");
+            throw new Error(
+                    "AES cipher rejected key of " + key_.length * 8 + " bits");
         }
         for(int pos = 0;pos < len;) {
             try {

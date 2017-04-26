@@ -13,7 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import prng.EntropySource;
-import prng.utility.Config;
+import prng.config.Config;
 
 /**
  * Entropy source that can pull entropy from some source on a regular basis
@@ -22,19 +22,20 @@ import prng.utility.Config;
  * @author Simon Greatrix
  *
  */
-abstract public class EntropyCollector extends EntropySource implements
-        Runnable {
+abstract public class EntropyCollector extends EntropySource
+        implements Runnable {
     /** Is entropy collection suspended? */
     private static boolean IS_SUSPENDED = false;
 
     /** Logger for entropy collectors */
-    protected static final Logger LOG = LoggerFactory.getLogger(EntropyCollector.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(
+            EntropyCollector.class);
 
     /**
      * Scheduler for entropy gathering processes
      */
-    private static ScheduledExecutorService SERVICE = Executors.newSingleThreadScheduledExecutor(new DaemonThreadFactory(
-            "PRNG-EntropyCollector"));
+    private static ScheduledExecutorService SERVICE = Executors.newSingleThreadScheduledExecutor(
+            new DaemonThreadFactory("PRNG-EntropyCollector"));
 
     /**
      * Set of all known collectors
@@ -50,7 +51,7 @@ abstract public class EntropyCollector extends EntropySource implements
      *            the entropy source
      */
     public static void initialise(EntropyCollector es) {
-        LOG.info("Initialising entropy collector {}",es.getClass().getName());
+        LOG.info("Initialising entropy collector {}", es.getClass().getName());
         synchronized (SOURCES) {
             SOURCES.add(es);
             if( IS_SUSPENDED ) return;
@@ -84,8 +85,10 @@ abstract public class EntropyCollector extends EntropySource implements
             try {
                 // create collector
                 Class<?> clazz1 = Class.forName(cl);
-                Class<? extends EntropyCollector> clazz2 = clazz1.asSubclass(EntropyCollector.class);
-                Constructor<? extends EntropyCollector> cons = clazz2.getConstructor(new Class<?>[] { Config.class });
+                Class<? extends EntropyCollector> clazz2 = clazz1.asSubclass(
+                        EntropyCollector.class);
+                Constructor<? extends EntropyCollector> cons = clazz2.getConstructor(
+                        new Class<?>[] { Config.class });
 
                 // get configuration
                 Config ecConfig = Config.getConfig("config." + cl);
@@ -96,8 +99,10 @@ abstract public class EntropyCollector extends EntropySource implements
             } catch (ClassNotFoundException cnfe) {
                 LOG.error("Class " + cl + " is not available", cnfe);
             } catch (ClassCastException cce) {
-                LOG.error("Class " + cl
-                        + " is not a sub-class of EntropyCollector", cce);
+                LOG.error(
+                        "Class " + cl
+                                + " is not a sub-class of EntropyCollector",
+                        cce);
             } catch (InvocationTargetException | InstantiationException
                     | IllegalAccessException e) {
                 LOG.error("Class " + cl + " could not be instantiated", e);
@@ -108,27 +113,28 @@ abstract public class EntropyCollector extends EntropySource implements
             }
         }
     }
-    
+
     /**
      * Time of the last speed reset
      */
     private static long RESET_TIME = System.currentTimeMillis();
-    
+
     /**
      * Period over which entropy collection slows down.
      */
     private static final long SLOW_DOWN_PERIOD;
-    
+
+
     /**
      * Reset the collection speed
      */
     public static void resetSpeed() {
         long time = System.currentTimeMillis() - RESET_TIME;
         double factor = 1.0;
-        if( time>SLOW_DOWN_PERIOD ) {
+        if( time > SLOW_DOWN_PERIOD ) {
             factor = (double) time / SLOW_DOWN_PERIOD;
         }
-        if( factor>2 ) {
+        if( factor > 2 ) {
             suspend();
             restart();
         }
@@ -168,8 +174,8 @@ abstract public class EntropyCollector extends EntropySource implements
 
     static {
         initialiseStandard();
-        
-        Config config = Config.getConfig("",EntropyCollector.class);
+
+        Config config = Config.getConfig("", EntropyCollector.class);
         SLOW_DOWN_PERIOD = config.getLong("slowDownPeriod", 5000);
     }
 
@@ -226,13 +232,13 @@ abstract public class EntropyCollector extends EntropySource implements
     public void run() {
         try {
             runImpl();
-        } catch ( RuntimeException re ) {
-            LOG.error("Error during entropy collection",re);
+        } catch (RuntimeException re) {
+            LOG.error("Error during entropy collection", re);
         }
 
         int delay = getDelay();
         long time = System.currentTimeMillis() - RESET_TIME;
-        if( time>SLOW_DOWN_PERIOD ) {
+        if( time > SLOW_DOWN_PERIOD ) {
             double factor = (double) time / SLOW_DOWN_PERIOD;
             delay *= factor;
         }

@@ -10,9 +10,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import prng.SystemRandom;
+import prng.config.Config;
 import prng.generator.IsaacRandom;
 import prng.utility.BLOBPrint;
-import prng.utility.Config;
 
 /**
  * Storage for PRNG seed information.
@@ -233,7 +233,7 @@ public abstract class SeedStorage implements AutoCloseable {
                     SAVE_WAIT = SAVE_MAX;
                 }
             }
-            
+
             // set time for next save
             SAVE_DUE = saveTime + SAVE_WAIT;
 

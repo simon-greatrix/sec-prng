@@ -11,4 +11,3 @@
  * @author Simon Greatrix
  */
 package prng.seeds;
-

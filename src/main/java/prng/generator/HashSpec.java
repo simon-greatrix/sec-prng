@@ -24,8 +24,8 @@ public class HashSpec {
      * block. The 440 bit input is padded with an 0x80 byte and a 64-bit message
      * length value to create a 512-bit block.
      */
-    public static final HashSpec SPEC_SHA256 = new HashSpec("SHA-256", 440,
-            256, 256);
+    public static final HashSpec SPEC_SHA256 = new HashSpec("SHA-256", 440, 256,
+            256);
 
     /**
      * Specification for SHA-512 based generator. The 888 bit seed length is the
@@ -33,8 +33,8 @@ public class HashSpec {
      * block. The 888 bit input is padded with an 0x80 byte and a 128-bit
      * message length value to create a 1024-bit block.
      */
-    public static final HashSpec SPEC_SHA512 = new HashSpec("SHA-512", 888,
-            512, 256);
+    public static final HashSpec SPEC_SHA512 = new HashSpec("SHA-512", 888, 512,
+            256);
 
     /** Name of the digest algorithm */
     final String algorithm_;
@@ -92,18 +92,20 @@ public class HashSpec {
             int strength) {
         this(null, algorithm, bitSeedLength, bitOutputLength, strength);
     }
-    
-    
+
+
     /**
      * Get an instance of this Hash function
+     * 
      * @return a Hash instance
      */
     public MessageDigest getInstance() {
         try {
-            if( provider_ == null ) return MessageDigest.getInstance(algorithm_);
-            return MessageDigest.getInstance(algorithm_,provider_);
+            if( provider_ == null )
+                return MessageDigest.getInstance(algorithm_);
+            return MessageDigest.getInstance(algorithm_, provider_);
         } catch (NoSuchAlgorithmException e) {
-            throw new Error("Algorithm "+algorithm_+" not available");
+            throw new Error("Algorithm " + algorithm_ + " not available");
         }
     }
 }

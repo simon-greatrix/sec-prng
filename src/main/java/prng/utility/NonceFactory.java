@@ -50,7 +50,8 @@ public class NonceFactory {
         // If multiple applications are running in the same JVM, the class
         // loader and load time will make it unique
         dig.writeUTF(NonceFactory.class.getClassLoader().getClass().getName());
-        dig.writeInt(System.identityHashCode(NonceFactory.class.getClassLoader()));
+        dig.writeInt(
+                System.identityHashCode(NonceFactory.class.getClassLoader()));
         dig.writeLong(System.nanoTime());
         dig.writeLong(Thread.currentThread().getId());
 
@@ -61,7 +62,8 @@ public class NonceFactory {
         dig.writeUTF(runBean.getName());
         dig.writeLong(runBean.getStartTime());
         dig.writeUTF(NonceFactory.class.getClassLoader().getClass().getName());
-        dig.writeInt(System.identityHashCode(NonceFactory.class.getClassLoader()));
+        dig.writeInt(
+                System.identityHashCode(NonceFactory.class.getClassLoader()));
         dig.writeLong(System.nanoTime());
         dig.writeLong(Thread.currentThread().getId());
 
@@ -69,14 +71,16 @@ public class NonceFactory {
         List<String> args;
         try {
             // requires ManagementPermission monitor
-            args = AccessController.doPrivileged(new PrivilegedAction<List<String>>() {
-                @Override
-                public List<String> run() {
-                    return runBean.getInputArguments();
-                }
-            });
+            args = AccessController.doPrivileged(
+                    new PrivilegedAction<List<String>>() {
+                        @Override
+                        public List<String> run() {
+                            return runBean.getInputArguments();
+                        }
+                    });
         } catch (SecurityException e) {
-            SecureRandomProvider.LOG.warn("Lacking permission \"ManagementPermission monitor\" - cannot fully personalize nonce factory");
+            SecureRandomProvider.LOG.warn(
+                    "Lacking permission \"ManagementPermission monitor\" - cannot fully personalize nonce factory");
             args = null;
         }
 
@@ -93,14 +97,16 @@ public class NonceFactory {
         Map<String, String> env;
         try {
             // requires PropertyPermission * read,write
-            env = AccessController.doPrivileged(new PrivilegedAction<Map<String, String>>() {
-                @Override
-                public Map<String, String> run() {
-                    return runBean.getSystemProperties();
-                }
-            });
+            env = AccessController.doPrivileged(
+                    new PrivilegedAction<Map<String, String>>() {
+                        @Override
+                        public Map<String, String> run() {
+                            return runBean.getSystemProperties();
+                        }
+                    });
         } catch (SecurityException se) {
-            SecureRandomProvider.LOG.warn("Lacking permission \"PropertyPermisson * read,write\" - cannot fully personalize nonce factory");
+            SecureRandomProvider.LOG.warn(
+                    "Lacking permission \"PropertyPermisson * read,write\" - cannot fully personalize nonce factory");
             env = null;
         }
 
@@ -116,14 +122,16 @@ public class NonceFactory {
 
         try {
             // requires RuntimePermission getenv.*
-            env = AccessController.doPrivileged(new PrivilegedAction<Map<String, String>>() {
-                @Override
-                public Map<String, String> run() {
-                    return System.getenv();
-                }
-            });
+            env = AccessController.doPrivileged(
+                    new PrivilegedAction<Map<String, String>>() {
+                        @Override
+                        public Map<String, String> run() {
+                            return System.getenv();
+                        }
+                    });
         } catch (SecurityException se) {
-            SecureRandomProvider.LOG.warn("Lacking permission \"RuntimePermission getenv.*\" - cannot fully personalize nonce factory");
+            SecureRandomProvider.LOG.warn(
+                    "Lacking permission \"RuntimePermission getenv.*\" - cannot fully personalize nonce factory");
             env = null;
         }
 

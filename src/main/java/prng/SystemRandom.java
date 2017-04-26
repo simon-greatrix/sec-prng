@@ -184,8 +184,8 @@ public class SystemRandom implements Runnable {
         SOURCE_LEN = len;
         SOURCES = new SystemRandom[len];
         EXECUTOR = new ThreadPoolExecutor(0, 2 * len, 0, TimeUnit.NANOSECONDS,
-                new LinkedBlockingQueue<Runnable>(), new DaemonThreadFactory(
-                        "PRNG-SystemRandom"));
+                new LinkedBlockingQueue<Runnable>(),
+                new DaemonThreadFactory("PRNG-SystemRandom"));
         SEED_MAKER = new ExecutorCompletionService<Seed>(EXECUTOR);
 
         // create the PRNGs

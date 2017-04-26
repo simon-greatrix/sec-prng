@@ -12,7 +12,8 @@ import prng.SecureRandomProvider;
  * new seed is combined with the existing state so that entropy is augmented,
  * not reset.
  * 
- * @see <a href="http://en.wikipedia.org/wiki/ISAAC_%28cipher%29">ISAAC on Wikipedia</a>
+ * @see <a href="http://en.wikipedia.org/wiki/ISAAC_%28cipher%29">ISAAC on
+ *      Wikipedia</a>
  * @see <a href="http://eprint.iacr.org/2006/438.pdf">ISAAC+ algorithm</a>
  *
  */
@@ -76,14 +77,14 @@ public class IsaacRandom extends Random {
      */
     private static void mix(int[] s) {
         // @formatter:off
-        s[0] ^= s[1] <<  11; s[3] += s[0]; s[1] += s[2];
-        s[1] ^= s[2] >>>  2; s[4] += s[1]; s[2] += s[3];
-        s[2] ^= s[3] <<   8; s[5] += s[2]; s[3] += s[4];
+        s[0] ^= s[1] << 11; s[3] += s[0]; s[1] += s[2];
+        s[1] ^= s[2] >>> 2; s[4] += s[1]; s[2] += s[3];
+        s[2] ^= s[3] << 8; s[5] += s[2]; s[3] += s[4];
         s[3] ^= s[4] >>> 16; s[6] += s[3]; s[4] += s[5];
-        s[4] ^= s[5]  << 10; s[7] += s[4]; s[5] += s[6];
-        s[5] ^= s[6] >>>  4; s[0] += s[5]; s[6] += s[7];
-        s[6] ^= s[7]  <<  8; s[1] += s[6]; s[7] += s[0];
-        s[7] ^= s[0] >>>  9; s[2] += s[7]; s[0] += s[1];
+        s[4] ^= s[5] << 10; s[7] += s[4]; s[5] += s[6];
+        s[5] ^= s[6] >>> 4; s[0] += s[5]; s[6] += s[7];
+        s[6] ^= s[7] << 8; s[1] += s[6]; s[7] += s[0];
+        s[7] ^= s[0] >>> 9; s[2] += s[7]; s[0] += s[1];
         // @formatter:on
     }
 

@@ -107,7 +107,7 @@ public class NistHmacRandom extends BaseRandom {
      */
     public NistHmacRandom(SeedSource source, HashSpec spec, int resistance,
             byte[] entropy, byte[] nonce, byte[] personalization) {
-        super(source, resistance, spec.seedLength_);
+        super(source, resistance, spec.seedLength_, spec.outputLength_);
         spec_ = spec;
         digest_ = spec.getInstance();
 
@@ -122,10 +122,9 @@ public class NistHmacRandom extends BaseRandom {
 
 
     @Override
-    protected void implNextBytes(byte[] bytes) {
-        int off = 0;
+    protected void implNextBytes(int off, byte[] bytes) {
         int outLen = spec_.outputLength_;
-        int len = bytes.length;
+        int len = bytes.length - off;
         int fullLoops = len / outLen;
         int lastSize = len - (fullLoops * outLen);
 
@@ -139,6 +138,7 @@ public class NistHmacRandom extends BaseRandom {
         if( lastSize > 0 ) {
             value_ = hmac(key_, value_);
             System.arraycopy(value_, 0, bytes, off, lastSize);
+            setSpares(value_,lastSize,outLen - lastSize);
         }
 
         update(NO_BYTES);

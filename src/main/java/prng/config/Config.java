@@ -1,9 +1,13 @@
-package prng.utility;
+package prng.config;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.Collections;
@@ -14,9 +18,14 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.Supplier;
+import java.util.prefs.BackingStoreException;
+import java.util.prefs.Preferences;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import prng.SecureRandomProvider;
 
 /**
  * Configuration data. The configuration is stored in a properties file.
@@ -33,8 +42,23 @@ public class Config implements Iterable<String> {
     /** Logger for configuration related matters */
     public static final Logger LOG = LoggerFactory.getLogger(Config.class);
 
+    /** URI used to indicate configuration from system preferences */
+    static final URI URI_PREFERENCE_SYSTEM;
+
+    /** URI used to indicate configuration from user preferences */
+    static final URI URI_PREFERENCE_USER;
+
     static {
-        init();
+        URI_PREFERENCE_SYSTEM = URI.create("prefs:system");
+        String userId = System.getProperty("user.name", "");
+        try {
+            userId = URLEncoder.encode(userId, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new Error("UTF-8 must be supported by JVM");
+        }
+        URI_PREFERENCE_USER = URI.create("prefs:user/" + userId);
+
+        init(null);
     }
 
 
@@ -72,17 +96,18 @@ public class Config implements Iterable<String> {
             // get key and advance
             final String key = value.substring(0, e);
             value = value.substring(e + 1);
-            String env = AccessController.doPrivileged(new PrivilegedAction<String>() {
+            String env = AccessController.doPrivileged(
+                    new PrivilegedAction<String>() {
 
-                @Override
-                public String run() {
-                    String env0 = System.getProperty(key); 
-                    if( env0 == null ) {
-                        env0 = System.getenv(key);
-                    }
-                    return env0;
-                }
-            });
+                        @Override
+                        public String run() {
+                            String env0 = System.getProperty(key);
+                            if( env0 == null ) {
+                                env0 = System.getenv(key);
+                            }
+                            return env0;
+                        }
+                    });
 
             // did we get a replacement?
             if( env == null ) {
@@ -137,10 +162,83 @@ public class Config implements Iterable<String> {
 
 
     /**
+     * Merge a set of properties into the current configuration. If the
+     * configuration already contains a value for a given key, the property is
+     * skipped.
+     * 
+     * @param props
+     *            the properties to load
+     * @param sources
+     *            the known sources
+     * @param source
+     *            the current source
+     */
+    private static void initMerge(Properties props, Map<String, URI> sources,
+            URI source) {
+        for(Map.Entry<Object, Object> e:props.entrySet()) {
+            String k = String.valueOf(e.getKey());
+            String v = String.valueOf(e.getValue());
+            if( !CONFIG.containsKey(k) ) {
+                CONFIG.put(k, v);
+                // store the source
+                if( sources != null ) {
+                    sources.put(k, source);
+                }
+            }
+        }
+    }
+
+
+    /**
+     * Fetch configuration from the preferences API
+     * @param prefSupplier the source of the preferences
+     * @param desc the description of the preferences for logging
+     * @return the loaded properties
+     */
+    private static Properties fetchPreferences(
+            Supplier<Preferences> prefSupplier, String desc) {
+        Preferences prefs = null;
+        // Get the preferences using a privileged action.
+        try {
+            prefs = AccessController.doPrivileged(
+                    new PrivilegedAction<Preferences>() {
+                        @Override
+                        public Preferences run() {
+                            return prefSupplier.get();
+                        }
+                    });
+        } catch (SecurityException se) {
+            LOG.info("Unable to access preferences for \"" + desc + "\"", se);
+        }
+
+        // Start loading the properties
+        Properties props = new Properties();
+        if( prefs == null ) {
+            return props;
+        }
+
+        try {
+            // copy each preference into the properties
+            for(String k:prefs.keys()) {
+                String v = prefs.get(k, null);
+                if( v != null ) {
+                    props.setProperty(k, v);
+                }
+            }
+        } catch (BackingStoreException bse) {
+            LOG.error("Failed to access prefernce storage.", bse);
+        }
+        return props;
+    }
+
+
+    /**
      * Load configuration data from the
      * <code>/prng/secure-prng.properties</code> files.
+     * @param sources where each configuration item comes from
+     * @return the loaded configuration
      */
-    private static void init() {
+    static Map<String,String> init(Map<String, URI> sources) {
         // find all the files
         Enumeration<URL> resources;
         try {
@@ -148,33 +246,46 @@ public class Config implements Iterable<String> {
                     "prng/secure-prng.properties");
         } catch (IOException e) {
             LOG.error("Failed to locate configuration files", e);
-            return;
+            return Collections.emptyMap();
         }
 
-        // load the properties files
         CONFIG.clear();
+
+        // Load user preferences
+        Properties props = fetchPreferences(
+                () -> Preferences.userNodeForPackage(
+                        SecureRandomProvider.class),
+                "user");
+        initMerge(props, sources, URI_PREFERENCE_USER);
+
+        // Load system preferences
+        props = fetchPreferences(() -> Preferences.systemNodeForPackage(
+                SecureRandomProvider.class), "system");
+        initMerge(props, sources, URI_PREFERENCE_SYSTEM);
+
+        // load the properties files
         while( resources.hasMoreElements() ) {
             URL url = resources.nextElement();
             LOG.info("Loading configuration from {}", url.toExternalForm());
-            Properties props = new Properties();
+            props = new Properties();
             try (InputStream in = url.openStream()) {
                 props.load(in);
             } catch (IOException ioe) {
                 // it went wrong :-(
-                LOG.error(
-                        "Failed to read configuration file " + url.toString(),
+                LOG.error("Failed to read configuration file " + url.toString(),
                         ioe);
                 continue;
             }
 
             // load configuration so that first loaded wins
-            for(Map.Entry<Object, Object> e:props.entrySet()) {
-                String k = String.valueOf(e.getKey());
-                String v = String.valueOf(e.getValue());
-                if( !CONFIG.containsKey(k) ) {
-                    CONFIG.put(k, v);
-                }
+            URI uri = null;
+            try {
+                uri = url.toURI();
+            } catch (URISyntaxException e) {
+                LOG.warn("Unable to convert source URL \""
+                        + url.toExternalForm() + "\" to URI");
             }
+            initMerge(props, sources, uri);
         }
 
         // log what was loaded
@@ -189,6 +300,8 @@ public class Config implements Iterable<String> {
                 LOG.error("Failed to write out configuration", ioe);
             }
         }
+        
+        return Collections.unmodifiableMap(CONFIG);
     }
 
     /** Configuration for the specified category */

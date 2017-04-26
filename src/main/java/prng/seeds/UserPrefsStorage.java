@@ -17,16 +17,20 @@ public class UserPrefsStorage extends PreferenceStorage {
     @Override
     protected Preferences getPreferences() throws StorageException {
         try {
-            return AccessController.doPrivileged(new PrivilegedAction<Preferences>() {
-                @Override
-                public Preferences run() {
-                    return Preferences.userNodeForPackage(SeedStorage.class);
-                }
-            });
+            return AccessController.doPrivileged(
+                    new PrivilegedAction<Preferences>() {
+                        @Override
+                        public Preferences run() {
+                            return Preferences.userNodeForPackage(
+                                    SeedStorage.class);
+                        }
+                    });
         } catch (SecurityException e) {
-            SecureRandomProvider.LOG.warn("Lacking permission \"RuntimePermission preferences\" or access to user preferences - cannot access seed data in user preferences");
+            SecureRandomProvider.LOG.warn(
+                    "Lacking permission \"RuntimePermission preferences\" or access to user preferences - cannot access seed data in user preferences");
             throw new StorageException(
-                    "Privilege 'preferences' is required to use preferences", e);
+                    "Privilege 'preferences' is required to use preferences",
+                    e);
         }
     }
 

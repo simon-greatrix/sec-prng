@@ -29,16 +29,16 @@ public class HotBits extends NetRandom {
      * Read data from Fourmilab's Hot Bits service
      * 
      * @return the bits
-     * @throws IOException if communication with the service goes wrong
+     * @throws IOException
+     *             if communication with the service goes wrong
      */
     @Override
     byte[] fetch() throws IOException {
         HttpURLConnection conn = connect(HOT_BITS);
         try {
             byte[] data = read(conn);
-            if( data.length != 128 )
-                throw new IOException(HOT_BITS.getHost() + " returned "
-                        + data.length + " bytes, not 128");
+            if( data.length != 128 ) throw new IOException(HOT_BITS.getHost()
+                    + " returned " + data.length + " bytes, not 128");
             return data;
         } finally {
             conn.disconnect();

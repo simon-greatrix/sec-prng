@@ -45,7 +45,8 @@ public class SeedOutput implements DataOutput {
      */
     public SeedOutput(int size) {
         if( size < 0 ) {
-            throw new IllegalArgumentException("Negative initial size: " + size);
+            throw new IllegalArgumentException(
+                    "Negative initial size: " + size);
         }
         buf_ = new byte[size];
     }
@@ -319,8 +320,8 @@ public class SeedOutput implements DataOutput {
         }
 
         if( utflen > 65535 ) {
-            throw new IllegalArgumentException("Encoded string too long: "
-                    + utflen + " bytes");
+            throw new IllegalArgumentException(
+                    "Encoded string too long: " + utflen + " bytes");
         }
 
         // create output array

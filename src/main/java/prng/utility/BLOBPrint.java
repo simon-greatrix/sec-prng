@@ -1,6 +1,5 @@
 package prng.utility;
 
-
 /**
  * Utility functions for printing out binary data in a nice format.
  * 
@@ -10,8 +9,8 @@ package prng.utility;
 public class BLOBPrint {
 
     /** Hexadecimal digits */
-    private static final char[] HEX = new char[] { '0', '1', '2', '3', '4',
-            '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
+    private static final char[] HEX = new char[] { '0', '1', '2', '3', '4', '5',
+            '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
 
 
     /**

@@ -7,12 +7,12 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
+import prng.config.Config;
 import prng.internet.SimpleJSONParser.JSONArray;
 import prng.internet.SimpleJSONParser.JSONObject;
 import prng.internet.SimpleJSONParser.Primitive;
 import prng.internet.SimpleJSONParser.Type;
 import prng.utility.BLOBPrint;
-import prng.utility.Config;
 
 /**
  * Source that fetches from the Random.Org service
@@ -29,7 +29,8 @@ public class RandomDotOrg extends NetRandom {
 
     static {
         try {
-            RANDOM_DOT_ORG = new URL("https://api.random.org/json-rpc/1/invoke");
+            RANDOM_DOT_ORG = new URL(
+                    "https://api.random.org/json-rpc/1/invoke");
         } catch (MalformedURLException e) {
             throw new Error("Impossible exception", e);
         }
@@ -50,7 +51,8 @@ public class RandomDotOrg extends NetRandom {
             params.put("max", new Primitive(Type.NUMBER, Integer.valueOf(255)));
             RANDOM_REQUEST = obj.toString().getBytes(StandardCharsets.US_ASCII);
         } else {
-            NetRandom.LOG.info("random.org RNG not in use as no API key provided");
+            NetRandom.LOG.info(
+                    "random.org RNG not in use as no API key provided");
             RANDOM_REQUEST = null;
         }
     }
@@ -69,8 +71,9 @@ public class RandomDotOrg extends NetRandom {
         byte[] data = connectRPC(RANDOM_DOT_ORG, RANDOM_REQUEST);
 
         try {
-            Primitive result = SimpleJSONParser.parse(new InputStreamReader(
-                    new ByteArrayInputStream(data), StandardCharsets.ISO_8859_1));
+            Primitive result = SimpleJSONParser.parse(
+                    new InputStreamReader(new ByteArrayInputStream(data),
+                            StandardCharsets.ISO_8859_1));
             if( result.getType() != Type.OBJECT ) {
                 throw new IOException(RANDOM_DOT_ORG.getHost()
                         + " returned JSON type: " + result.getType());

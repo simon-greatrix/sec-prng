@@ -16,9 +16,9 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import prng.SecureRandomProvider;
+import prng.config.Config;
 import prng.generator.HashSpec;
 import prng.generator.IsaacRandom;
-import prng.utility.Config;
 import prng.utility.DigestDataOutput;
 
 /**
@@ -52,12 +52,14 @@ public class AWTEntropy extends EntropyCollector {
         Sampler(GraphicsDevice d) throws AWTException, SecurityException {
             device_ = d;
             try {
-                robot_ = AccessController.doPrivileged(new PrivilegedExceptionAction<Robot>() {
-                    @Override
-                    public Robot run() throws AWTException, SecurityException {
-                        return new Robot(device_);
-                    }
-                });
+                robot_ = AccessController.doPrivileged(
+                        new PrivilegedExceptionAction<Robot>() {
+                            @Override
+                            public Robot run()
+                                    throws AWTException, SecurityException {
+                                return new Robot(device_);
+                            }
+                        });
             } catch (PrivilegedActionException e) {
                 Exception cause = e.getException();
                 if( cause instanceof AWTException ) {
@@ -67,8 +69,8 @@ public class AWTEntropy extends EntropyCollector {
                 // SecurityException and RuntimeException are not checked
                 // exceptions so whilst they may happen, they should not come
                 // here.
-                EntropyCollector.LOG.error(
-                        "Undeclared throwable in AWTEntropy", e.getCause());
+                EntropyCollector.LOG.error("Undeclared throwable in AWTEntropy",
+                        e.getCause());
                 throw new UndeclaredThrowableException(e.getCause());
             }
         }
@@ -99,12 +101,13 @@ public class AWTEntropy extends EntropyCollector {
             Rectangle rect = new Rectangle(xOff, yOff, width, height);
             try {
                 // use privileges to read the screen
-                return AccessController.doPrivileged(new PrivilegedAction<BufferedImage>() {
-                    @Override
-                    public BufferedImage run() {
-                        return robot_.createScreenCapture(rect);
-                    }
-                });
+                return AccessController.doPrivileged(
+                        new PrivilegedAction<BufferedImage>() {
+                            @Override
+                            public BufferedImage run() {
+                                return robot_.createScreenCapture(rect);
+                            }
+                        });
             } catch (SecurityException e) {
                 // expected
                 return null;
@@ -169,7 +172,8 @@ public class AWTEntropy extends EntropyCollector {
                 // also expected
                 LOG.debug("Security blocked entropy collection from "
                         + screens[i].getIDstring());
-                SecureRandomProvider.LOG.warn("Lacking permission \"AWTPermission createRobot\" or \"AWTPermission readDisplayPixels\" - cannot access display entropy");                
+                SecureRandomProvider.LOG.warn(
+                        "Lacking permission \"AWTPermission createRobot\" or \"AWTPermission readDisplayPixels\" - cannot access display entropy");
             }
         }
 

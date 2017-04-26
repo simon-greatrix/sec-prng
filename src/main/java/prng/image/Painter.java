@@ -1,4 +1,5 @@
 package prng.image;
+
 import java.awt.Graphics2D;
 import java.util.Random;
 import java.util.function.DoubleConsumer;

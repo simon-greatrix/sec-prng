@@ -1,4 +1,5 @@
 package prng.image;
+
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.util.Random;
@@ -7,12 +8,16 @@ import java.util.function.DoubleConsumer;
 public class Combined implements Painter {
     static class Progress {
         final double[] progress = new double[4];
+
         double total = 0;
+
         final DoubleConsumer cons;
-        
+
+
         Progress(DoubleConsumer cons) {
             this.cons = cons;
         }
+
 
         void update(int i, double p) {
             total -= progress[i];
@@ -39,7 +44,7 @@ public class Combined implements Painter {
 
         for(int i = 0;i < 4;i++) {
             Painter p = paintings[i];
-            if( p!=null ) {
+            if( p != null ) {
                 final int j = i;
                 Thread t = new Thread() {
                     public void run() {

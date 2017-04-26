@@ -242,21 +242,20 @@ public class InstantEntropy implements Runnable {
      * All prime numbers greater than 30 take the form of 30k+c, where c is one
      * of these values. Of course, not all numbers of the form 30k+c are prime!
      */
-    private static final int[] ADD_CONST = new int[] { 1, 7, 11, 13, 17, 19,
-            23, 29 };
+    private static final int[] ADD_CONST = new int[] { 1, 7, 11, 13, 17, 19, 23,
+            29 };
 
     /** Count of ready sources */
     final static Counter COUNTER = new Counter();
 
     /** Thread pool for generating entropy */
     private static ExecutorService ENTROPY_RUNNER = new ThreadPoolExecutor(20,
-            20, 100, TimeUnit.MILLISECONDS,
-            new LinkedBlockingQueue<Runnable>(), new DaemonThreadFactory(
-                    "PRNG-EntropyFactory"));
+            20, 100, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(),
+            new DaemonThreadFactory("PRNG-EntropyFactory"));
 
     /** Bit for 256-bit FNV hash */
-    private static final BigInteger FNV_MASK = BigInteger.ZERO.setBit(256).subtract(
-            BigInteger.ONE);
+    private static final BigInteger FNV_MASK = BigInteger.ZERO.setBit(
+            256).subtract(BigInteger.ONE);
 
     /** Offset for 256-bit FNV hash */
     private static final BigInteger FNV_OFFSET = new BigInteger(
@@ -493,6 +492,7 @@ public class InstantEntropy implements Runnable {
         RAND.setSeed(seed);
     }
 
+
     /**
      * Try to find a prime number. This is simply an operation that takes a
      * hard-to-predict amount of time with a hard-to-predict output.
@@ -539,7 +539,6 @@ public class InstantEntropy implements Runnable {
 
     /** The entropy output sink */
     private final DigestDataOutput output_;
-
 
     /**
      * Time this generator started

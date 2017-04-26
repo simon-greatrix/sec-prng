@@ -1,4 +1,5 @@
 package prng.image;
+
 import java.awt.*;
 import java.awt.font.FontRenderContext;
 import java.awt.font.GlyphVector;
@@ -46,19 +47,19 @@ public class Letters extends BasePainter {
         GraphicsEnvironment e = GraphicsEnvironment.getLocalGraphicsEnvironment();
         String[] families = e.getAvailableFontFamilyNames();
         ArrayList<Font> fonts = new ArrayList<>();
-        for(String f : families) {
-            Font font = new Font(f,Font.PLAIN,12);
+        for(String f:families) {
+            Font font = new Font(f, Font.PLAIN, 12);
             if( font.canDisplayUpTo(CHARS) != -1 ) continue;
             fonts.add(font);
         }
-        
+
         ArrayList<Area> drawn = new ArrayList<>();
         BufferedImage image = new BufferedImage(512, 512,
                 BufferedImage.TYPE_INT_RGB);
         Graphics2D graphics = (Graphics2D) image.getGraphics();
         graphics.setStroke(new BasicStroke(1));
         Stroke fatStroke = new BasicStroke(3);
-        FontRenderContext frc = graphics.getFontRenderContext();        
+        FontRenderContext frc = graphics.getFontRenderContext();
         Font font = fonts.get(rand.nextInt(fonts.size()));
         double scale = 512;
         while( scale >= 16 ) {

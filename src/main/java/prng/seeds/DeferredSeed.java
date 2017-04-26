@@ -37,8 +37,8 @@ public class DeferredSeed extends Seed {
         try {
             data_ = source_.call();
         } catch (Exception e) {
-            SeedStorage.LOG.error("Failed to create seed \"{}\" from {}",
-                    name_, source_.getClass().getName(), e);
+            SeedStorage.LOG.error("Failed to create seed \"{}\" from {}", name_,
+                    source_.getClass().getName(), e);
             data_ = new byte[0];
         }
     }

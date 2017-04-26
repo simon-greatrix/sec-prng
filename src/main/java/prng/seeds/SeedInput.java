@@ -60,9 +60,8 @@ public class SeedInput implements DataInput {
     @Override
     public void readFully(byte[] b, int off, int len) throws EOFException {
         int endPos = position_ + len;
-        if( endPos > length_ )
-            throw new EOFException("Only " + (length_ - position_)
-                    + " bytes remain. Required " + len);
+        if( endPos > length_ ) throw new EOFException("Only "
+                + (length_ - position_) + " bytes remain. Required " + len);
         System.arraycopy(input_, position_, b, off, len);
         position_ = endPos;
     }
@@ -113,9 +112,8 @@ public class SeedInput implements DataInput {
     @Override
     public int readUnsignedShort() throws EOFException {
         int endPos = position_ + 2;
-        if( endPos > length_ )
-            throw new EOFException("Only " + (length_ - position_)
-                    + " bytes remain. Required 2");
+        if( endPos > length_ ) throw new EOFException(
+                "Only " + (length_ - position_) + " bytes remain. Required 2");
         int b0 = 0xff & input_[position_];
         int b1 = 0xff & input_[position_ + 1];
         position_ = endPos;
@@ -132,9 +130,8 @@ public class SeedInput implements DataInput {
     @Override
     public int readInt() throws EOFException {
         int endPos = position_ + 4;
-        if( endPos > length_ )
-            throw new EOFException("Only " + (length_ - position_)
-                    + " bytes remain. Required 4");
+        if( endPos > length_ ) throw new EOFException(
+                "Only " + (length_ - position_) + " bytes remain. Required 4");
         int b0 = 0xff & input_[position_];
         int b1 = 0xff & input_[position_ + 1];
         int b2 = 0xff & input_[position_ + 2];
@@ -147,9 +144,8 @@ public class SeedInput implements DataInput {
     @Override
     public long readLong() throws EOFException {
         int endPos = position_ + 8;
-        if( endPos > length_ )
-            throw new EOFException("Only " + (length_ - position_)
-                    + " bytes remain. Required 8");
+        if( endPos > length_ ) throw new EOFException(
+                "Only " + (length_ - position_) + " bytes remain. Required 8");
 
         long v = 0;
         for(int p = position_;p < endPos;p++) {
@@ -195,9 +191,8 @@ public class SeedInput implements DataInput {
         char[] chars = new char[utflen];
 
         int endPos = position_ + utflen;
-        if( endPos > length_ )
-            throw new EOFException("Only " + (length_ - position_)
-                    + " bytes remain. Required " + utflen);
+        if( endPos > length_ ) throw new EOFException("Only "
+                + (length_ - position_) + " bytes remain. Required " + utflen);
 
         int p = position_;
         int c = 0;
@@ -222,11 +217,10 @@ public class SeedInput implements DataInput {
             } else if( x < 0b1110_0000 ) {
                 // two byte character, check 2nd byte
                 p++;
-                if( p == endPos )
-                    throw new UTFDataFormatException(
-                            "Missing byte at end of input. Last byte was 0x"
-                                    + Integer.toHexString(x) + " at position "
-                                    + (p - 1));
+                if( p == endPos ) throw new UTFDataFormatException(
+                        "Missing byte at end of input. Last byte was 0x"
+                                + Integer.toHexString(x) + " at position "
+                                + (p - 1));
                 int y = input_[p] & 0xff;
                 if( y < 0b1000_0000 || 0b1100_000 <= y )
                     throw new UTFDataFormatException(
@@ -239,11 +233,10 @@ public class SeedInput implements DataInput {
             } else if( x < 0b1111_0000 ) {
                 // three byte character, check 2nd byte
                 p++;
-                if( p == endPos )
-                    throw new UTFDataFormatException(
-                            "Missing bytes at end of input. Last byte was 0x"
-                                    + Integer.toHexString(x) + " at position "
-                                    + (p - 1));
+                if( p == endPos ) throw new UTFDataFormatException(
+                        "Missing bytes at end of input. Last byte was 0x"
+                                + Integer.toHexString(x) + " at position "
+                                + (p - 1));
                 int y = input_[p] & 0xff;
                 if( y < 0b1000_0000 || 0b1100_000 <= y )
                     throw new UTFDataFormatException(
@@ -253,19 +246,20 @@ public class SeedInput implements DataInput {
 
                 // check 3rd byte
                 p++;
-                if( p == endPos )
-                    throw new UTFDataFormatException(
-                            "Missing byte at end of input. Last bytes were 0x"
-                                    + Integer.toHexString((x << 8) | y)
-                                    + " at position " + (p - 1));
+                if( p == endPos ) throw new UTFDataFormatException(
+                        "Missing byte at end of input. Last bytes were 0x"
+                                + Integer.toHexString((x << 8) | y)
+                                + " at position " + (p - 1));
                 int z = input_[p] & 0xff;
                 if( z < 0b1000_0000 || 0b1100_000 <= z )
                     throw new UTFDataFormatException(
                             "Malformed input. Saw bytes was 0x"
-                                    + Integer.toHexString((x << 16) | (y << 8)
-                                            | z) + " at position " + (p - 2));
+                                    + Integer.toHexString(
+                                            (x << 16) | (y << 8) | z)
+                                    + " at position " + (p - 2));
 
-                chars[c] = (char) (((x & 0xf) << 12) | ((y & 0x3f) << 6) | (z & 0x3f));
+                chars[c] = (char) (((x & 0xf) << 12) | ((y & 0x3f) << 6)
+                        | (z & 0x3f));
                 c++;
                 p++;
             } else {

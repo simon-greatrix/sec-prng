@@ -34,6 +34,12 @@ abstract public class BaseRandom extends SecureRandomSpi {
     /** Source of entropy */
     private final SeedSource source_;
 
+    /** Number of spare bytes currently available */
+    private int spareBytes_ = 0;
+
+    /** Storage for spare bytes */
+    private final byte[] spares_;
+
 
     /**
      * New instance.
@@ -44,11 +50,15 @@ abstract public class BaseRandom extends SecureRandomSpi {
      *            number of operations between re-seeds
      * @param seedSize
      *            the number of bytes in a re-seed.
+     * @param spareSize
+     *            the maximum space required for spare bytes
      */
-    protected BaseRandom(SeedSource source, int resistance, int seedSize) {
+    protected BaseRandom(SeedSource source, int resistance, int seedSize,
+            int spareSize) {
         source_ = (source == null) ? Fortuna.SOURCE : source;
         resistance_ = resistance;
         seedSize_ = seedSize;
+        spares_ = new byte[spareSize];
     }
 
 
@@ -84,8 +94,8 @@ abstract public class BaseRandom extends SecureRandomSpi {
         byte[] seedMaterial = new byte[inputLength];
         System.arraycopy(entropy, 0, seedMaterial, 0, entropy.length);
         System.arraycopy(nonce, 0, seedMaterial, entropy.length, nonce.length);
-        System.arraycopy(personalization, 0, seedMaterial, entropy.length
-                + nonce.length, personalization.length);
+        System.arraycopy(personalization, 0, seedMaterial,
+                entropy.length + nonce.length, personalization.length);
         return seedMaterial;
     }
 
@@ -98,12 +108,22 @@ abstract public class BaseRandom extends SecureRandomSpi {
 
     @Override
     protected final synchronized void engineNextBytes(byte[] bytes) {
+        int offset = 0;
+        if( spareBytes_ > 0 ) {
+            int toUse = Math.min(spareBytes_, bytes.length);
+            System.arraycopy(spares_, 0, bytes, 0, toUse);
+            spareBytes_ -= toUse;
+            offset += toUse;
+            if( offset == bytes.length ) {
+                return;
+            }
+        }
         if( resistance_ < counter_ ) {
             engineSetSeed(engineGenerateSeed(seedSize_));
         } else {
             counter_++;
         }
-        implNextBytes(bytes);
+        implNextBytes(offset, bytes);
     }
 
 
@@ -119,10 +139,12 @@ abstract public class BaseRandom extends SecureRandomSpi {
     /**
      * The implementation for generating the next bytes, ignoring reseeds
      * 
+     * @param offset
+     *            first byte to start
      * @param bytes
      *            the bytes to generate
      */
-    abstract protected void implNextBytes(byte[] bytes);
+    abstract protected void implNextBytes(int offset, byte[] bytes);
 
 
     /**
@@ -144,5 +166,21 @@ abstract public class BaseRandom extends SecureRandomSpi {
         byte[] seed = new byte[seedSize_];
         engineNextBytes(seed);
         return seed;
+    }
+
+
+    /**
+     * Set the spare bytes available for the next round
+     * 
+     * @param data
+     *            the spares
+     * @param offset
+     *            the offset into the input
+     * @param length
+     *            the number of bytes
+     */
+    protected void setSpares(byte[] data, int offset, int length) {
+        spareBytes_ = length;
+        System.arraycopy(data, offset, spares_, 0, length);
     }
 }
