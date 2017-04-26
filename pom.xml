@@ -30,4 +30,10 @@
   		<scope>runtime</scope>
   	</dependency>
   </dependencies>
+  <packaging>pom</packaging>
+  <modules>
+  	<module>core</module>
+  	<module>image</module>
+  	<module>configurator</module>
+  </modules>
 </project>
