@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project default="javadoc">
+    <target name="javadoc">
+        <javadoc access="package" author="true" classpath="C:\Users\Simon\.m2\repository\org\slf4j\slf4j-api\1.7.10\slf4j-api-1.7.10.jar;C:\Users\Simon\.m2\repository\org\slf4j\slf4j-jdk14\1.7.10\slf4j-jdk14-1.7.10.jar" destdir="doc" doctitle="Secure Random Number Generation" nodeprecated="false" nodeprecatedlist="false" noindex="false" nonavbar="false" notree="false" packagenames="prng.internet,prng.seeds,prng.utility,prng.generator,prng.collector,test,prng" source="1.8" sourcepath="src/main/java" splitindex="true" use="true" version="true">
+            <link href="http://docs.oracle.com/javase/8/docs/api/"/>
+        </javadoc>
+    </target>
+</project>
