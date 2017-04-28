@@ -1,9 +1,16 @@
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Random;
 
-import javax.sound.sampled.*;
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.CompoundControl;
+import javax.sound.sampled.Control;
+import javax.sound.sampled.DataLine;
+import javax.sound.sampled.FloatControl;
+import javax.sound.sampled.Line;
+import javax.sound.sampled.Mixer;
+import javax.sound.sampled.Port;
+import javax.sound.sampled.TargetDataLine;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -149,8 +156,8 @@ public class AudioTest {
                             target.open(test, buffSize);
                             target.start();
                             int frameSize = test.getFrameSize();
-                            int frames = 1280 / frameSize;
-                            if( frames * frameSize < 1280 ) frames++;
+                            int frames = 1024 / frameSize;
+                            if( frames * frameSize < 1024 ) frames++;
                             byte[] seedData = new byte[frames * frameSize];
                             int off = 0;
                             while( off < seedData.length ) {
@@ -159,14 +166,12 @@ public class AudioTest {
                             }
                             target.stop();
                             target.close();
+                            
+                    //        System.out.println(BLOBPrint.toString(seedData));
 
                             float entropy = 0;
                             int count[] = new int[256];
                             for(byte b:seedData) {
-                                int x = (b + 128) / 4;
-                                // for(int y=0;y<x;y++) { System.out.print(" ");
-                                // }
-                                // System.out.println("X");
                                 count[0xff & b]++;
                             }
                             int cn = 0;
@@ -174,7 +179,8 @@ public class AudioTest {
                                 if( c == 0 ) continue;
                                 cn++;
                                 float f = (float) c / seedData.length;
-                                entropy -= f * Math.log(f);
+                                System.out.println(c+" -> "+(100*f)+" \t "+(Math.log(f)/Math.log(2)));
+                                entropy -= c * Math.log(f);
                             }
                             entropy /= Math.log(2);
                             System.out.println(entropy + " , " + cn);
