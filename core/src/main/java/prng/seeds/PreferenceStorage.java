@@ -11,6 +11,11 @@ import java.util.prefs.Preferences;
  *
  */
 public abstract class PreferenceStorage extends SeedStorage {
+    
+    protected PreferenceStorage() throws StorageException {
+        // test we have access privilege to preferences.
+        getPreferences();
+    }
 
     /**
      * Get the appropriate preferences

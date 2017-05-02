@@ -1,16 +1,6 @@
-import java.util.Arrays;
 import java.util.Random;
 
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.CompoundControl;
-import javax.sound.sampled.Control;
-import javax.sound.sampled.DataLine;
-import javax.sound.sampled.FloatControl;
-import javax.sound.sampled.Line;
-import javax.sound.sampled.Mixer;
-import javax.sound.sampled.Port;
-import javax.sound.sampled.TargetDataLine;
+import javax.sound.sampled.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +10,16 @@ import prng.generator.IsaacRandom;
 import prng.utility.BLOBPrint;
 
 public class AudioTest {
+
+    static class AudioSource {
+        Mixer mixer;
+
+
+        AudioSource(Mixer mixer) {
+            this.mixer = mixer;
+
+        }
+    }
 
     protected static final Logger LOG = LoggerFactory.getLogger(
             EntropyCollector.class);
@@ -32,60 +32,34 @@ public class AudioTest {
             22050, 11025, 8000 };
 
 
-    private static void listControls() throws Exception {
-        Mixer.Info[] mixerInfos = AudioSystem.getMixerInfo();
-        Line.Info isPort = new Line.Info(Port.class);
-        for(Mixer.Info mi:mixerInfos) {
-            System.out.println(mi);
-
-            Mixer mixer = AudioSystem.getMixer(mi);
-            mixer.open();
-            if( mixer.isLineSupported(isPort) ) {
-                Line line = mixer.getLine(isPort);
-                line.open();
-                if( line != null ) {
-                    System.out.println(line.getControls().length);
-                    for(Control c:line.getControls()) {
-                        System.out.println("control = " + c);
-                        if( c instanceof CompoundControl ) {
-                            CompoundControl cc = (CompoundControl) c;
-                            for(Control d:cc.getMemberControls()) {
-                                System.out.println("\t\t = " + d);
-                            }
-                        }
-                    }
-                }
-                line.close();
-            }
-        }
-    }
-
-
     public static void main(String[] args) throws Exception {
-        Mixer.Info[] mixerInfos = AudioSystem.getMixerInfo();
+        // A recordable line is a target data line
         Line.Info targetDataType = new Line.Info(TargetDataLine.class);
-        for(Mixer.Info mi:mixerInfos) {
-            Mixer mixer = AudioSystem.getMixer(mi);
-            if( !mixer.isLineSupported(targetDataType) ) continue;
-            Control[] cntrls = mixer.getControls();
-            System.out.println(Arrays.toString(cntrls));
 
+        // Get available mixers
+        Mixer.Info[] mixerInfos = AudioSystem.getMixerInfo();
+        for(Mixer.Info mi:mixerInfos) {
+            // May throw SecurityException
+            Mixer mixer = AudioSystem.getMixer(mi);
+
+            // No use if cannot record from it
+            if( !mixer.isLineSupported(targetDataType) ) continue;
+
+            // Get the recordable lines
             Line.Info[] source = mixer.getTargetLineInfo();
             if( source == null || source.length == 0 ) continue;
 
-            System.out.println("\nMixer: " + mi);
-            System.out.println("Target lines: " + (source.length));
-
+            // For each recordable line
             for(Line.Info info:source) {
+                // If not a data line, ignore it
                 if( !(info instanceof DataLine.Info) ) continue;
-                System.out.println(info);
-                DataLine.Info di = (DataLine.Info) info;
-                System.out.println("\t" + Arrays.toString(di.getFormats()));
-                System.out.println(
-                        di.getMinBufferSize() + " -> " + di.getMaxBufferSize());
 
-                // try to get 1024 bits
-                int buffSize = 128;
+                DataLine.Info di = (DataLine.Info) info;
+
+                // Try to get 1024 bytes in the buffer. We are going to assume
+                // just 1 bit of entropy per frame and the smallest frame is 1
+                // byte,
+                int buffSize = 1024;
                 if( buffSize < di.getMinBufferSize()
                         && di.getMinBufferSize() != AudioSystem.NOT_SPECIFIED ) {
                     buffSize = di.getMinBufferSize();
@@ -97,6 +71,7 @@ public class AudioTest {
 
                 // Try to create a valid format
                 for(AudioFormat supported:di.getFormats()) {
+                    // If its not PCM, we don't know how to use it
                     AudioFormat.Encoding encoding = supported.getEncoding();
                     if( !(AudioFormat.Encoding.PCM_SIGNED.equals(encoding)
                             || AudioFormat.Encoding.PCM_UNSIGNED.equals(
@@ -105,6 +80,7 @@ public class AudioTest {
                     boolean isPCMSigned = AudioFormat.Encoding.PCM_SIGNED.equals(
                             encoding);
 
+                    // Recording quality is based on sample rate and size
                     float sampleRate[] = new float[] {
                             supported.getSampleRate() };
                     if( sampleRate[0] == AudioSystem.NOT_SPECIFIED ) {
@@ -115,6 +91,8 @@ public class AudioTest {
                     if( sampleSize[0] == AudioSystem.NOT_SPECIFIED ) {
                         sampleSize = new int[] { 8, 16 };
                     }
+
+                    // Mono, stereo or something else?
                     int channels[] = new int[] { supported.getChannels() };
                     if( channels[0] == AudioSystem.NOT_SPECIFIED ) {
                         channels = new int[] { 1, 2 };
@@ -122,6 +100,7 @@ public class AudioTest {
 
                     boolean isBig = supported.isBigEndian();
 
+                    // Create an array of all possible formats
                     AudioFormat tests[] = new AudioFormat[sampleRate.length
                             * sampleSize.length * channels.length];
                     int index = 0;
@@ -148,7 +127,6 @@ public class AudioTest {
                         DataLine.Info targetInfo = new DataLine.Info(
                                 TargetDataLine.class, test, buffSize);
                         if( mixer.isLineSupported(targetInfo) ) {
-                            if( test.getFrameSize() != 1 ) continue;
                             System.out.println(mi.getName() + "  "
                                     + mi.getDescription() + "  " + test);
                             TargetDataLine target = (TargetDataLine) mixer.getLine(
@@ -156,8 +134,7 @@ public class AudioTest {
                             target.open(test, buffSize);
                             target.start();
                             int frameSize = test.getFrameSize();
-                            int frames = 1024 / frameSize;
-                            if( frames * frameSize < 1024 ) frames++;
+                            int frames = 128;
                             byte[] seedData = new byte[frames * frameSize];
                             int off = 0;
                             while( off < seedData.length ) {
@@ -166,8 +143,8 @@ public class AudioTest {
                             }
                             target.stop();
                             target.close();
-                            
-                    //        System.out.println(BLOBPrint.toString(seedData));
+
+                            System.out.println(BLOBPrint.toString(seedData));
 
                             float entropy = 0;
                             int count[] = new int[256];
@@ -179,7 +156,8 @@ public class AudioTest {
                                 if( c == 0 ) continue;
                                 cn++;
                                 float f = (float) c / seedData.length;
-                                System.out.println(c+" -> "+(100*f)+" \t "+(Math.log(f)/Math.log(2)));
+                                System.out.println(c + " -> " + (100 * f)
+                                        + " \t " + (Math.log(f) / Math.log(2)));
                                 entropy -= c * Math.log(f);
                             }
                             entropy /= Math.log(2);

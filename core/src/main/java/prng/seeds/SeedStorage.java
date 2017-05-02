@@ -16,7 +16,7 @@ import prng.utility.BLOBPrint;
 
 /**
  * Storage for PRNG seed information.
- * 
+ *
  * @author Simon Greatrix
  *
  */
@@ -42,13 +42,27 @@ public abstract class SeedStorage implements AutoCloseable {
     private static Random RAND = IsaacRandom.getSharedInstance();
 
     /**
-     * Number of milliseconds between storage saves. Takes the value of
-     * "savePeriod" from the "config" section and defaults to 5000 milliseconds.
+     * Additive increase in the milliseconds between successive saves. For
+     * example, if this was set to 5000 the the time between saves in seconds
+     * would be 5, 10, 15, 20, 25, 30 and so on. Takes the value of
+     * "savePeriodAdd" from the "config" section and defaults to 0.
      */
-    private static final int SAVE_PERIOD = Math.max(
-            Config.getConfig("config", SeedStorage.class).getInt("savePeriod",
-                    5000),
-            100);
+    private static final int SAVE_ADD = Math.max(
+            Config.getConfig("config", SeedStorage.class).getInt(
+                    "savePeriodAdd", 0),
+            0);
+
+    /** Last time entropy was saved */
+    private static long SAVE_DUE = 0;
+
+    /**
+     * The maximum amount of time between saves. Takes the value of
+     * "savePeriodMax" from the "config" section and defaults to 24 hours.
+     */
+    private static final int SAVE_MAX = Math.max(
+            Config.getConfig("config", SeedStorage.class).getInt(
+                    "savePeriodMax", 1000 * 60 * 60 * 24),
+            1000);
 
     /**
      * Multiplicative increase in the time between successive saves. For
@@ -62,27 +76,13 @@ public abstract class SeedStorage implements AutoCloseable {
             1);
 
     /**
-     * Additive increase in the milliseconds between successive saves. For
-     * example, if this was set to 5000 the the time between saves in seconds
-     * would be 5, 10, 15, 20, 25, 30 and so on. Takes the value of
-     * "savePeriodAdd" from the "config" section and defaults to 0.
+     * Number of milliseconds between storage saves. Takes the value of
+     * "savePeriod" from the "config" section and defaults to 5000 milliseconds.
      */
-    private static final int SAVE_ADD = Math.max(
-            Config.getConfig("config", SeedStorage.class).getInt(
-                    "savePeriodAdd", 0),
-            0);
-
-    /**
-     * The maximum amount of time between saves. Takes the value of
-     * "savePeriodMax" from the "config" section and defaults to 24 hours.
-     */
-    private static final int SAVE_MAX = Math.max(
-            Config.getConfig("config", SeedStorage.class).getInt(
-                    "savePeriodMax", 1000 * 60 * 60 * 24),
-            1000);
-
-    /** Last time entropy was saved */
-    private static long SAVE_DUE = 0;
+    private static final int SAVE_PERIOD = Math.max(
+            Config.getConfig("config", SeedStorage.class).getInt("savePeriod",
+                    5000),
+            100);
 
     /** Last time entropy was saved */
     private static long SAVE_WAIT = 5000;
@@ -93,14 +93,18 @@ public abstract class SeedStorage implements AutoCloseable {
             @Override
             public void run() {
                 synchronized (QUEUE) {
-                    if( QUEUE.isEmpty() ) return;
+                    if( QUEUE.isEmpty() ) {
+                        return;
+                    }
 
                     // save the enqueued seeds
                     SeedStorage storage = null;
                     try {
                         storage = getInstance();
                     } finally {
-                        if( storage != null ) storage.close();
+                        if( storage != null ) {
+                            storage.close();
+                        }
                     }
                 }
             }
@@ -113,7 +117,7 @@ public abstract class SeedStorage implements AutoCloseable {
     /**
      * Enqueue a seed update to be written with the next regular update of the
      * seed file
-     * 
+     *
      * @param seed
      *            the updated seed
      */
@@ -122,13 +126,17 @@ public abstract class SeedStorage implements AutoCloseable {
         synchronized (QUEUE) {
             QUEUE.add(seed);
             long now = System.currentTimeMillis();
-            if( now < SAVE_DUE ) return;
+            if( now < SAVE_DUE ) {
+                return;
+            }
 
             SeedStorage storage = null;
             try {
                 storage = getInstance();
             } finally {
-                if( storage != null ) storage.close();
+                if( storage != null ) {
+                    storage.close();
+                }
             }
         }
     }
@@ -137,7 +145,7 @@ public abstract class SeedStorage implements AutoCloseable {
     /**
      * Get the seed file where seed information can be stored. Only one thread
      * can work with the storage at a time.
-     * 
+     *
      * @return the seed file instance
      */
     public static SeedStorage getInstance() {
@@ -160,13 +168,30 @@ public abstract class SeedStorage implements AutoCloseable {
             LOG.error("Specified class of " + className + " was not found");
         } catch (InstantiationException e) {
             // something went wrong
+            if( e.getCause() instanceof StorageException ) {
+                LOG.error(e.getCause().getMessage(), e.getCause());
+            }
             LOG.error("Specified class of " + className + " failed to load", e);
         } catch (IllegalAccessException e) {
             // unexpected
             LOG.error("Specified class of " + className + " was not accessible",
                     e);
         }
-        if( store == null ) store = new UserPrefsStorage();
+        if( store == null ) {
+            try {
+                store = new UserPrefsStorage();
+            } catch (StorageException se) {
+                LOG.error("Failed to use user preferences for seed storage.",
+                        se);
+                try {
+                    store = new FileStorage();
+                } catch (StorageException se2) {
+                    LOG.error("Failed to use file system for seed storage.",
+                            se2);
+                    store = new FakedStorage();
+                }
+            }
+        }
 
         synchronized (QUEUE) {
             for(Seed s:QUEUE) {
@@ -183,7 +208,7 @@ public abstract class SeedStorage implements AutoCloseable {
      * the bit representation of that entropy. By scrambling on every read and
      * write, knowledge of the seed file contents does not reveal the bits
      * actually used in the algorithms.
-     * 
+     *
      * @param data
      *            Data to scramble
      * @return scrambled data
@@ -255,7 +280,7 @@ public abstract class SeedStorage implements AutoCloseable {
 
     /**
      * Close the actual storage
-     * 
+     *
      * @throws StorageException
      *             if the storage cannot be flushed and closed
      */
@@ -266,7 +291,7 @@ public abstract class SeedStorage implements AutoCloseable {
 
     /**
      * Get a seed of a specific type from persistent storage
-     * 
+     *
      * @param type
      *            the seed's type
      * @param name
@@ -310,7 +335,7 @@ public abstract class SeedStorage implements AutoCloseable {
 
     /**
      * Get a seed from persistent storage
-     * 
+     *
      * @param name
      *            the seed's name
      * @return the seed, or null
@@ -345,7 +370,7 @@ public abstract class SeedStorage implements AutoCloseable {
 
     /**
      * Get raw seed data from persistent storage
-     * 
+     *
      * @param name
      *            the seed's name
      * @return the raw data
@@ -357,7 +382,7 @@ public abstract class SeedStorage implements AutoCloseable {
 
     /**
      * Save a seed to persistent storage
-     * 
+     *
      * @param seed
      *            the seed to save
      */
@@ -376,7 +401,7 @@ public abstract class SeedStorage implements AutoCloseable {
 
     /**
      * Store the raw form of a seed
-     * 
+     *
      * @param name
      *            the seed's name
      * @param data
@@ -390,7 +415,7 @@ public abstract class SeedStorage implements AutoCloseable {
 
     /**
      * Remove a seed from storage. This is used only when a seed is bad.
-     * 
+     *
      * @param name
      *            the seed's name
      */

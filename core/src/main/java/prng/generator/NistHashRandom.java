@@ -123,7 +123,7 @@ public class NistHashRandom extends BaseRandom {
         if( overflow != 0 ) {
             max += spec.outputLength_ - overflow;
         }
-        maxLength_ = overflow;
+        maxLength_ = max;
     }
 
 

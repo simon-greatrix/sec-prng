@@ -36,7 +36,6 @@ public class FinalizerEntropy extends EntropyCollector {
             // its ID.
             long info = Long.rotateRight(System.nanoTime() - createTime, 32)
                     ^ hashCode();
-            System.out.println(Long.toHexString(info));
             setEvent(info);
         }
     }

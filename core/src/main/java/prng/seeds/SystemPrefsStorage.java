@@ -14,6 +14,10 @@ import prng.SecureRandomProvider;
  */
 public class SystemPrefsStorage extends PreferenceStorage {
 
+    public SystemPrefsStorage() throws StorageException {
+        // no-op
+    }
+
     @Override
     protected Preferences getPreferences() throws StorageException {
         try {

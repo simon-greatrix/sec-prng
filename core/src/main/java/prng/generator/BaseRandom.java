@@ -111,7 +111,7 @@ abstract public class BaseRandom extends SecureRandomSpi {
         int offset = 0;
         if( spareBytes_ > 0 ) {
             int toUse = Math.min(spareBytes_, bytes.length);
-            System.arraycopy(spares_, 0, bytes, 0, toUse);
+            System.arraycopy(spares_, spareBytes_ - toUse, bytes, 0, toUse);
             spareBytes_ -= toUse;
             offset += toUse;
             if( offset == bytes.length ) {

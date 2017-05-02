@@ -1,37 +1,22 @@
 package prng.config;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.net.URLEncoder;
+import java.security.AccessControlException;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.function.Supplier;
-import java.util.prefs.BackingStoreException;
-import java.util.prefs.Preferences;
+import java.util.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import prng.SecureRandomProvider;
 
 /**
  * Configuration data. The configuration is stored in a properties file.
  * Different sections of the configuration file are distinguished by different
  * prefixes on the property names.
- * 
+ *
  * @author Simon Greatrix
  *
  */
@@ -50,7 +35,10 @@ public class Config implements Iterable<String> {
 
     static {
         URI_PREFERENCE_SYSTEM = URI.create("prefs:system");
-        String userId = System.getProperty("user.name", "");
+        String userId = getProperty("user.name");
+        if( userId == null ) {
+            userId = "*";
+        }
         try {
             userId = URLEncoder.encode(userId, "UTF-8");
         } catch (UnsupportedEncodingException e) {
@@ -58,7 +46,7 @@ public class Config implements Iterable<String> {
         }
         URI_PREFERENCE_USER = URI.create("prefs:user/" + userId);
 
-        init(null);
+        init();
     }
 
 
@@ -66,18 +54,22 @@ public class Config implements Iterable<String> {
      * Expand any system properties or environment variables in the input. A
      * system property or environment variable is enclosed in braces (i.e.
      * {variable}).
-     * 
+     *
      * @param value
      *            the input
      * @return the input with values replaced.
      */
     public static String expand(String value) {
         // if null, do not process
-        if( value == null ) return null;
+        if( value == null ) {
+            return null;
+        }
 
         // are any replacements indicated?
         int s = value.indexOf('{');
-        if( s == -1 ) return value;
+        if( s == -1 ) {
+            return value;
+        }
 
         // build new string
         StringBuilder buf = new StringBuilder();
@@ -96,18 +88,10 @@ public class Config implements Iterable<String> {
             // get key and advance
             final String key = value.substring(0, e);
             value = value.substring(e + 1);
-            String env = AccessController.doPrivileged(
-                    new PrivilegedAction<String>() {
-
-                        @Override
-                        public String run() {
-                            String env0 = System.getProperty(key);
-                            if( env0 == null ) {
-                                env0 = System.getenv(key);
-                            }
-                            return env0;
-                        }
-                    });
+            String env = getProperty(key);
+            if( env == null ) {
+                env = getEnv(key);
+            }
 
             // did we get a replacement?
             if( env == null ) {
@@ -129,13 +113,13 @@ public class Config implements Iterable<String> {
 
     /**
      * Get the configuration for a specified prefix.
-     * 
+     *
      * @param prefix
      *            the prefix
      * @return the configuration associated with that prefix
      */
     public static Config getConfig(String prefix) {
-        if( prefix.length() > 0 && !prefix.endsWith(".") ) {
+        if( (prefix.length() > 0) && !prefix.endsWith(".") ) {
             prefix = prefix + ".";
         }
         return new Config(prefix);
@@ -145,7 +129,7 @@ public class Config implements Iterable<String> {
     /**
      * Get the configuration for a specified prefix in the context of a given
      * class
-     * 
+     *
      * @param prefix
      *            the prefix
      * @param context
@@ -153,7 +137,7 @@ public class Config implements Iterable<String> {
      * @return the configuration
      */
     public static Config getConfig(String prefix, Class<?> context) {
-        if( prefix.length() > 0 && !prefix.endsWith(".") ) {
+        if( (prefix.length() > 0) && !prefix.endsWith(".") ) {
             prefix = prefix + ".";
         }
         prefix += context.getName() + ".";
@@ -162,131 +146,74 @@ public class Config implements Iterable<String> {
 
 
     /**
-     * Merge a set of properties into the current configuration. If the
-     * configuration already contains a value for a given key, the property is
-     * skipped.
-     * 
-     * @param props
-     *            the properties to load
-     * @param sources
-     *            the known sources
-     * @param source
-     *            the current source
+     * Get an environment variable with privilege.
+     *
+     * @param key
+     *            the variable name to retrieve
+     * @return the value, or null if the variable does not exist or we lack the
+     *         privilege to get it.
      */
-    private static void initMerge(Properties props, Map<String, URI> sources,
-            URI source) {
-        for(Map.Entry<Object, Object> e:props.entrySet()) {
-            String k = String.valueOf(e.getKey());
-            String v = String.valueOf(e.getValue());
-            if( !CONFIG.containsKey(k) ) {
-                CONFIG.put(k, v);
-                // store the source
-                if( sources != null ) {
-                    sources.put(k, source);
-                }
-            }
+    public static String getEnv(String key) {
+        try {
+            return AccessController.doPrivileged(
+                    new PrivilegedAction<String>() {
+
+                        @Override
+                        public String run() {
+                            RuntimePermission p = new RuntimePermission(
+                                    "getenv." + key);
+                            AccessController.checkPermission(p);
+
+                            return System.getProperty(key);
+                        }
+                    });
+        } catch (AccessControlException ace) {
+            LOG.warn("Unable to read environment variable \"" + key
+                    + "\". Missing permission " + ace.getPermission());
+            return null;
         }
     }
 
 
     /**
-     * Fetch configuration from the preferences API
-     * @param prefSupplier the source of the preferences
-     * @param desc the description of the preferences for logging
-     * @return the loaded properties
+     * Get a system property with privilege.
+     *
+     * @param key
+     *            the system property to retrieve
+     * @return the property, or null if the property does not exist or we lack
+     *         the privilege to get it.
      */
-    private static Properties fetchPreferences(
-            Supplier<Preferences> prefSupplier, String desc) {
-        Preferences prefs = null;
-        // Get the preferences using a privileged action.
+    public static String getProperty(String key) {
         try {
-            prefs = AccessController.doPrivileged(
-                    new PrivilegedAction<Preferences>() {
+            return AccessController.doPrivileged(
+                    new PrivilegedAction<String>() {
+
                         @Override
-                        public Preferences run() {
-                            return prefSupplier.get();
+                        public String run() {
+                            PropertyPermission p = new PropertyPermission(key,
+                                    "read");
+                            AccessController.checkPermission(p);
+
+                            return System.getProperty(key);
                         }
                     });
-        } catch (SecurityException se) {
-            LOG.info("Unable to access preferences for \"" + desc + "\"", se);
+        } catch (AccessControlException ace) {
+            LOG.warn("Unable to read system property \"" + key
+                    + "\". Missing permission " + ace.getPermission());
+            return null;
         }
-
-        // Start loading the properties
-        Properties props = new Properties();
-        if( prefs == null ) {
-            return props;
-        }
-
-        try {
-            // copy each preference into the properties
-            for(String k:prefs.keys()) {
-                String v = prefs.get(k, null);
-                if( v != null ) {
-                    props.setProperty(k, v);
-                }
-            }
-        } catch (BackingStoreException bse) {
-            LOG.error("Failed to access prefernce storage.", bse);
-        }
-        return props;
     }
 
 
     /**
      * Load configuration data from the
      * <code>/prng/secure-prng.properties</code> files.
-     * @param sources where each configuration item comes from
-     * @return the loaded configuration
      */
-    static Map<String,String> init(Map<String, URI> sources) {
-        // find all the files
-        Enumeration<URL> resources;
-        try {
-            resources = Config.class.getClassLoader().getResources(
-                    "prng/secure-prng.properties");
-        } catch (IOException e) {
-            LOG.error("Failed to locate configuration files", e);
-            return Collections.emptyMap();
-        }
-
+    static void init() {
+        PropsList props = new PropsList();
+        props.load();
         CONFIG.clear();
-
-        // Load user preferences
-        Properties props = fetchPreferences(
-                () -> Preferences.userNodeForPackage(
-                        SecureRandomProvider.class),
-                "user");
-        initMerge(props, sources, URI_PREFERENCE_USER);
-
-        // Load system preferences
-        props = fetchPreferences(() -> Preferences.systemNodeForPackage(
-                SecureRandomProvider.class), "system");
-        initMerge(props, sources, URI_PREFERENCE_SYSTEM);
-
-        // load the properties files
-        while( resources.hasMoreElements() ) {
-            URL url = resources.nextElement();
-            LOG.info("Loading configuration from {}", url.toExternalForm());
-            props = new Properties();
-            try (InputStream in = url.openStream()) {
-                props.load(in);
-            } catch (IOException ioe) {
-                // it went wrong :-(
-                LOG.error("Failed to read configuration file " + url.toString(),
-                        ioe);
-                continue;
-            }
-
-            // load configuration so that first loaded wins
-            URI uri = null;
-            try {
-                uri = url.toURI();
-            } catch (URISyntaxException e) {
-                LOG.warn("Unable to convert source URL \""
-                        + url.toExternalForm() + "\" to URI");
-            }
-            initMerge(props, sources, uri);
-        }
+        CONFIG.putAll(props.get());
 
         // log what was loaded
         if( LOG.isInfoEnabled() ) {
@@ -300,8 +227,6 @@ public class Config implements Iterable<String> {
                 LOG.error("Failed to write out configuration", ioe);
             }
         }
-        
-        return Collections.unmodifiableMap(CONFIG);
     }
 
     /** Configuration for the specified category */
@@ -310,7 +235,7 @@ public class Config implements Iterable<String> {
 
     /**
      * Create new configuration
-     * 
+     *
      * @param prefix
      *            the prefix
      */
@@ -318,7 +243,9 @@ public class Config implements Iterable<String> {
         int len = prefix.length();
         for(Map.Entry<String, String> e:CONFIG.entrySet()) {
             String k = e.getKey();
-            if( !k.startsWith(prefix) ) continue;
+            if( !k.startsWith(prefix) ) {
+                continue;
+            }
             config_.put(k.substring(len), e.getValue());
         }
     }
@@ -326,7 +253,7 @@ public class Config implements Iterable<String> {
 
     /**
      * Get a textual property.
-     * 
+     *
      * @param key
      *            the lookup key
      * @return the value or null if missing
@@ -338,7 +265,7 @@ public class Config implements Iterable<String> {
 
     /**
      * Get a textual property
-     * 
+     *
      * @param key
      *            the lookup key
      * @param dflt
@@ -353,7 +280,7 @@ public class Config implements Iterable<String> {
 
     /**
      * Get a boolean property.
-     * 
+     *
      * @param key
      *            the lookup key
      * @return the value or null if missing
@@ -365,7 +292,7 @@ public class Config implements Iterable<String> {
 
     /**
      * Get a boolean property
-     * 
+     *
      * @param key
      *            the lookup key
      * @param dflt
@@ -380,14 +307,16 @@ public class Config implements Iterable<String> {
 
     /**
      * Get a double property.
-     * 
+     *
      * @param key
      *            the lookup key
      * @return the value or null if missing
      */
     public Double getDouble(String key) {
         String txt = config_.get(key);
-        if( txt == null ) return null;
+        if( txt == null ) {
+            return null;
+        }
         try {
             return Double.valueOf(txt);
         } catch (NumberFormatException e) {
@@ -399,7 +328,7 @@ public class Config implements Iterable<String> {
 
     /**
      * Get a double property.
-     * 
+     *
      * @param key
      *            the lookup key
      * @param dflt
@@ -414,14 +343,16 @@ public class Config implements Iterable<String> {
 
     /**
      * Get a float property.
-     * 
+     *
      * @param key
      *            the lookup key
      * @return the value or null if missing
      */
     public Float getFloat(String key) {
         String txt = config_.get(key);
-        if( txt == null ) return null;
+        if( txt == null ) {
+            return null;
+        }
         try {
             return Float.valueOf(txt);
         } catch (NumberFormatException e) {
@@ -433,7 +364,7 @@ public class Config implements Iterable<String> {
 
     /**
      * Get a float property.
-     * 
+     *
      * @param key
      *            the lookup key
      * @param dflt
@@ -448,14 +379,16 @@ public class Config implements Iterable<String> {
 
     /**
      * Get an integer property.
-     * 
+     *
      * @param key
      *            the lookup key
      * @return the value or null if missing
      */
     public Integer getInt(String key) {
         String txt = config_.get(key);
-        if( txt == null ) return null;
+        if( txt == null ) {
+            return null;
+        }
         try {
             return Integer.valueOf(txt);
         } catch (NumberFormatException e) {
@@ -467,7 +400,7 @@ public class Config implements Iterable<String> {
 
     /**
      * Get an integer property.
-     * 
+     *
      * @param key
      *            the lookup key
      * @param dflt
@@ -482,14 +415,16 @@ public class Config implements Iterable<String> {
 
     /**
      * Get a long property.
-     * 
+     *
      * @param key
      *            the lookup key
      * @return the value or null if missing
      */
     public Long getLong(String key) {
         String txt = config_.get(key);
-        if( txt == null ) return null;
+        if( txt == null ) {
+            return null;
+        }
         try {
             return Long.valueOf(txt);
         } catch (NumberFormatException e) {
@@ -501,7 +436,7 @@ public class Config implements Iterable<String> {
 
     /**
      * Get a long property.
-     * 
+     *
      * @param key
      *            the lookup key
      * @param dflt
@@ -516,7 +451,7 @@ public class Config implements Iterable<String> {
 
     /**
      * An iterator over the keys of this configuration
-     * 
+     *
      * @return an iterator.
      */
     @Override
@@ -527,7 +462,7 @@ public class Config implements Iterable<String> {
 
     /**
      * Get the set of all keys in this configuration.
-     * 
+     *
      * @return the keys
      */
     public Set<String> keySet() {
@@ -537,7 +472,7 @@ public class Config implements Iterable<String> {
 
     /**
      * Get the number of entries in this configuration
-     * 
+     *
      * @return the number of entries
      */
     public int size() {
