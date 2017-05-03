@@ -71,20 +71,20 @@ public class NistHmacRandom extends BaseRandom {
     /**
      * The hash function
      */
-    private final MessageDigest digest_;
+    private final MessageDigest digest;
 
     /**
      * The "Key" parameter as defined in the specification.
      */
-    private byte[] key_;
+    private byte[] key;
 
     /** Algorithm parameters */
-    private final HashSpec spec_;
+    private final HashSpec spec;
 
     /**
      * The "V" Value parameter as defined in the specification.
      */
-    private byte[] value_;
+    private byte[] value;
 
 
     /**
@@ -107,38 +107,38 @@ public class NistHmacRandom extends BaseRandom {
      */
     public NistHmacRandom(SeedSource source, HashSpec spec, int resistance,
             byte[] entropy, byte[] nonce, byte[] personalization) {
-        super(source, resistance, spec.seedLength_, spec.outputLength_);
-        spec_ = spec;
-        digest_ = spec.getInstance();
+        super(source, resistance, spec.seedLength, spec.outputLength);
+        this.spec = spec;
+        digest = spec.getInstance();
 
         byte[] seedMaterial = combineMaterials(entropy, nonce, personalization,
-                spec.seedLength_, spec.seedLength_);
+                spec.seedLength, spec.seedLength);
 
-        key_ = new byte[spec.outputLength_];
-        value_ = new byte[spec.outputLength_];
-        Arrays.fill(value_, (byte) 1);
+        key = new byte[spec.outputLength];
+        value = new byte[spec.outputLength];
+        Arrays.fill(value, (byte) 1);
         update(seedMaterial);
     }
 
 
     @Override
     protected void implNextBytes(int off, byte[] bytes) {
-        int outLen = spec_.outputLength_;
+        int outLen = spec.outputLength;
         int len = bytes.length - off;
         int fullLoops = len / outLen;
         int lastSize = len - (fullLoops * outLen);
 
         for(int i = 0;i < fullLoops;i++) {
-            value_ = hmac(key_, value_);
-            System.arraycopy(value_, 0, bytes, off, outLen);
+            value = hmac(key, value);
+            System.arraycopy(value, 0, bytes, off, outLen);
             off += outLen;
         }
 
         // final block
         if( lastSize > 0 ) {
-            value_ = hmac(key_, value_);
-            System.arraycopy(value_, 0, bytes, off, lastSize);
-            setSpares(value_,lastSize,outLen - lastSize);
+            value = hmac(key, value);
+            System.arraycopy(value, 0, bytes, off, lastSize);
+            setSpares(value,lastSize,outLen - lastSize);
         }
 
         update(NO_BYTES);
@@ -155,36 +155,36 @@ public class NistHmacRandom extends BaseRandom {
     /**
      * Calculate a HMAC where the message is a single value
      * 
-     * @param key
+     * @param myKey
      *            HMAC key
-     * @param value
+     * @param myValue
      *            HMAC message
      * @return hmac value
      */
-    private byte[] hmac(byte[] key, byte[] value) {
-        byte[] ipad = key.clone();
-        byte[] opad = key.clone();
-        int len = key.length;
+    private byte[] hmac(byte[] myKey, byte[] myValue) {
+        byte[] ipad = myKey.clone();
+        byte[] opad = myKey.clone();
+        int len = myKey.length;
         for(int i = 0;i < len;i++) {
             ipad[i] ^= (byte) 0x36;
             opad[i] ^= (byte) 0x5c;
         }
 
-        digest_.update(ipad);
-        digest_.update(value);
-        byte[] hash = digest_.digest();
-        digest_.update(opad);
-        digest_.update(hash);
-        return digest_.digest();
+        digest.update(ipad);
+        digest.update(myValue);
+        byte[] hash = digest.digest();
+        digest.update(opad);
+        digest.update(hash);
+        return digest.digest();
     }
 
 
     /**
      * Calculate a HMAC where the message consists of three parts
      * 
-     * @param key
+     * @param myKey
      *            HMAC key
-     * @param value
+     * @param myValue
      *            HMAC message part 1
      * @param extra
      *            HMAC message part 2
@@ -192,23 +192,23 @@ public class NistHmacRandom extends BaseRandom {
      *            HMAC message part 3
      * @return hmac value
      */
-    private byte[] hmac(byte[] key, byte[] value, byte extra, byte[] message) {
-        byte[] ipad = key.clone();
-        byte[] opad = key.clone();
-        int len = key.length;
+    private byte[] hmac(byte[] myKey, byte[] myValue, byte extra, byte[] message) {
+        byte[] ipad = myKey.clone();
+        byte[] opad = myKey.clone();
+        int len = myKey.length;
         for(int i = 0;i < len;i++) {
             ipad[i] ^= (byte) 0x36;
             opad[i] ^= (byte) 0x5c;
         }
 
-        digest_.update(ipad);
-        digest_.update(value);
-        digest_.update(extra);
-        digest_.update(message);
-        byte[] hash = digest_.digest();
-        digest_.update(opad);
-        digest_.update(hash);
-        return digest_.digest();
+        digest.update(ipad);
+        digest.update(myValue);
+        digest.update(extra);
+        digest.update(message);
+        byte[] hash = digest.digest();
+        digest.update(opad);
+        digest.update(hash);
+        return digest.digest();
     }
 
 
@@ -219,11 +219,11 @@ public class NistHmacRandom extends BaseRandom {
      *            entropy (may be empty)
      */
     private void update(byte[] entropy) {
-        key_ = hmac(key_, value_, (byte) 0, entropy);
-        value_ = hmac(key_, value_);
+        key = hmac(key, value, (byte) 0, entropy);
+        value = hmac(key, value);
 
         if( entropy.length == 0 ) return;
-        key_ = hmac(key_, value_, (byte) 1, entropy);
-        value_ = hmac(key_, value_);
+        key = hmac(key, value, (byte) 1, entropy);
+        value = hmac(key, value);
     }
 }

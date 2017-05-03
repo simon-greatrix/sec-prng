@@ -15,7 +15,7 @@ import prng.config.Config;
  */
 public class GarbageCollectorEntropy extends EntropyCollector {
     /** The VM's garbage collectors */
-    private final List<GarbageCollectorMXBean> gcBeans_ = ManagementFactory.getGarbageCollectorMXBeans();
+    private final List<GarbageCollectorMXBean> gcBeans = ManagementFactory.getGarbageCollectorMXBeans();
 
 
     /**
@@ -34,21 +34,21 @@ public class GarbageCollectorEntropy extends EntropyCollector {
     @Override
     protected boolean initialise() {
         // check at least one garbage collector can provide useful information
-        Iterator<GarbageCollectorMXBean> iter = gcBeans_.iterator();
+        Iterator<GarbageCollectorMXBean> iter = gcBeans.iterator();
         while( iter.hasNext() ) {
             GarbageCollectorMXBean bean = iter.next();
             long l1 = bean.getCollectionCount();
             long l2 = bean.getCollectionTime();
             if( (l1 == -1) && (l2 == -1) ) iter.remove();
         }
-        return !gcBeans_.isEmpty();
+        return !gcBeans.isEmpty();
     }
 
 
     @Override
     protected void runImpl() {
         long sum = 0;
-        for(GarbageCollectorMXBean garbageCollectorMXBean:gcBeans_) {
+        for(GarbageCollectorMXBean garbageCollectorMXBean:gcBeans) {
             long l = garbageCollectorMXBean.getCollectionCount();
             if( l != -1 ) sum = sum * 31 + l;
 

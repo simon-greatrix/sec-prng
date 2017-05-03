@@ -18,15 +18,15 @@ public class SeedOutput implements DataOutput {
     /**
      * The buffer where data is stored.
      */
-    protected byte buf_[];
+    protected byte[] buf;
 
     /**
      * The number of valid bytes in the buffer.
      */
-    protected int count_;
+    protected int count;
 
     /** Buffer for encoding primitives */
-    private byte writeBuffer_[] = new byte[8];
+    private byte[] writeBuffer = new byte[8];
 
 
     /**
@@ -48,7 +48,7 @@ public class SeedOutput implements DataOutput {
             throw new IllegalArgumentException(
                     "Negative initial size: " + size);
         }
-        buf_ = new byte[size];
+        buf = new byte[size];
     }
 
 
@@ -61,7 +61,7 @@ public class SeedOutput implements DataOutput {
      */
     private void ensureCapacity(int minCapacity) {
         // overflow-conscious code
-        if( minCapacity - buf_.length > 0 ) grow(minCapacity);
+        if( minCapacity - buf.length > 0 ) grow(minCapacity);
     }
 
 
@@ -74,7 +74,7 @@ public class SeedOutput implements DataOutput {
      */
     private void grow(int minCapacity) {
         // overflow-conscious code
-        int oldCapacity = buf_.length;
+        int oldCapacity = buf.length;
         int newCapacity = oldCapacity << 1;
         if( newCapacity - minCapacity < 0 ) newCapacity = minCapacity;
         if( newCapacity < 0 ) {
@@ -82,7 +82,7 @@ public class SeedOutput implements DataOutput {
                 throw new OutOfMemoryError();
             newCapacity = Integer.MAX_VALUE;
         }
-        buf_ = Arrays.copyOf(buf_, newCapacity);
+        buf = Arrays.copyOf(buf, newCapacity);
     }
 
 
@@ -93,7 +93,7 @@ public class SeedOutput implements DataOutput {
      * allocated buffer space.
      */
     public void reset() {
-        count_ = 0;
+        count = 0;
     }
 
 
@@ -103,7 +103,7 @@ public class SeedOutput implements DataOutput {
      * @return the number of valid bytes in this output stream.
      */
     public int size() {
-        return count_;
+        return count;
     }
 
 
@@ -113,7 +113,7 @@ public class SeedOutput implements DataOutput {
      * @return the ByteBuffer
      */
     public ByteBuffer toBuffer() {
-        return ByteBuffer.wrap(buf_, 0, count_);
+        return ByteBuffer.wrap(buf, 0, count);
     }
 
 
@@ -125,7 +125,7 @@ public class SeedOutput implements DataOutput {
      * @return the current contents of this output stream, as a byte array.
      */
     public byte toByteArray()[] {
-        return Arrays.copyOf(buf_, count_);
+        return Arrays.copyOf(buf, count);
     }
 
 
@@ -152,14 +152,14 @@ public class SeedOutput implements DataOutput {
      *            the number of bytes to write.
      */
     @Override
-    public void write(byte b[], int off, int len) {
+    public void write(byte[] b, int off, int len) {
         if( (off < 0) || (off > b.length) || (len < 0)
                 || ((off + len) - b.length > 0) ) {
             throw new IndexOutOfBoundsException();
         }
-        ensureCapacity(count_ + len);
-        System.arraycopy(b, off, buf_, count_, len);
-        count_ += len;
+        ensureCapacity(count + len);
+        System.arraycopy(b, off, buf, count, len);
+        count += len;
     }
 
 
@@ -177,9 +177,9 @@ public class SeedOutput implements DataOutput {
      */
     @Override
     public void write(int b) {
-        ensureCapacity(count_ + 1);
-        buf_[count_] = (byte) b;
-        count_ += 1;
+        ensureCapacity(count + 1);
+        buf[count] = (byte) b;
+        count += 1;
     }
 
 
@@ -236,26 +236,26 @@ public class SeedOutput implements DataOutput {
 
     @Override
     public void writeInt(int v) {
-        writeBuffer_[0] = (byte) (v >>> 24);
-        writeBuffer_[1] = (byte) (v >>> 16);
-        writeBuffer_[2] = (byte) (v >>> 8);
-        writeBuffer_[3] = (byte) (v);
+        writeBuffer[0] = (byte) (v >>> 24);
+        writeBuffer[1] = (byte) (v >>> 16);
+        writeBuffer[2] = (byte) (v >>> 8);
+        writeBuffer[3] = (byte) (v);
         write((v >>> 24) & 0xFF);
-        write(writeBuffer_, 0, 4);
+        write(writeBuffer, 0, 4);
     }
 
 
     @Override
     public void writeLong(long v) {
-        writeBuffer_[0] = (byte) (v >>> 56);
-        writeBuffer_[1] = (byte) (v >>> 48);
-        writeBuffer_[2] = (byte) (v >>> 40);
-        writeBuffer_[3] = (byte) (v >>> 32);
-        writeBuffer_[4] = (byte) (v >>> 24);
-        writeBuffer_[5] = (byte) (v >>> 16);
-        writeBuffer_[6] = (byte) (v >>> 8);
-        writeBuffer_[7] = (byte) (v);
-        write(writeBuffer_, 0, 8);
+        writeBuffer[0] = (byte) (v >>> 56);
+        writeBuffer[1] = (byte) (v >>> 48);
+        writeBuffer[2] = (byte) (v >>> 40);
+        writeBuffer[3] = (byte) (v >>> 32);
+        writeBuffer[4] = (byte) (v >>> 24);
+        writeBuffer[5] = (byte) (v >>> 16);
+        writeBuffer[6] = (byte) (v >>> 8);
+        writeBuffer[7] = (byte) (v);
+        write(writeBuffer, 0, 8);
     }
 
 
@@ -289,7 +289,7 @@ public class SeedOutput implements DataOutput {
      *                if an I/O error occurs.
      */
     public void writeTo(OutputStream out) throws IOException {
-        out.write(buf_, 0, count_);
+        out.write(buf, 0, count);
     }
 
 
@@ -306,7 +306,7 @@ public class SeedOutput implements DataOutput {
         // copied from the DataOutputStream source.
         int strlen = str.length();
         int utflen = 0;
-        int c, count = 0;
+        int c, cnt = 0;
 
         for(int i = 0;i < strlen;i++) {
             c = str.charAt(i);
@@ -326,22 +326,22 @@ public class SeedOutput implements DataOutput {
 
         // create output array
         byte[] bytearr = new byte[utflen + 2];
-        bytearr[count++] = (byte) ((utflen >>> 8) & 0xFF);
-        bytearr[count++] = (byte) ((utflen >>> 0) & 0xFF);
+        bytearr[cnt++] = (byte) ((utflen >>> 8) & 0xFF);
+        bytearr[cnt++] = (byte) ((utflen >>> 0) & 0xFF);
 
         // write chars to byte array
         for(int i = 0;i < strlen;i++) {
             c = str.charAt(i);
             if( (c >= 0x0001) && (c <= 0x007F) ) {
-                bytearr[count++] = (byte) c;
+                bytearr[cnt++] = (byte) c;
 
             } else if( c > 0x07FF ) {
-                bytearr[count++] = (byte) (0xE0 | ((c >> 12) & 0x0F));
-                bytearr[count++] = (byte) (0x80 | ((c >> 6) & 0x3F));
-                bytearr[count++] = (byte) (0x80 | ((c >> 0) & 0x3F));
+                bytearr[cnt++] = (byte) (0xE0 | ((c >> 12) & 0x0F));
+                bytearr[cnt++] = (byte) (0x80 | ((c >> 6) & 0x3F));
+                bytearr[cnt++] = (byte) (0x80 | ((c >> 0) & 0x3F));
             } else {
-                bytearr[count++] = (byte) (0xC0 | ((c >> 6) & 0x1F));
-                bytearr[count++] = (byte) (0x80 | ((c >> 0) & 0x3F));
+                bytearr[cnt++] = (byte) (0xC0 | ((c >> 6) & 0x1F));
+                bytearr[cnt++] = (byte) (0x80 | ((c >> 0) & 0x3F));
             }
         }
 

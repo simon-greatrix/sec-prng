@@ -10,7 +10,7 @@ import prng.config.Config;
  */
 public class SchedulingEntropy extends EntropyCollector {
     /** Last time this was called */
-    private long lastTime_ = System.nanoTime();
+    private long lastTime = System.nanoTime();
 
 
     /**
@@ -33,8 +33,8 @@ public class SchedulingEntropy extends EntropyCollector {
     @Override
     protected void runImpl() {
         long now = System.nanoTime();
-        long diff = now - lastTime_;
-        lastTime_ = now;
+        long diff = now - lastTime;
+        lastTime = now;
         setEvent((short) diff);
     }
 }

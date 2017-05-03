@@ -15,7 +15,7 @@ class SecureRandomImpl extends SecureRandom {
     private static final long serialVersionUID = 2l;
 
     /** The actual PRNG */
-    private final BaseRandom base_;
+    private final BaseRandom base;
 
 
     /**
@@ -26,7 +26,7 @@ class SecureRandomImpl extends SecureRandom {
      */
     SecureRandomImpl(BaseRandom spi) {
         super(spi, SecureRandomProvider.PROVIDER);
-        base_ = spi;
+        base = spi;
     }
 
 
@@ -36,6 +36,6 @@ class SecureRandomImpl extends SecureRandom {
      * @return some seed material
      */
     public byte[] newSeed() {
-        return base_.newSeed();
+        return base.newSeed();
     }
 }

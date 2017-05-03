@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Random;
 
 public class Letters extends BasePainter {
+    /** Selected visually distinct characters */
     private static final String CHARS = "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabdefghijnpqrt$%&*+@#?<>";
 
 

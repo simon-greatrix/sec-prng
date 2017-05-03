@@ -89,16 +89,16 @@ public class IsaacRandom extends Random {
     }
 
     /** Internal generator state */
-    private int aa_ = 0, bb_ = 0, cc_ = 0;
+    private int aa = 0, bb = 0, cc = 0;
 
     /** Output of last generation */
-    private final int[] randResult_ = new int[256];
+    private final int[] randResult = new int[256];
 
     /** Internal generator state */
-    private final int[] state_ = new int[256];
+    private final int[] state = new int[256];
 
     /** The number of values used from the current result */
-    private int valuesUsed_;
+    private int valuesUsed;
 
 
     /** Create a unseeded generator */
@@ -138,42 +138,42 @@ public class IsaacRandom extends Random {
      */
     private void generateMoreResults() {
         // c <= c + 1
-        cc_++;
+        cc++;
 
         // b <= b + c
-        bb_ += cc_;
+        bb += cc;
 
         for(int i = 0;i < 256;i++) {
             // x <- state[i]
-            int x = state_[i];
+            int x = state[i];
 
             // a <- f(a,i) + state[i+128]
             switch (i & 3) {
             case 0:
-                aa_ = aa_ ^ Integer.rotateLeft(aa_, 13);
+                aa = aa ^ Integer.rotateLeft(aa, 13);
                 break;
             case 1:
-                aa_ = aa_ ^ Integer.rotateRight(aa_, 6);
+                aa = aa ^ Integer.rotateRight(aa, 6);
                 break;
             case 2:
-                aa_ = aa_ ^ Integer.rotateLeft(aa_, 2);
+                aa = aa ^ Integer.rotateLeft(aa, 2);
                 break;
             case 3:
-                aa_ = aa_ ^ Integer.rotateRight(aa_, 16);
+                aa = aa ^ Integer.rotateRight(aa, 16);
                 break;
             }
-            aa_ = state_[i ^ 128] + aa_;
+            aa = state[i ^ 128] + aa;
 
             // state[i] <- a + b + state[x>>2]
             // state[i] <- (a ^ b) + state[x>>2] (ISAAC+)
-            int y = state_[i] = state_[(x >>> 2) & 0xFF] + (aa_ ^ bb_);
+            int y = state[i] = state[(x >>> 2) & 0xFF] + (aa ^ bb);
 
             // r <- x + state[state[i]>>>10]
             // r <- x + a ^ state[state[i]>>>10] (ISAAC+)
-            randResult_[i] = bb_ = (aa_ ^ state_[(y >>> 10) & 0xFF]) + x;
+            randResult[i] = bb = (aa ^ state[(y >>> 10) & 0xFF]) + x;
         }
 
-        valuesUsed_ = 0;
+        valuesUsed = 0;
     }
 
 
@@ -190,11 +190,11 @@ public class IsaacRandom extends Random {
 
         // Combine with existing state. For the first time, this will be all
         // zero.
-        if( valuesUsed_ > 0 ) {
+        if( valuesUsed > 0 ) {
             generateMoreResults();
         }
         for(int i = 0;i < 256;i++) {
-            seed[i] = seed[i] ^ randResult_[i];
+            seed[i] = seed[i] ^ randResult[i];
         }
 
         // initialise to the golden ratio
@@ -212,35 +212,35 @@ public class IsaacRandom extends Random {
             }
             mix(initState);
             for(int j = 0;j < 8;j++) {
-                state_[i + j] = initState[j];
+                state[i + j] = initState[j];
             }
         }
 
         // mix the state with itself
         for(int i = 0;i < 256;i += 8) {
             for(int j = 0;j < 8;j++) {
-                initState[j] += state_[i + j];
+                initState[j] += state[i + j];
             }
             mix(initState);
             for(int j = 0;j < 8;j++) {
-                state_[i + j] = initState[j];
+                state[i + j] = initState[j];
             }
         }
 
         // Make sure generateMoreResults() will be called by
         // the next next() call.
-        valuesUsed_ = 256;
+        valuesUsed = 256;
     }
 
 
     @Override
     protected int next(int bits) {
-        synchronized (randResult_) {
-            if( valuesUsed_ == 256 ) {
+        synchronized (randResult) {
+            if( valuesUsed == 256 ) {
                 generateMoreResults();
             }
-            int value = randResult_[valuesUsed_];
-            valuesUsed_++;
+            int value = randResult[valuesUsed];
+            valuesUsed++;
             return value >>> (32 - bits);
         }
     }
@@ -258,7 +258,7 @@ public class IsaacRandom extends Random {
             setSeed(createStartingSeed(this));
             return;
         }
-        synchronized (randResult_) {
+        synchronized (randResult) {
             super.setSeed(0);
             init(seed);
         }
@@ -273,7 +273,7 @@ public class IsaacRandom extends Random {
      */
     @Override
     public void setSeed(long seed) {
-        if( state_ == null ) {
+        if( state == null ) {
             // We're being called from the superclass constructor. We don't
             // have our state arrays instantiated yet, and we're going to do
             // proper initialization later in our own constructor anyway, so
@@ -282,7 +282,7 @@ public class IsaacRandom extends Random {
             return;
         }
 
-        synchronized (randResult_) {
+        synchronized (randResult) {
             super.setSeed(0);
             int[] arraySeed = new int[256];
             arraySeed[0] = (int) (seed & 0xFFFFFFFF);
@@ -299,7 +299,7 @@ public class IsaacRandom extends Random {
      *            a character string
      */
     public void setSeed(String seed) {
-        synchronized (randResult_) {
+        synchronized (randResult) {
             super.setSeed(0);
             char[] charSeed = seed.toCharArray();
             int[] intSeed = new int[256];

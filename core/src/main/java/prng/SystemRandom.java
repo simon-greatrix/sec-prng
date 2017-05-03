@@ -54,10 +54,10 @@ public class SystemRandom implements Runnable {
      */
     static class Seed implements Callable<Seed> {
         /** Secure random seed source */
-        final SecureRandom random_;
+        final SecureRandom source;
 
         /** Generated or injected seed */
-        byte[] seed_ = null;
+        byte[] seed = null;
 
 
         /**
@@ -67,8 +67,8 @@ public class SystemRandom implements Runnable {
          *            data to inject
          */
         Seed(byte[] seed) {
-            random_ = null;
-            seed_ = seed.clone();
+            source = null;
+            this.seed = seed.clone();
         }
 
 
@@ -79,24 +79,24 @@ public class SystemRandom implements Runnable {
          *            seed source
          */
         Seed(SecureRandom random) {
-            random_ = random;
+            source = random;
         }
 
 
         @Override
         public Seed call() {
-            if( random_ == null ) return this;
+            if( source == null ) return this;
 
             if( LOG.isDebugEnabled() ) {
                 LOG.debug("Generating seed from "
-                        + random_.getProvider().getName() + ":"
-                        + random_.getAlgorithm());
+                        + source.getProvider().getName() + ":"
+                        + source.getAlgorithm());
             }
-            seed_ = random_.generateSeed(32);
+            seed = source.generateSeed(32);
             if( LOG.isDebugEnabled() ) {
                 LOG.debug("Finished generating seed from "
-                        + random_.getProvider().getName() + ":"
-                        + random_.getAlgorithm());
+                        + source.getProvider().getName() + ":"
+                        + source.getAlgorithm());
             }
             return this;
         }
@@ -106,8 +106,8 @@ public class SystemRandom implements Runnable {
          * Resubmit this seed source
          */
         public void resubmit() {
-            seed_ = null;
-            if( random_ != null ) {
+            seed = null;
+            if( source != null ) {
                 SEED_MAKER.submit(this);
             }
         }
@@ -299,16 +299,16 @@ public class SystemRandom implements Runnable {
      * Number of bytes available in the current block. A value of -1 means not
      * initialised.
      */
-    private int available_ = -1;
+    private int available = -1;
 
     /** Random bytes drawn from the system PRNG */
-    private byte[] block_ = new byte[BLOCK_LEN];
+    private byte[] block = new byte[BLOCK_LEN];
 
     /** The System SecureRandom instance */
-    private SecureRandom random_ = null;
+    private SecureRandom random = null;
 
     /** Number of operations before requesting a reseed */
-    private int reseed_;
+    private int reseed;
 
 
     /**
@@ -343,21 +343,21 @@ public class SystemRandom implements Runnable {
     boolean get(byte[] output, int pos) {
         synchronized (this) {
             // is this initialised?
-            if( available_ == -1 ) return false;
+            if( available == -1 ) return false;
 
             // if no bytes available, cannot supply any
-            if( available_ == 0 ) return false;
+            if( available == 0 ) return false;
 
             // get a byte
-            int p = (--available_);
-            output[pos] = block_[p];
+            int p = (--available);
+            output[pos] = block[p];
 
             // have we used all available bytes?
             if( p == 0 ) {
                 if( LOG.isDebugEnabled() ) {
                     LOG.debug("Used all bytes from "
-                            + random_.getProvider().getName() + ":"
-                            + random_.getAlgorithm());
+                            + random.getProvider().getName() + ":"
+                            + random.getAlgorithm());
                 }
 
                 // asynchronously generate more bytes
@@ -380,27 +380,27 @@ public class SystemRandom implements Runnable {
         // get the specific instance
         LOG.info("Initialising System PRNG: {}:{}", prov.getName(), alg);
         try {
-            random_ = SecureRandom.getInstance(alg, prov);
+            random = SecureRandom.getInstance(alg, prov);
         } catch (NoSuchAlgorithmException e) {
             // Instance not available.
             LOG.error("Provider " + prov + " does not implement " + alg
                     + " after announcing it as a service");
-            random_ = null;
+            random = null;
             return;
         }
 
         // load the first block
-        random_.nextBytes(block_);
+        random.nextBytes(block);
 
         // set when this reseeds
-        reseed_ = RESEED.nextInt(SOURCE_LEN);
+        reseed = RESEED.nextInt(SOURCE_LEN);
 
         // enrol this algorithm with the seed maker
-        SEED_MAKER.submit(new Seed(random_));
+        SEED_MAKER.submit(new Seed(random));
 
         // update the state
         synchronized (this) {
-            available_ = BLOCK_LEN;
+            available = BLOCK_LEN;
         }
 
         // Now at least one System Random is initialised, the Seed Storage can
@@ -417,13 +417,13 @@ public class SystemRandom implements Runnable {
         // use injected seeds immediately
         byte[] s = INJECTED.poll();
         if( s != null ) {
-            random_.setSeed(s);
+            random.setSeed(s);
         } else {
-            reseed_--;
+            reseed--;
         }
 
         // is a reseed due?
-        if( reseed_ < 0 ) {
+        if( reseed < 0 ) {
             // get the next seed
             Future<Seed> future = SEED_MAKER.poll();
             if( future != null ) {
@@ -439,10 +439,10 @@ public class SystemRandom implements Runnable {
 
                 if( seed != null ) {
                     // we are reseeding, schedule the next reseed
-                    reseed_ = RESEED.nextInt(SOURCE_LEN);
+                    reseed = RESEED.nextInt(SOURCE_LEN);
 
                     // use the seed and then resubmit to get a future one
-                    random_.setSeed(seed.seed_);
+                    random.setSeed(seed.seed);
                     seed.resubmit();
                 }
             }
@@ -459,21 +459,21 @@ public class SystemRandom implements Runnable {
         synchronized (this) {
             if( LOG.isDebugEnabled() ) {
                 LOG.debug("Generating bytes from "
-                        + random_.getProvider().getName() + ":"
-                        + random_.getAlgorithm());
+                        + random.getProvider().getName() + ":"
+                        + random.getAlgorithm());
             }
 
             // generate random bytes
-            random_.nextBytes(block_);
+            random.nextBytes(block);
 
             if( LOG.isDebugEnabled() ) {
                 LOG.debug("Finished generating bytes from "
-                        + random_.getProvider().getName() + ":"
-                        + random_.getAlgorithm());
+                        + random.getProvider().getName() + ":"
+                        + random.getAlgorithm());
             }
 
             // update the state
-            available_ = BLOCK_LEN;
+            available = BLOCK_LEN;
         }
     }
 }

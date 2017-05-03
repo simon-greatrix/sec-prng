@@ -4,7 +4,6 @@ import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLEncoder;
-import java.security.AccessControlException;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.*;
@@ -154,24 +153,21 @@ public class Config implements Iterable<String> {
      *         privilege to get it.
      */
     public static String getEnv(String key) {
-        try {
-            return AccessController.doPrivileged(
-                    new PrivilegedAction<String>() {
+        return AccessController.doPrivileged(new PrivilegedAction<String>() {
 
-                        @Override
-                        public String run() {
-                            RuntimePermission p = new RuntimePermission(
-                                    "getenv." + key);
-                            AccessController.checkPermission(p);
-
-                            return System.getProperty(key);
-                        }
-                    });
-        } catch (AccessControlException ace) {
-            LOG.warn("Unable to read environment variable \"" + key
-                    + "\". Missing permission " + ace.getPermission());
-            return null;
-        }
+            @Override
+            public String run() {
+                try {
+                    return System.getProperty(key);
+                } catch (SecurityException se) {
+                    RuntimePermission p = new RuntimePermission(
+                            "getenv." + key);
+                    LOG.warn("Unable to read environment variable \"" + key
+                            + "\". Missing permission " + p);
+                    return null;
+                }
+            }
+        });
     }
 
 
@@ -184,24 +180,20 @@ public class Config implements Iterable<String> {
      *         the privilege to get it.
      */
     public static String getProperty(String key) {
-        try {
-            return AccessController.doPrivileged(
-                    new PrivilegedAction<String>() {
+        return AccessController.doPrivileged(new PrivilegedAction<String>() {
 
-                        @Override
-                        public String run() {
-                            PropertyPermission p = new PropertyPermission(key,
-                                    "read");
-                            AccessController.checkPermission(p);
-
-                            return System.getProperty(key);
-                        }
-                    });
-        } catch (AccessControlException ace) {
-            LOG.warn("Unable to read system property \"" + key
-                    + "\". Missing permission " + ace.getPermission());
-            return null;
-        }
+            @Override
+            public String run() {
+                try {
+                    return System.getProperty(key);
+                } catch (SecurityException se) {
+                    PropertyPermission p = new PropertyPermission(key, "read");
+                    LOG.warn("Unable to read system property \"" + key
+                            + "\". Missing permission " + p);
+                    return null;
+                }
+            }
+        });
     }
 
 
@@ -230,7 +222,7 @@ public class Config implements Iterable<String> {
     }
 
     /** Configuration for the specified category */
-    protected Map<String, String> config_ = new HashMap<String, String>();
+    protected Map<String, String> config = new HashMap<String, String>();
 
 
     /**
@@ -246,7 +238,7 @@ public class Config implements Iterable<String> {
             if( !k.startsWith(prefix) ) {
                 continue;
             }
-            config_.put(k.substring(len), e.getValue());
+            config.put(k.substring(len), e.getValue());
         }
     }
 
@@ -259,7 +251,7 @@ public class Config implements Iterable<String> {
      * @return the value or null if missing
      */
     public String get(String key) {
-        return config_.get(key);
+        return config.get(key);
     }
 
 
@@ -286,7 +278,7 @@ public class Config implements Iterable<String> {
      * @return the value or null if missing
      */
     public Boolean getBoolean(String key) {
-        return Boolean.valueOf(config_.get(key));
+        return Boolean.valueOf(config.get(key));
     }
 
 
@@ -313,7 +305,7 @@ public class Config implements Iterable<String> {
      * @return the value or null if missing
      */
     public Double getDouble(String key) {
-        String txt = config_.get(key);
+        String txt = config.get(key);
         if( txt == null ) {
             return null;
         }
@@ -349,7 +341,7 @@ public class Config implements Iterable<String> {
      * @return the value or null if missing
      */
     public Float getFloat(String key) {
-        String txt = config_.get(key);
+        String txt = config.get(key);
         if( txt == null ) {
             return null;
         }
@@ -385,7 +377,7 @@ public class Config implements Iterable<String> {
      * @return the value or null if missing
      */
     public Integer getInt(String key) {
-        String txt = config_.get(key);
+        String txt = config.get(key);
         if( txt == null ) {
             return null;
         }
@@ -421,7 +413,7 @@ public class Config implements Iterable<String> {
      * @return the value or null if missing
      */
     public Long getLong(String key) {
-        String txt = config_.get(key);
+        String txt = config.get(key);
         if( txt == null ) {
             return null;
         }
@@ -466,7 +458,7 @@ public class Config implements Iterable<String> {
      * @return the keys
      */
     public Set<String> keySet() {
-        return Collections.unmodifiableSet(config_.keySet());
+        return Collections.unmodifiableSet(config.keySet());
     }
 
 
@@ -476,6 +468,6 @@ public class Config implements Iterable<String> {
      * @return the number of entries
      */
     public int size() {
-        return config_.size();
+        return config.size();
     }
 }

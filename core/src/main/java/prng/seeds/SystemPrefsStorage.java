@@ -7,16 +7,23 @@ import java.util.prefs.Preferences;
 import prng.SecureRandomProvider;
 
 /**
- * Store seed data in the JVM's system preferences storage
+ * Store seed data in the JVM's system preferences storage. Note that accessing
+ * system preferences often requires administrator privileges.
  * 
  * @author Simon Greatrix
  *
  */
 public class SystemPrefsStorage extends PreferenceStorage {
 
+    /**
+     * Create storage that used the system preferences.
+     * 
+     * @throws StorageException
+     */
     public SystemPrefsStorage() throws StorageException {
         // no-op
     }
+
 
     @Override
     protected Preferences getPreferences() throws StorageException {

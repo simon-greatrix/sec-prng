@@ -14,6 +14,10 @@ import prng.SecureRandomProvider;
  */
 public class UserPrefsStorage extends PreferenceStorage {
 
+    /**
+     * New storage using user preferences
+     * @throws StorageException
+     */
     public UserPrefsStorage() throws StorageException {
         // no-op
     }

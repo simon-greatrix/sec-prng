@@ -3,7 +3,9 @@ package prng.image;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.security.*;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.SecureRandom;
 import java.util.Random;
 import java.util.function.DoubleConsumer;
 
@@ -15,33 +17,6 @@ import javax.swing.SwingUtilities;
 import prng.SecureRandomProvider;
 
 public class Display extends JFrame {
-
-    class Updater extends Thread implements DoubleConsumer {
-        public void run() {
-            painter.create(this);
-            doRepaint();
-        }
-
-
-        @Override
-        public void accept(double value) {
-            doRepaint();
-        }
-
-
-        private void doRepaint() {
-            SwingUtilities.invokeLater(new Runnable() {
-                public void run() {
-                    Display.this.repaint();
-                }
-            });
-        }
-    }
-
-    /**
-     *
-     */
-    private static final long serialVersionUID = 1L;
 
     class Comp extends JComponent {
 
@@ -59,6 +34,35 @@ public class Display extends JFrame {
         }
 
     }
+
+    class Updater extends Thread implements DoubleConsumer {
+        @Override
+        public void accept(double value) {
+            doRepaint();
+        }
+
+
+        private void doRepaint() {
+            SwingUtilities.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    Display.this.repaint();
+                }
+            });
+        }
+
+
+        @Override
+        public void run() {
+            painter.create(this);
+            doRepaint();
+        }
+    }
+
+    /**
+     *
+     */
+    private static final long serialVersionUID = 1L;
 
 
     public static void main(String[] args)

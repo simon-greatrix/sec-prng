@@ -12,10 +12,10 @@ import prng.utility.BLOBPrint;
 public class Seed {
 
     /** Name of this seed datum */
-    protected String name_;
+    protected String name;
 
     /** The seed entropy */
-    protected byte[] data_;
+    protected byte[] data;
 
 
     /**
@@ -27,8 +27,8 @@ public class Seed {
      *            seed data
      */
     public Seed(String name, byte[] data) {
-        name_ = name;
-        data_ = data.clone();
+        this.name = name;
+        this.data = (data!=null) ? data.clone() : null;
     }
 
 
@@ -36,8 +36,8 @@ public class Seed {
      * Create an empty seed. Must be initialized.
      */
     public Seed() {
-        name_ = "unset";
-        data_ = new byte[0];
+        name = "unset";
+        data = new byte[0];
     }
 
 
@@ -50,8 +50,8 @@ public class Seed {
      *             if something goes wrong initializing the seed
      */
     public void initialize(SeedInput input) throws Exception {
-        name_ = input.readUTF();
-        data_ = input.readSeed();
+        name = input.readUTF();
+        data = input.readSeed();
     }
 
 
@@ -61,7 +61,7 @@ public class Seed {
      * @return true if this seed contains no data
      */
     public boolean isEmpty() {
-        return data_ == null || data_.length == 0;
+        return data == null || data.length == 0;
     }
 
 
@@ -72,8 +72,8 @@ public class Seed {
      *            output stream
      */
     public void save(SeedOutput output) {
-        output.writeUTF(name_);
-        output.writeSeed(data_);
+        output.writeUTF(name);
+        output.writeSeed(data);
     }
 
 
@@ -83,7 +83,7 @@ public class Seed {
      * @return the name
      */
     public String getName() {
-        return name_;
+        return name;
     }
 
 
@@ -93,13 +93,13 @@ public class Seed {
      * @return the value
      */
     public byte[] getSeed() {
-        return data_.clone();
+        return data.clone();
     }
 
 
     @Override
     public int hashCode() {
-        return ((name_ == null) ? 0 : name_.hashCode());
+        return ((name == null) ? 0 : name.hashCode());
     }
 
 
@@ -109,15 +109,15 @@ public class Seed {
         if( obj == null ) return false;
         if( getClass() != obj.getClass() ) return false;
         Seed other = (Seed) obj;
-        if( name_ == null ) {
-            return (other.name_ == null);
+        if( name == null ) {
+            return (other.name == null);
         }
-        return name_.equals(other.name_);
+        return name.equals(other.name);
     }
 
 
     @Override
     public String toString() {
-        return "Seed( " + name_ + " ) [\n" + BLOBPrint.toString(data_) + "]";
+        return "Seed( " + name + " ) [\n" + BLOBPrint.toString(data) + "]";
     }
 }

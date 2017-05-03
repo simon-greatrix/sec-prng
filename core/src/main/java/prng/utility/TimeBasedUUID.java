@@ -163,7 +163,7 @@ public class TimeBasedUUID {
     }
 
     /** The Ethernet address this generator is associated with */
-    protected final long ethernetAddress_;
+    protected final long ethernetAddress;
 
 
     /**
@@ -186,7 +186,7 @@ public class TimeBasedUUID {
         for(int i = 0;i < 6;i++) {
             v = (v << 8) | (address[i] & 0xff);
         }
-        ethernetAddress_ = v;
+        ethernetAddress = v;
     }
 
 
@@ -215,7 +215,7 @@ public class TimeBasedUUID {
         // the top 4 bits of the time are lost
 
         long l2 = ((long) sequence) << 48;
-        l2 |= ethernetAddress_;
+        l2 |= ethernetAddress;
 
         return new UUID(l1, l2);
     }
@@ -311,13 +311,13 @@ final class UUIDTime {
     /**
      * A 16-bit sequence number unique with the current 100 nanosecond interval.
      */
-    private final int sequence_;
+    private final int sequence;
 
     /**
      * The number of 100 nanosecond intervals that have passed since the start
      * of the Gregorian calendar.
      */
-    private final long timeStamp_;
+    private final long timeStamp;
 
 
     /**
@@ -329,8 +329,8 @@ final class UUIDTime {
      *            the sequence
      */
     private UUIDTime(long timeStamp, short sequence) {
-        timeStamp_ = timeStamp;
-        sequence_ = sequence & 0xffff;
+        this.timeStamp = timeStamp;
+        this.sequence = sequence & 0xffff;
     }
 
 
@@ -340,7 +340,7 @@ final class UUIDTime {
      * @return the sequence value
      */
     public int getSequence() {
-        return sequence_;
+        return sequence;
     }
 
 
@@ -350,6 +350,6 @@ final class UUIDTime {
      * @return the time value
      */
     public long getTime() {
-        return timeStamp_;
+        return timeStamp;
     }
 }

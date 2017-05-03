@@ -26,19 +26,19 @@ import prng.utility.BLOBPrint;
  */
 public class FileStorage extends SeedStorage {
     /** File name where data is stored */
-    final File fileName_;
+    final File fileName;
 
     /** Internal map of storage */
-    private Map<String, byte[]> storage_ = new HashMap<String, byte[]>();
+    private Map<String, byte[]> storage = new HashMap<String, byte[]>();
 
     /** Lock on file whilst the store is open */
-    FileLock lock_ = null;
+    FileLock lock = null;
 
     /** Channel for store whilst it is open */
-    FileChannel channel_ = null;
+    FileChannel channel = null;
 
     /** Is the store modified? */
-    boolean isModified_ = false;
+    boolean isModified = false;
 
 
     /**
@@ -51,17 +51,17 @@ public class FileStorage extends SeedStorage {
         String file = config.get("file", "./seeds.db");
         file = Config.expand(file);
         
-        fileName_ = new File(file);
+        fileName = new File(file);
         try {
             AccessController.doPrivileged(new PrivilegedAction<Void>() {
 
                 @Override
                 public Void run() {
-                    if( !fileName_.canWrite() ) {
-                        LOG.error("Cannot write to file \""+fileName_.getAbsolutePath()+"\".");
+                    if( !fileName.canWrite() ) {
+                        LOG.error("Cannot write to file \""+fileName.getAbsolutePath()+"\".");
                     }
-                    if( fileName_.exists() && ! fileName_.canRead() ) {
-                        LOG.error("Cannot read from file \""+fileName_.getAbsolutePath()+"\".");
+                    if( fileName.exists() && ! fileName.canRead() ) {
+                        LOG.error("Cannot read from file \""+fileName.getAbsolutePath()+"\".");
                     }
                     return null;
                 }
@@ -69,9 +69,9 @@ public class FileStorage extends SeedStorage {
             });
         } catch ( SecurityException se ) {
             SecureRandomProvider.LOG.warn(
-                    "Lacking permission: 'FilePermission \""+fileName_.getAbsolutePath()+"\", \"delete,write,read\"' - cannot access seed data in file");
+                    "Lacking permission: 'FilePermission \""+fileName.getAbsolutePath()+"\", \"delete,write,read\"' - cannot access seed data in file");
             throw new StorageException(
-                    "Privilege 'FilePermission \""+fileName_.getAbsolutePath()+"\", \"delete,write,read\"' is required to use seed file.",
+                    "Privilege 'FilePermission \""+fileName.getAbsolutePath()+"\", \"delete,write,read\"' is required to use seed file.",
                     se);
         }
     }
@@ -83,7 +83,7 @@ public class FileStorage extends SeedStorage {
      * @throws StorageException
      */
     private void init() throws StorageException {
-        if( lock_ != null ) return;
+        if( lock != null ) return;
 
         try {
             AccessController.doPrivileged(new PrivilegedExceptionAction<Void>() {
@@ -96,13 +96,15 @@ public class FileStorage extends SeedStorage {
                 
             });
         } catch (PrivilegedActionException e) {
+            // Storage access failed
             StorageException se = (StorageException) e.getCause();
             throw se;
         } catch (SecurityException se ) {
+            // Lacking required privilege
             SecureRandomProvider.LOG.warn(
-                    "Lacking permission: 'FilePermission \""+fileName_.getAbsolutePath()+"\", \"delete,write,read\"' - cannot access seed data in file");
+                    "Lacking permission: 'FilePermission \""+fileName.getAbsolutePath()+"\", \"delete,write,read\"' - cannot access seed data in file");
             throw new StorageException(
-                    "Privilege 'FilePermission \""+fileName_.getAbsolutePath()+"\", \"delete,write,read\"' is required to use seed file.",
+                    "Privilege 'FilePermission \""+fileName.getAbsolutePath()+"\", \"delete,write,read\"' is required to use seed file.",
                     se);            
         }
     }
@@ -115,7 +117,7 @@ public class FileStorage extends SeedStorage {
      */
     void initWithPrivilege() throws StorageException {
         try {
-            File file = fileName_;
+            File file = fileName;
             LOG.info("Opening file \"{}\"", file.getAbsolutePath());
             // create the file and folder if needed
             if( !file.exists() ) {
@@ -146,21 +148,21 @@ public class FileStorage extends SeedStorage {
                         + "\" is not readable.", null);
             }
 
-            channel_ = FileChannel.open(file.toPath(),
+            channel = FileChannel.open(file.toPath(),
                     StandardOpenOption.CREATE, StandardOpenOption.READ,
                     StandardOpenOption.WRITE, StandardOpenOption.DSYNC);
 
             // this lock is automatically released when the channel is closed
-            lock_ = channel_.lock();
+            lock = channel.lock();
 
-            byte[] buf = new byte[(int) channel_.size()];
-            storage_.clear();
+            byte[] buf = new byte[(int) channel.size()];
+            storage.clear();
             if( buf.length == 0 ) return;
 
             ByteBuffer bbuf = ByteBuffer.wrap(buf);
-            channel_.position(0);
+            channel.position(0);
             while( bbuf.hasRemaining() ) {
-                channel_.read(bbuf);
+                channel.read(bbuf);
             }
 
             ByteArrayInputStream in = new ByteArrayInputStream(buf);
@@ -169,7 +171,7 @@ public class FileStorage extends SeedStorage {
             while( true ) {
                 boolean flag = data.readBoolean();
                 if( flag ) break;
-                LOG.info("Reading item {}", Integer.valueOf(storage_.size()));
+                LOG.info("Reading item {}", Integer.valueOf(storage.size()));
 
                 // get the key
                 String key = data.readUTF();
@@ -182,14 +184,14 @@ public class FileStorage extends SeedStorage {
                     LOG.info("Value for {} is:\n{}", key,
                             BLOBPrint.toString(value));
                 }
-                storage_.put(key, value);
+                storage.put(key, value);
             }
-            isModified_ = false;
+            isModified = false;
 
             LOG.info("File read finised");
         } catch (IOException ioe) {
             throw new StorageException("Loading storage from "
-                    + fileName_.getAbsolutePath() + " failed", ioe);
+                    + fileName.getAbsolutePath() + " failed", ioe);
         }
     }
 
@@ -207,27 +209,27 @@ public class FileStorage extends SeedStorage {
                     "Maximum data length is 65536, not " + data.length,
                     new IllegalArgumentException("Parameter too long"));
         }
-        isModified_ = true;
-        storage_.put(name, data);
+        isModified = true;
+        storage.put(name, data);
     }
 
 
     @Override
     protected byte[] getRaw(String name) throws StorageException {
         init();
-        return storage_.get(name);
+        return storage.get(name);
     }
 
 
     @Override
     protected void remove(String name) {
-        storage_.remove(name);
+        storage.remove(name);
     }
 
 
     @Override
     protected void closeRaw() throws StorageException {
-        if( channel_ == null || !channel_.isOpen() ) return;
+        if( channel == null || !channel.isOpen() ) return;
 
         try {
             AccessController.doPrivileged(new PrivilegedExceptionAction<Void>() {
@@ -240,24 +242,30 @@ public class FileStorage extends SeedStorage {
                 
             });
         } catch (PrivilegedActionException e) {
+            // It will be a storage exception
             StorageException se = (StorageException) e.getCause();
             throw se;
         } catch (SecurityException se) {
+            // Lacking required privilege
             SecureRandomProvider.LOG.warn(
-                    "Lacking permission: 'FilePermission \""+fileName_.getAbsolutePath()+"\", \"delete,write,read\"' - cannot access seed data in file");
+                    "Lacking permission: 'FilePermission \""+fileName.getAbsolutePath()+"\", \"delete,write,read\"' - cannot access seed data in file");
             throw new StorageException(
-                    "Privilege 'FilePermission \""+fileName_.getAbsolutePath()+"\", \"delete,write,read\"' is required to use seed file.",
+                    "Privilege 'FilePermission \""+fileName.getAbsolutePath()+"\", \"delete,write,read\"' is required to use seed file.",
                     se);            
         }
     }
     
+    /**
+     * Close the storage after ascerting privilege
+     * @throws StorageException
+     */
     void closeRawWithPrivilege() throws StorageException {
-        TreeSet<String> keys = new TreeSet<String>(storage_.keySet());
+        TreeSet<String> keys = new TreeSet<String>(storage.keySet());
         IOException ioe = null;
         try {
             // if not modified, skip straight to the finally block to close the
             // channel
-            if( !isModified_ ) return;
+            if( !isModified ) return;
 
             ByteArrayOutputStream buf = new ByteArrayOutputStream(4000);
             DataOutputStream data = new DataOutputStream(buf);
@@ -271,7 +279,7 @@ public class FileStorage extends SeedStorage {
                 data.writeUTF(key);
 
                 // write the value
-                byte[] value = storage_.get(key);
+                byte[] value = storage.get(key);
                 if( LOG.isDebugEnabled() ) {
                     LOG.debug("Writing value:\n{}", BLOBPrint.toString(value));
                 }
@@ -284,19 +292,19 @@ public class FileStorage extends SeedStorage {
 
             // convert to Buffer and write out in one write
             ByteBuffer bbuf = ByteBuffer.wrap(buf.toByteArray());
-            LOG.info("Writing file {}", fileName_.getAbsolutePath());
-            channel_.position(0);
+            LOG.info("Writing file {}", fileName.getAbsolutePath());
+            channel.position(0);
             while( bbuf.hasRemaining() ) {
-                channel_.write(bbuf);
+                channel.write(bbuf);
             }
-            channel_.force(true);
+            channel.force(true);
             LOG.info("Write complete");
         } catch (IOException ioe2) {
             ioe = ioe2;
         } finally {
             try {
                 // closing the channel releases the lock
-                channel_.close();
+                channel.close();
             } catch (IOException ioe2) {
                 if( ioe == null ) {
                     ioe = ioe2;
@@ -304,20 +312,20 @@ public class FileStorage extends SeedStorage {
                     ioe.addSuppressed(ioe2);
                 }
             } finally {
-                storage_.clear();
-                channel_ = null;
-                lock_ = null;
+                storage.clear();
+                channel = null;
+                lock = null;
             }
         }
 
         if( ioe != null ) {
             // delete bad file
-            LOG.warn("Deleting bad file \"{}\"", fileName_.getAbsolutePath());
-            fileName_.delete();
+            LOG.warn("Deleting bad file \"{}\"", fileName.getAbsolutePath());
+            fileName.delete();
 
             // rethrow exception
             throw new StorageException(
-                    "Failed to save " + fileName_.getAbsolutePath(), ioe);
+                    "Failed to save " + fileName.getAbsolutePath(), ioe);
         }
     }
 

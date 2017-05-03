@@ -118,10 +118,10 @@ public class SimpleJSONParser {
      */
     static public class Primitive {
         /** The type represented by this primitive */
-        final Type type_;
+        final Type type;
 
         /** The encapsulated value */
-        final Object value_;
+        final Object value;
 
 
         /**
@@ -137,8 +137,8 @@ public class SimpleJSONParser {
             if( (type == Type.NULL) != (value == null) ) {
                 throw new IllegalArgumentException("Null if and only if NULL");
             }
-            type_ = type;
-            value_ = value;
+            this.type = type;
+            this.value = value;
         }
 
 
@@ -148,7 +148,7 @@ public class SimpleJSONParser {
          * @return the type
          */
         public Type getType() {
-            return type_;
+            return type;
         }
 
 
@@ -158,7 +158,7 @@ public class SimpleJSONParser {
          * @return the value
          */
         public Object getValue() {
-            return value_;
+            return value;
         }
 
 
@@ -167,15 +167,15 @@ public class SimpleJSONParser {
          * 
          * @param <T>
          *            required type
-         * @param type
+         * @param reqType
          *            the required type
          * @param dflt
          *            default value if type is not correct
          * @return the value
          */
-        public <T> T getValue(Class<T> type, T dflt) {
-            if( type.isInstance(value_) ) {
-                return type.cast(value_);
+        public <T> T getValue(Class<T> reqType, T dflt) {
+            if( reqType.isInstance(value) ) {
+                return reqType.cast(value);
             }
             return dflt;
         }
@@ -186,19 +186,19 @@ public class SimpleJSONParser {
          * 
          * @param <T>
          *            required type
-         * @param type
+         * @param reqType
          *            the required type
          * @return the value
          */
-        public <T> T getValueSafe(Class<T> type) {
-            return type.cast(value_);
+        public <T> T getValueSafe(Class<T> reqType) {
+            return reqType.cast(value);
         }
 
 
         @Override
         public String toString() {
-            if( type_ == Type.STRING ) return escapeString((String) value_);
-            return String.valueOf(value_);
+            if( type == Type.STRING ) return escapeString((String) value);
+            return String.valueOf(value);
         }
     }
 
@@ -225,7 +225,7 @@ public class SimpleJSONParser {
         STRING(String.class);
 
         /** Class of associated encapsulated values */
-        private final Class<?> type_;
+        private final Class<?> type;
 
 
         /**
@@ -235,7 +235,7 @@ public class SimpleJSONParser {
          *            encapsulated value class
          */
         Type(Class<?> type) {
-            type_ = type;
+            this.type = type;
         }
 
 
@@ -245,7 +245,7 @@ public class SimpleJSONParser {
          * @return the type of the encapsulated value
          */
         public Class<?> getType() {
-            return type_;
+            return type;
         }
     }
 
@@ -484,6 +484,7 @@ public class SimpleJSONParser {
     private static Primitive parseNumber(PushbackReader input, int r)
             throws IOException {
         StringBuilder buf = new StringBuilder();
+        // process first character
         int s = 1;
         if( r == '-' ) {
             buf.append('-');
@@ -494,6 +495,8 @@ public class SimpleJSONParser {
         } else {
             buf.append((char) r);
         }
+        
+        // read rest of number
         boolean notDone = true;
         while( notDone ) {
             r = input.read();

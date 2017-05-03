@@ -13,25 +13,25 @@ public class EntropySource {
     private static AtomicInteger EVENT_WRAPPER_ID_SRC = new AtomicInteger(1);
 
     /** Unique identifier for this source */
-    private final int hashID_;
+    private final int hashID;
 
     /**
      * This event source's "unique" id.
      */
-    private final byte id_;
+    private final byte id;
 
     /**
      * The pool the event is to be written to
      */
-    private int pool_ = 0;
+    private int pool = 0;
 
 
     /**
      * New entropy source
      */
     public EntropySource() {
-        hashID_ = EVENT_WRAPPER_ID_SRC.getAndIncrement();
-        id_ = (byte) hashID_;
+        hashID = EVENT_WRAPPER_ID_SRC.getAndIncrement();
+        id = (byte) hashID;
     }
 
 
@@ -39,13 +39,13 @@ public class EntropySource {
     public boolean equals(Object other) {
         if( other == null ) return false;
         if( !(other instanceof EntropySource) ) return false;
-        return hashID_ == ((EntropySource) other).hashID_;
+        return hashID == ((EntropySource) other).hashID;
     }
 
 
     @Override
     public int hashCode() {
-        return hashID_;
+        return hashID;
     }
 
 
@@ -56,11 +56,11 @@ public class EntropySource {
      *            the data to post
      */
     protected void post(byte[] data) {
-        int pool;
+        int myPool;
         synchronized (this) {
-            pool_ = pool = (pool_ + 1) % 32;
+            pool = myPool = (pool + 1) % 32;
         }
-        Fortuna.addEvent(pool, data);
+        Fortuna.addEvent(myPool, data);
     }
 
 
@@ -72,7 +72,7 @@ public class EntropySource {
      */
     public final void setEvent(byte b) {
         byte[] data = new byte[3];
-        data[0] = id_;
+        data[0] = id;
         data[1] = 1;
         data[2] = b;
         post(data);
@@ -92,7 +92,7 @@ public class EntropySource {
             len = 255;
         }
         byte[] data = new byte[2 + len];
-        data[0] = id_;
+        data[0] = id;
         data[1] = (byte) len;
         System.arraycopy(b, 0, data, 2, len);
         post(data);
@@ -129,7 +129,7 @@ public class EntropySource {
      */
     public final void setEvent(int i) {
         byte[] data = new byte[6];
-        data[0] = id_;
+        data[0] = id;
         data[1] = 4;
         data[2] = (byte) (i >> 24);
         data[3] = (byte) (i >> 16);
@@ -147,7 +147,7 @@ public class EntropySource {
      */
     public final void setEvent(long l) {
         byte[] data = new byte[10];
-        data[0] = id_;
+        data[0] = id;
         data[1] = 8;
         int i1 = (int) (l >>> 32);
         int i2 = (int) l;
@@ -173,7 +173,7 @@ public class EntropySource {
      */
     public final void setEvent(short s) {
         byte[] data = new byte[4];
-        data[0] = id_;
+        data[0] = id;
         data[1] = 2;
         data[2] = (byte) (s >> 8);
         data[3] = (byte) s;

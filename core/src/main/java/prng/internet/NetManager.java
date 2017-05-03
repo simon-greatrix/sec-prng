@@ -26,19 +26,19 @@ public class NetManager implements Runnable {
     }
 
     /** Number of times a network seed is expected to be used */
-    private double expectedUsage_;
+    private double expectedUsage;
 
     /** Number of seeds injected into Fortuna */
-    private int seedsUsed_;
+    private int seedsUsed;
 
     /** Available network sources */
-    private NetRandom[] sources_;
+    private NetRandom[] sources;
 
     /** Seed data drawn from network sources */
-    private Seed[] seeds_ = new Seed[64];
+    private Seed[] seeds = new Seed[64];
 
     /** Preference weighting for network sources */
-    private double[] weights_;
+    private double[] weights;
 
 
     /**
@@ -48,16 +48,16 @@ public class NetManager implements Runnable {
      */
     private boolean init() {
         Config config = Config.getConfig("network");
-        expectedUsage_ = 1.0 / config.getInt("expectedUsage", 32);
-        seedsUsed_ = Math.min(32, config.getInt("seedsUsed", 4));
+        expectedUsage = 1.0 / config.getInt("expectedUsage", 32);
+        seedsUsed = Math.min(32, config.getInt("seedsUsed", 4));
 
         // load configuration for sources
         config = Config.getConfig("network.source");
         int count = 0;
         int size = config.size();
         double total = 0;
-        double[] weights = new double[size];
-        NetRandom[] sources = new NetRandom[size];
+        double[] myWeights = new double[size];
+        NetRandom[] mySources = new NetRandom[size];
 
         // create source instances
         for(String cl:config) {
@@ -72,8 +72,8 @@ public class NetManager implements Runnable {
                         cl, e);
                 continue;
             }
-            weights[count] = weight;
-            sources[count] = source;
+            myWeights[count] = weight;
+            mySources[count] = source;
             count++;
             total += weight;
         }
@@ -81,18 +81,18 @@ public class NetManager implements Runnable {
         if( count == 0 ) return false;
 
         // All sources found, store in arrays
-        sources_ = new NetRandom[count];
-        System.arraycopy(sources, 0, sources_, 0, count);
-        weights_ = new double[count];
-        System.arraycopy(weights, 0, weights_, 0, count);
+        sources = new NetRandom[count];
+        System.arraycopy(mySources, 0, sources, 0, count);
+        weights = new double[count];
+        System.arraycopy(myWeights, 0, weights, 0, count);
         for(int i = 0;i < count;i++) {
-            weights_[i] /= total;
+            weights[i] /= total;
         }
 
         // load current seeds
         try (SeedStorage store = SeedStorage.getInstance()) {
             for(int i = 0;i < 64;i++) {
-                seeds_[i] = store.get("NetRandom." + i);
+                seeds[i] = store.get("NetRandom." + i);
             }
         }
 
@@ -111,16 +111,16 @@ public class NetManager implements Runnable {
         double r = IsaacRandom.getSharedInstance().nextDouble();
         int source = 0;
         do {
-            r -= weights_[source];
+            r -= weights[source];
             if( r <= 0 ) break;
             source++;
-        } while( source < weights_.length );
+        } while( source < weights.length );
 
-        NetRandom nr = sources_[source];
+        NetRandom nr = sources[source];
         System.out.println("Fetching data from " + nr.getClass());
         byte[] data = nr.load();
         Seed seed = new Seed("NetRandom." + i, data);
-        seeds_[i] = seed;
+        seeds[i] = seed;
         SeedStorage.enqueue(seed);
         return data;
     }
@@ -132,17 +132,17 @@ public class NetManager implements Runnable {
     private void inject() {
         EntropySource entropy = new EntropySource();
         Random rand = IsaacRandom.getSharedInstance();
-        byte[] indexes = new byte[seedsUsed_];
+        byte[] indexes = new byte[seedsUsed];
         rand.nextBytes(indexes);
         for(int i = 0;i < indexes.length;i++) {
             // pick a seed at random
             int index = indexes[i] & 63;
-            Seed seed = seeds_[index];
+            Seed seed = seeds[index];
 
             // get data from the seed
             byte[] data;
             double r = rand.nextDouble();
-            if( seed == null || seed.isEmpty() || r < expectedUsage_ ) {
+            if( seed == null || seed.isEmpty() || r < expectedUsage ) {
                 data = getSource(index);
             } else {
                 data = seed.getSeed();
@@ -167,7 +167,7 @@ public class NetManager implements Runnable {
      */
     private void fetch() {
         for(int i = 0;i < 64;i++) {
-            Seed seed = seeds_[i];
+            Seed seed = seeds[i];
             if( seed == null || seed.isEmpty() ) {
                 getSource(i);
             }

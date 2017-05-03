@@ -37,19 +37,19 @@ public class HashSpec {
             256);
 
     /** Name of the digest algorithm */
-    final String algorithm_;
+    final String algorithm;
 
     /** Number of bytes in the digest output */
-    final int outputLength_;
+    final int outputLength;
 
     /** Security provider, if needed */
-    final Provider provider_;
+    final Provider provider;
 
     /** Number of seed bytes required by the algorithm */
-    final int seedLength_;
+    final int seedLength;
 
     /** Effective security strength in bits */
-    final int strength_;
+    final int strength;
 
 
     /**
@@ -68,11 +68,11 @@ public class HashSpec {
      */
     public HashSpec(Provider provider, String algorithm, int bitSeedLength,
             int bitOutputLength, int strength) {
-        provider_ = provider;
-        algorithm_ = algorithm;
-        seedLength_ = bitSeedLength / 8;
-        outputLength_ = bitOutputLength / 8;
-        strength_ = strength;
+        this.provider = provider;
+        this.algorithm = algorithm;
+        seedLength = bitSeedLength / 8;
+        outputLength = bitOutputLength / 8;
+        this.strength = strength;
     }
 
 
@@ -101,11 +101,11 @@ public class HashSpec {
      */
     public MessageDigest getInstance() {
         try {
-            if( provider_ == null )
-                return MessageDigest.getInstance(algorithm_);
-            return MessageDigest.getInstance(algorithm_, provider_);
+            if( provider == null )
+                return MessageDigest.getInstance(algorithm);
+            return MessageDigest.getInstance(algorithm, provider);
         } catch (NoSuchAlgorithmException e) {
-            throw new Error("Algorithm " + algorithm_ + " not available");
+            throw new Error("Algorithm " + algorithm + " not available");
         }
     }
 }

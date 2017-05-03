@@ -1,4 +1,4 @@
-grant codeBase "file:/D:/workspace/-" {
+grant {
   permission java.security.SecurityPermission "getProperty.secureRandom.strongAlgorithms";
   permission java.security.SecurityPermission "setProperty.securerandom.strongAlgorithms";
   permission java.security.SecurityPermission "insertProvider.SecureRandomProvider";
@@ -21,6 +21,3 @@ grant codeBase "file:/D:/workspace/-" {
   permission java.net.SocketPermission "api.random.org", "connect, resolve";
 };
 
-grant {
-  permission java.util.PropertyPermission "slf4j.*", "read";
-};

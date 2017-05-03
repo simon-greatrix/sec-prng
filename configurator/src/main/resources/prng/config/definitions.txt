@@ -125,3 +125,11 @@ Duration
 config.prng.seeds.FileStorage.file
 SEED_STORAGE_FILE
 String
+
+config.preferences.enable.system
+PREFS_ENABLE_SYSTEM
+Boolean
+
+config.preferences.enable.user
+PREFS_ENABLE_USER
+Boolean

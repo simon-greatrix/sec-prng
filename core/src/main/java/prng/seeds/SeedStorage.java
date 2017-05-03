@@ -45,11 +45,11 @@ public abstract class SeedStorage implements AutoCloseable {
      * Additive increase in the milliseconds between successive saves. For
      * example, if this was set to 5000 the the time between saves in seconds
      * would be 5, 10, 15, 20, 25, 30 and so on. Takes the value of
-     * "savePeriodAdd" from the "config" section and defaults to 0.
+     * "savePeriodAdd" from the "config" section and defaults to 5000.
      */
     private static final int SAVE_ADD = Math.max(
             Config.getConfig("config", SeedStorage.class).getInt(
-                    "savePeriodAdd", 0),
+                    "savePeriodAdd", 5000),
             0);
 
     /** Last time entropy was saved */
@@ -151,6 +151,8 @@ public abstract class SeedStorage implements AutoCloseable {
     public static SeedStorage getInstance() {
         LOCK.lock();
         Config config = Config.getConfig("config", SeedStorage.class);
+        
+        // Get the class name and try to create it
         String className = config.get("class",
                 UserPrefsStorage.class.getName());
         SeedStorage store = null;
@@ -177,6 +179,8 @@ public abstract class SeedStorage implements AutoCloseable {
             LOG.error("Specified class of " + className + " was not accessible",
                     e);
         }
+        
+        // If we didn't create a store, try a fall-back
         if( store == null ) {
             try {
                 store = new UserPrefsStorage();
@@ -193,6 +197,7 @@ public abstract class SeedStorage implements AutoCloseable {
             }
         }
 
+        // Put all the queued seeds into the store
         synchronized (QUEUE) {
             for(Seed s:QUEUE) {
                 store.put(s);

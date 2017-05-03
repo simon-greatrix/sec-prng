@@ -35,10 +35,10 @@ public class AWTEntropy extends EntropyCollector {
      */
     private static class Sampler {
         /** The graphics device */
-        final GraphicsDevice device_;
+        final GraphicsDevice device;
 
         /** The robot */
-        final Robot robot_;
+        final Robot robot;
 
 
         /**
@@ -50,14 +50,14 @@ public class AWTEntropy extends EntropyCollector {
          * @throws SecurityException
          */
         Sampler(GraphicsDevice d) throws AWTException, SecurityException {
-            device_ = d;
+            device = d;
             try {
-                robot_ = AccessController.doPrivileged(
+                robot = AccessController.doPrivileged(
                         new PrivilegedExceptionAction<Robot>() {
                             @Override
                             public Robot run()
                                     throws AWTException, SecurityException {
-                                return new Robot(device_);
+                                return new Robot(device);
                             }
                         });
             } catch (PrivilegedActionException e) {
@@ -86,7 +86,7 @@ public class AWTEntropy extends EntropyCollector {
          * @return the sample image
          */
         BufferedImage sample(int width, int height) {
-            DisplayMode mode = device_.getDisplayMode();
+            DisplayMode mode = device.getDisplayMode();
             int scrWidth = mode.getWidth();
             width = Math.min(scrWidth, width);
             int xOff = scrWidth - width;
@@ -105,7 +105,7 @@ public class AWTEntropy extends EntropyCollector {
                         new PrivilegedAction<BufferedImage>() {
                             @Override
                             public BufferedImage run() {
-                                return robot_.createScreenCapture(rect);
+                                return robot.createScreenCapture(rect);
                             }
                         });
             } catch (SecurityException e) {
@@ -118,13 +118,13 @@ public class AWTEntropy extends EntropyCollector {
     /**
      * Samplers by graphics devices
      */
-    private Sampler[] samplers_;
+    private Sampler[] samplers;
 
     /** Selected sample area width */
-    private int sampleWidth_ = 50;
+    private int sampleWidth = 50;
 
     /** Selected sample area height */
-    private int sampleHeight_ = 50;
+    private int sampleHeight = 50;
 
 
     /**
@@ -135,11 +135,11 @@ public class AWTEntropy extends EntropyCollector {
      */
     public AWTEntropy(Config config) {
         super(config, 1000);
-        sampleWidth_ = config.getInt("sampleWidth", 50);
-        if( sampleWidth_ <= 0 ) sampleWidth_ = 50;
+        sampleWidth = config.getInt("sampleWidth", 50);
+        if( sampleWidth <= 0 ) sampleWidth = 50;
 
-        sampleHeight_ = config.getInt("sampleHeight", 50);
-        if( sampleHeight_ <= 0 ) sampleHeight_ = 50;
+        sampleHeight = config.getInt("sampleHeight", 50);
+        if( sampleHeight <= 0 ) sampleHeight = 50;
     }
 
 
@@ -159,7 +159,7 @@ public class AWTEntropy extends EntropyCollector {
             try {
                 // create and test a sampler
                 Sampler samp = new Sampler(screens[i]);
-                BufferedImage img = samp.sample(sampleWidth_, sampleHeight_);
+                BufferedImage img = samp.sample(sampleWidth, sampleHeight);
                 if( img == null ) continue;
 
                 // all OK
@@ -179,7 +179,7 @@ public class AWTEntropy extends EntropyCollector {
 
         if( list.isEmpty() ) return false;
 
-        samplers_ = list.toArray(new Sampler[list.size()]);
+        samplers = list.toArray(new Sampler[list.size()]);
         return true;
     }
 
@@ -187,7 +187,7 @@ public class AWTEntropy extends EntropyCollector {
     @Override
     protected void runImpl() {
         // select a screen
-        int s = samplers_.length;
+        int s = samplers.length;
         if( s > 1 ) {
             s = IsaacRandom.getSharedInstance().nextInt(s);
         } else {
@@ -195,7 +195,7 @@ public class AWTEntropy extends EntropyCollector {
         }
 
         // grab a sample image if security allows us to do so
-        BufferedImage image = samplers_[s].sample(sampleWidth_, sampleHeight_);
+        BufferedImage image = samplers[s].sample(sampleWidth, sampleHeight);
         if( image == null ) return;
 
         // compute digest of screen image

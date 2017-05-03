@@ -70,8 +70,9 @@ public class ConfigTable extends AbstractTableModel {
             d.type = defTxt.get(i*3+2);
         }
         
-        sources = new HashMap<>();
-        config = Config.init(sources);
+        PropsList props = new PropsList();
+        props.load();
+        config = props.get();
     }
 
 

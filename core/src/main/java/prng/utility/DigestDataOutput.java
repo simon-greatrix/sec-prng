@@ -16,10 +16,10 @@ import java.security.Provider;
 public class DigestDataOutput implements DataOutput {
 
     /** Buffer for numeric output */
-    private byte[] buffer_ = new byte[8];
+    private byte[] buffer = new byte[8];
 
     /** The digest */
-    private final MessageDigest digest_;
+    private final MessageDigest digest;
 
 
     /**
@@ -29,8 +29,8 @@ public class DigestDataOutput implements DataOutput {
      *            the digest instance to use
      */
     public DigestDataOutput(MessageDigest digest) {
-        digest_ = digest;
-        digest_.reset();
+        this.digest = digest;
+        digest.reset();
     }
 
 
@@ -42,7 +42,7 @@ public class DigestDataOutput implements DataOutput {
      */
     public DigestDataOutput(String name) {
         try {
-            digest_ = MessageDigest.getInstance(name);
+            digest = MessageDigest.getInstance(name);
         } catch (NoSuchAlgorithmException e) {
             throw new Error(
                     "Digest algorithm \"" + name + "\" is not supported.");
@@ -60,7 +60,7 @@ public class DigestDataOutput implements DataOutput {
      */
     public DigestDataOutput(String name, Provider provider) {
         try {
-            digest_ = MessageDigest.getInstance(name, provider);
+            digest = MessageDigest.getInstance(name, provider);
         } catch (NoSuchAlgorithmException e) {
             throw new Error("Digest algorithm \"" + name
                     + "\" is not supported by provider \"" + provider.getName()
@@ -75,37 +75,37 @@ public class DigestDataOutput implements DataOutput {
      * @return the digest
      */
     public byte[] digest() {
-        return digest_.digest();
+        return digest.digest();
     }
 
 
     @Override
     public void write(byte[] b) {
-        digest_.update(b);
+        digest.update(b);
     }
 
 
     @Override
     public void write(byte[] b, int off, int len) {
-        digest_.update(b, off, len);
+        digest.update(b, off, len);
     }
 
 
     @Override
     public void write(int b) {
-        digest_.update((byte) b);
+        digest.update((byte) b);
     }
 
 
     @Override
     public void writeBoolean(boolean v) {
-        digest_.update(v ? (byte) 1 : (byte) 0);
+        digest.update(v ? (byte) 1 : (byte) 0);
     }
 
 
     @Override
     public void writeByte(int v) {
-        digest_.update((byte) v);
+        digest.update((byte) v);
     }
 
 
@@ -116,15 +116,15 @@ public class DigestDataOutput implements DataOutput {
         for(int i = 0;i < l;i++) {
             buf[i] = (byte) s.charAt(i);
         }
-        digest_.update(buf);
+        digest.update(buf);
     }
 
 
     @Override
     public void writeChar(int v) {
-        buffer_[0] = (byte) (v >>> 8);
-        buffer_[1] = (byte) v;
-        digest_.update(buffer_, 0, 2);
+        buffer[0] = (byte) (v >>> 8);
+        buffer[1] = (byte) v;
+        digest.update(buffer, 0, 2);
     }
 
 
@@ -136,7 +136,7 @@ public class DigestDataOutput implements DataOutput {
             buf[i * 2] = (byte) (s.charAt(i) >>> 8);
             buf[i * 2 + 1] = (byte) s.charAt(i);
         }
-        digest_.update(buf);
+        digest.update(buf);
     }
 
 
@@ -154,33 +154,33 @@ public class DigestDataOutput implements DataOutput {
 
     @Override
     public void writeInt(int v) {
-        buffer_[0] = (byte) (v >>> 24);
-        buffer_[1] = (byte) (v >>> 16);
-        buffer_[2] = (byte) (v >>> 8);
-        buffer_[3] = (byte) v;
-        digest_.update(buffer_, 0, 4);
+        buffer[0] = (byte) (v >>> 24);
+        buffer[1] = (byte) (v >>> 16);
+        buffer[2] = (byte) (v >>> 8);
+        buffer[3] = (byte) v;
+        digest.update(buffer, 0, 4);
     }
 
 
     @Override
     public void writeLong(long v) {
-        buffer_[0] = (byte) (v >>> 56);
-        buffer_[1] = (byte) (v >>> 48);
-        buffer_[2] = (byte) (v >>> 40);
-        buffer_[3] = (byte) (v >>> 32);
-        buffer_[4] = (byte) (v >>> 24);
-        buffer_[5] = (byte) (v >>> 16);
-        buffer_[6] = (byte) (v >>> 8);
-        buffer_[7] = (byte) v;
-        digest_.update(buffer_, 0, 8);
+        buffer[0] = (byte) (v >>> 56);
+        buffer[1] = (byte) (v >>> 48);
+        buffer[2] = (byte) (v >>> 40);
+        buffer[3] = (byte) (v >>> 32);
+        buffer[4] = (byte) (v >>> 24);
+        buffer[5] = (byte) (v >>> 16);
+        buffer[6] = (byte) (v >>> 8);
+        buffer[7] = (byte) v;
+        digest.update(buffer, 0, 8);
     }
 
 
     @Override
     public void writeShort(int v) {
-        buffer_[0] = (byte) (v >>> 8);
-        buffer_[1] = (byte) v;
-        digest_.update(buffer_, 0, 2);
+        buffer[0] = (byte) (v >>> 8);
+        buffer[1] = (byte) v;
+        digest.update(buffer, 0, 2);
     }
 
 
@@ -215,7 +215,7 @@ public class DigestDataOutput implements DataOutput {
 
             // if buffer full, flush it
             if( pos >= 256 ) {
-                digest_.update(buf, 0, 256);
+                digest.update(buf, 0, 256);
                 int newPos = pos - 256;
                 System.arraycopy(buf, 256, buf, 0, newPos);
                 pos = newPos;
@@ -224,7 +224,7 @@ public class DigestDataOutput implements DataOutput {
 
         // final zero
         buf[pos++] = 0;
-        digest_.update(buf, 0, pos);
+        digest.update(buf, 0, pos);
     }
 
 }

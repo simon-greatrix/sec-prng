@@ -11,10 +11,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class DaemonThreadFactory implements ThreadFactory {
     /** Generator for unique ID numbers for the threads */
-    private AtomicInteger idSrc_ = new AtomicInteger();
+    private AtomicInteger idSrc = new AtomicInteger();
 
     /** Thread name prefix */
-    private final String name_;
+    private final String name;
 
 
     /**
@@ -24,13 +24,13 @@ public class DaemonThreadFactory implements ThreadFactory {
      *            the name prefix for threads
      */
     public DaemonThreadFactory(String name) {
-        name_ = name;
+        this.name = name;
     }
 
 
     @Override
     public Thread newThread(Runnable r) {
-        Thread thread = new Thread(r, name_ + "-" + idSrc_.incrementAndGet());
+        Thread thread = new Thread(r, name + "-" + idSrc.incrementAndGet());
         thread.setDaemon(true);
         return thread;
     }

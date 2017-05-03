@@ -41,6 +41,12 @@ public class FinalizerEntropy extends EntropyCollector {
     }
 
 
+    /**
+     * Create new entropy collector
+     * 
+     * @param config
+     *            the configuration
+     */
     public FinalizerEntropy(Config config) {
         super(config, 100);
     }

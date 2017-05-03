@@ -11,7 +11,7 @@ import java.util.concurrent.Callable;
 public class DeferredSeed extends Seed {
 
     /** Source of the seed for when it is needed */
-    private final Callable<byte[]> source_;
+    private final Callable<byte[]> source;
 
 
     /**
@@ -23,9 +23,8 @@ public class DeferredSeed extends Seed {
      *            the source of the seed data
      */
     public DeferredSeed(String name, Callable<byte[]> source) {
-        name_ = name;
-        data_ = null;
-        source_ = source;
+        super(name,null);
+        this.source = source;
     }
 
 
@@ -33,13 +32,13 @@ public class DeferredSeed extends Seed {
      * Initialise this seed with actual data
      */
     private void init() {
-        if( data_ != null ) return;
+        if( data != null ) return;
         try {
-            data_ = source_.call();
+            data = source.call();
         } catch (Exception e) {
-            SeedStorage.LOG.error("Failed to create seed \"{}\" from {}", name_,
-                    source_.getClass().getName(), e);
-            data_ = new byte[0];
+            SeedStorage.LOG.error("Failed to create seed \"{}\" from {}", name,
+                    source.getClass().getName(), e);
+            data = new byte[0];
         }
     }
 

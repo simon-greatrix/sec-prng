@@ -18,27 +18,27 @@ abstract public class BaseRandom extends SecureRandomSpi {
     /**
      * The re-seed counter
      */
-    private int counter_ = 1;
+    private int counter = 1;
 
     /**
      * A counter for how often this can generate bytes before needing reseeding.
      * Counter-intuitively, higher values of resistance are less secure.
      */
-    private final int resistance_;
+    private final int resistance;
 
     /**
      * Number of bytes required for a re-seed
      */
-    private final int seedSize_;
+    private final int seedSize;
 
     /** Source of entropy */
-    private final SeedSource source_;
+    private final SeedSource source;
 
     /** Number of spare bytes currently available */
-    private int spareBytes_ = 0;
+    private int spareBytes = 0;
 
     /** Storage for spare bytes */
-    private final byte[] spares_;
+    private final byte[] spares;
 
 
     /**
@@ -55,10 +55,10 @@ abstract public class BaseRandom extends SecureRandomSpi {
      */
     protected BaseRandom(SeedSource source, int resistance, int seedSize,
             int spareSize) {
-        source_ = (source == null) ? Fortuna.SOURCE : source;
-        resistance_ = resistance;
-        seedSize_ = seedSize;
-        spares_ = new byte[spareSize];
+        this.source = (source == null) ? Fortuna.SOURCE : source;
+        this.resistance = resistance;
+        this.seedSize = seedSize;
+        spares = new byte[spareSize];
     }
 
 
@@ -79,7 +79,7 @@ abstract public class BaseRandom extends SecureRandomSpi {
      */
     protected byte[] combineMaterials(byte[] entropy, byte[] nonce,
             byte[] personalization, int minEntropy, int desiredEntropy) {
-        if( entropy == null ) entropy = source_.getSeed(desiredEntropy);
+        if( entropy == null ) entropy = source.getSeed(desiredEntropy);
         if( entropy.length < minEntropy ) {
             byte[] newEntropy = Fortuna.getSeed(minEntropy);
             System.arraycopy(entropy, 0, newEntropy, 0, entropy.length);
@@ -102,26 +102,26 @@ abstract public class BaseRandom extends SecureRandomSpi {
 
     @Override
     protected final byte[] engineGenerateSeed(int size) {
-        return source_.getSeed(size);
+        return source.getSeed(size);
     }
 
 
     @Override
     protected final synchronized void engineNextBytes(byte[] bytes) {
         int offset = 0;
-        if( spareBytes_ > 0 ) {
-            int toUse = Math.min(spareBytes_, bytes.length);
-            System.arraycopy(spares_, spareBytes_ - toUse, bytes, 0, toUse);
-            spareBytes_ -= toUse;
+        if( spareBytes > 0 ) {
+            int toUse = Math.min(spareBytes, bytes.length);
+            System.arraycopy(spares, spareBytes - toUse, bytes, 0, toUse);
+            spareBytes -= toUse;
             offset += toUse;
             if( offset == bytes.length ) {
                 return;
             }
         }
-        if( resistance_ < counter_ ) {
-            engineSetSeed(engineGenerateSeed(seedSize_));
+        if( resistance < counter ) {
+            engineSetSeed(engineGenerateSeed(seedSize));
         } else {
-            counter_++;
+            counter++;
         }
         implNextBytes(offset, bytes);
     }
@@ -132,7 +132,7 @@ abstract public class BaseRandom extends SecureRandomSpi {
         implSetSeed(seed);
 
         // reset the counter
-        counter_ = 1;
+        counter = 1;
     }
 
 
@@ -163,7 +163,7 @@ abstract public class BaseRandom extends SecureRandomSpi {
      * @return a value for seeding this algorithm
      */
     public byte[] newSeed() {
-        byte[] seed = new byte[seedSize_];
+        byte[] seed = new byte[seedSize];
         engineNextBytes(seed);
         return seed;
     }
@@ -180,7 +180,7 @@ abstract public class BaseRandom extends SecureRandomSpi {
      *            the number of bytes
      */
     protected void setSpares(byte[] data, int offset, int length) {
-        spareBytes_ = length;
-        System.arraycopy(data, offset, spares_, 0, length);
+        spareBytes = length;
+        System.arraycopy(data, offset, spares, 0, length);
     }
 }

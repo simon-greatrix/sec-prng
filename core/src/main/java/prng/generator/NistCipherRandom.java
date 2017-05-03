@@ -12,9 +12,9 @@ import javax.crypto.spec.SecretKeySpec;
  * An implementation of the NIST Cipher-based Deterministic Random Number
  * Generator as defined in SP800-90A. Only the AES-256 cipher is available as an
  * underlying cipher.
- * 
+ *
  * @author Simon Greatrix
- * 
+ *
  */
 public class NistCipherRandom extends BaseRandom {
     /** Byte array of 48 zeros */
@@ -37,13 +37,15 @@ public class NistCipherRandom extends BaseRandom {
 
     /**
      * Ensure a seed value has 384 bits.
-     * 
+     *
      * @param seed
      *            a proposed seed
      * @return a seed with 384 bits
      */
     private static byte[] trimSeed(byte[] seed) {
-        if( seed.length == 48 ) return seed;
+        if( seed.length == 48 ) {
+            return seed;
+        }
         synchronized (KEY_DF) {
             KEY_DF.reset();
             KEY_DF.update(seed);
@@ -54,22 +56,22 @@ public class NistCipherRandom extends BaseRandom {
     /**
      * Single block output buffer
      */
-    private final byte[] buffer_ = new byte[16];
+    private final byte[] buffer = new byte[16];
 
     /**
      * The cipher function
      */
-    private final Cipher cipher_;
+    private final Cipher cipher;
 
     /**
      * The "Key" parameter as defined in the specification.
      */
-    private byte[] key_;
+    private byte[] key;
 
     /**
      * The "V" Value parameter as defined in the specification.
      */
-    private byte[] value_;
+    private byte[] value;
 
 
     /**
@@ -83,7 +85,7 @@ public class NistCipherRandom extends BaseRandom {
 
     /**
      * Create a new deterministic random number generator
-     * 
+     *
      * @param source
      *            entropy source (null means use the default source)
      * @param resistance
@@ -102,7 +104,7 @@ public class NistCipherRandom extends BaseRandom {
         super(source, resistance, 48, 16);
 
         try {
-            cipher_ = Cipher.getInstance("AES/ECB/NoPadding");
+            cipher = Cipher.getInstance("AES/ECB/NoPadding");
         } catch (NoSuchAlgorithmException e) {
             throw new Error("AES not supported");
         } catch (NoSuchPaddingException e) {
@@ -112,8 +114,8 @@ public class NistCipherRandom extends BaseRandom {
         byte[] seedMaterial = combineMaterials(entropy, nonce, personalization,
                 32, 48);
 
-        key_ = new byte[32];
-        value_ = new byte[16];
+        key = new byte[32];
+        value = new byte[16];
         implSetSeed(seedMaterial);
     }
 
@@ -127,16 +129,16 @@ public class NistCipherRandom extends BaseRandom {
         try {
             for(int i = 0;i < fullLoops;i++) {
                 incr();
-                cipher_.update(value_, 0, 16, bytes, i * 16);
+                cipher.update(value, 0, 16, bytes, i * 16);
                 off += 16;
             }
 
             // final block
             if( lastSize > 0 ) {
                 incr();
-                cipher_.update(value_, 0, 16, buffer_, 0);
-                System.arraycopy(buffer_, 0, bytes, off, lastSize);
-                setSpares(buffer_, lastSize, 16-lastSize);
+                cipher.update(value, 0, 16, buffer, 0);
+                System.arraycopy(buffer, 0, bytes, off, lastSize);
+                setSpares(buffer, lastSize, 16 - lastSize);
             }
         } catch (GeneralSecurityException e) {
             throw new Error("Cyryptographic failure", e);
@@ -147,20 +149,8 @@ public class NistCipherRandom extends BaseRandom {
 
 
     /**
-     * Increment the value
-     */
-    private void incr() {
-        for(int j = 0;j < 16;j++) {
-            byte b = (byte) (value_[j] + 1);
-            value_[j] = b;
-            if( b != 0 ) break;
-        }
-    }
-
-
-    /**
      * Update this PRNG with new seed material
-     * 
+     *
      * @param seedMaterial
      *            the new seed material
      */
@@ -169,10 +159,10 @@ public class NistCipherRandom extends BaseRandom {
         seedMaterial = trimSeed(seedMaterial);
         byte[] temp = new byte[48];
         try {
-            cipher_.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key_, "AES"));
+            cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"));
             for(int i = 0;i < 3;i++) {
                 incr();
-                cipher_.update(value_, 0, 16, temp, i * 16);
+                cipher.update(value, 0, 16, temp, i * 16);
             }
         } catch (GeneralSecurityException e) {
             throw new Error("Cyryptographic failure", e);
@@ -181,8 +171,22 @@ public class NistCipherRandom extends BaseRandom {
             temp[i] ^= seedMaterial[i];
         }
 
-        System.arraycopy(temp, 0, key_, 0, 32);
-        System.arraycopy(temp, 32, value_, 0, 16);
+        System.arraycopy(temp, 0, key, 0, 32);
+        System.arraycopy(temp, 32, value, 0, 16);
+    }
+
+
+    /**
+     * Increment the value
+     */
+    private void incr() {
+        for(int j = 0;j < 16;j++) {
+            byte b = (byte) (value[j] + 1);
+            value[j] = b;
+            if( b != 0 ) {
+                break;
+            }
+        }
     }
 
 }

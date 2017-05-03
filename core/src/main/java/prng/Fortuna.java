@@ -60,7 +60,7 @@ public class Fortuna {
      */
     private static class SeedMaker implements Callable<byte[]> {
         /** The random implementation to make a seed for */
-        final SecureRandomImpl impl_;
+        final SecureRandomImpl impl;
 
 
         /**
@@ -70,13 +70,13 @@ public class Fortuna {
          *            the random implementation
          */
         SeedMaker(SecureRandomImpl impl) {
-            impl_ = impl;
+            this.impl = impl;
         }
 
 
         @Override
         public byte[] call() {
-            return impl_.newSeed();
+            return impl.newSeed();
         }
     }
 
@@ -93,7 +93,7 @@ public class Fortuna {
         pool = pool & 31;
         Fortuna instance = Fortuna.INSTANCE;
         synchronized (instance) {
-            SecureRandomImpl impl = instance.pool_[pool];
+            SecureRandomImpl impl = instance.pool[pool];
             impl.setSeed(data);
             SeedStorage.enqueue(
                     new DeferredSeed("Fortuna." + pool, new SeedMaker(impl)));
@@ -117,25 +117,25 @@ public class Fortuna {
     }
 
     /** A buffer to hold a single block */
-    private byte[] blockBuffer_ = new byte[16];
+    private byte[] blockBuffer = new byte[16];
 
     /** AES with 256-bit key */
-    private Cipher cipher_;
+    private Cipher cipher;
 
     /** An 128-bit counter */
-    private byte[] counter_ = new byte[16];
+    private byte[] counter = new byte[16];
 
     /** SHA-256 digest */
-    private MessageDigest digest_;
+    private MessageDigest digest;
 
     /** A 256-bit cipher key */
-    private byte[] key_ = new byte[32];
+    private byte[] key = new byte[32];
 
     /** Entropy accumulators */
-    private SecureRandomImpl[] pool_ = new SecureRandomImpl[32];
+    private SecureRandomImpl[] pool = new SecureRandomImpl[32];
 
     /** Number of times this instance has been reseeded. */
-    private int reseedCount_ = 0;
+    private int reseedCount = 0;
 
 
     /**
@@ -143,8 +143,8 @@ public class Fortuna {
      */
     private Fortuna() {
         try {
-            cipher_ = Cipher.getInstance("AES/ECB/NoPadding");
-            digest_ = MessageDigest.getInstance("SHA-256");
+            cipher = Cipher.getInstance("AES/ECB/NoPadding");
+            digest = MessageDigest.getInstance("SHA-256");
         } catch (GeneralSecurityException gse) {
             throw new Error("Failed to initialise seed generator", gse);
         }
@@ -178,7 +178,7 @@ public class Fortuna {
                         HashSpec.SPEC_SHA512, 5, entropy, null, null);
                 break;
             }
-            pool_[i] = new SecureRandomImpl(spi);
+            pool[i] = new SecureRandomImpl(spi);
         }
 
         // use our saved entropy for more buzz!
@@ -186,14 +186,14 @@ public class Fortuna {
             for(int i = 0;i < 32;i++) {
                 Seed seed = store.get("Fortuna." + i);
                 if( seed != null ) {
-                    pool_[i].setSeed(seed.getSeed());
+                    pool[i].setSeed(seed.getSeed());
                 }
             }
         }
 
         for(int i = 0;i < 32;i++) {
             SeedStorage.enqueue(
-                    new DeferredSeed("Fortuna." + i, new SeedMaker(pool_[i])));
+                    new DeferredSeed("Fortuna." + i, new SeedMaker(pool[i])));
         }
     }
 
@@ -211,15 +211,15 @@ public class Fortuna {
      */
     private void generateBlocks(byte[] output, int off, int len) {
         try {
-            cipher_.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key_, "AES"));
+            cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"));
         } catch (InvalidKeyException e) {
             throw new Error(
-                    "AES cipher rejected key of " + key_.length * 8 + " bits");
+                    "AES cipher rejected key of " + key.length * 8 + " bits");
         }
         for(int pos = 0;pos < len;) {
             try {
-                pos += cipher_.update(counter_, 0, 16, output, pos);
-                pos += cipher_.doFinal(output, pos);
+                pos += cipher.update(counter, 0, 16, output, pos);
+                pos += cipher.doFinal(output, pos);
             } catch (GeneralSecurityException e) {
                 throw new Error("Cipher failed", e);
             }
@@ -233,9 +233,9 @@ public class Fortuna {
      */
     private void incrementCounter() {
         for(int i = 0;i < 16;i++) {
-            byte b = counter_[i];
+            byte b = counter[i];
             b++;
-            counter_[i] = b;
+            counter[i] = b;
             if( b != 0 ) break;
         }
     }
@@ -255,7 +255,7 @@ public class Fortuna {
         // generate at most 2^20=1048576 bytes at a time
         for(int i = 0;i < runs;i++) {
             generateBlocks(output, pos, 1048576);
-            generateBlocks(key_, 0, 32);
+            generateBlocks(key, 0, 32);
             pos += 1048576;
         }
 
@@ -267,11 +267,11 @@ public class Fortuna {
 
         finalLen = len - pos;
         if( finalLen > 0 ) {
-            byte[] buf = blockBuffer_;
+            byte[] buf = blockBuffer;
             generateBlocks(buf, 0, 16);
             System.arraycopy(buf, 0, output, pos, finalLen);
         }
-        generateBlocks(key_, 0, 32);
+        generateBlocks(key, 0, 32);
         return output;
     }
 
@@ -284,17 +284,17 @@ public class Fortuna {
      * @return random data
      */
     byte[] randomData(int len) {
-        reseedCount_++;
+        reseedCount++;
         int poolCount = 1;
         int mask = 1;
-        while( (mask != 0) && (reseedCount_ & mask) != 0 ) {
+        while( (mask != 0) && (reseedCount & mask) != 0 ) {
             poolCount++;
             mask <<= 1;
         }
         byte[] buf = new byte[32];
         byte[] seed = new byte[poolCount * 32];
         for(int i = 0;i < poolCount;i++) {
-            pool_[i].nextBytes(buf);
+            pool[i].nextBytes(buf);
             System.arraycopy(buf, 0, seed, i * 32, 32);
         }
         reseed(seed);
@@ -310,11 +310,11 @@ public class Fortuna {
      */
     private void reseed(byte[] input) {
         // derive new key
-        digest_.update(key_);
+        digest.update(key);
         for(int i = 0;i < 32;i++) {
-            key_[i] = 0;
+            key[i] = 0;
         }
-        key_ = digest_.digest(input);
+        key = digest.digest(input);
 
         // increment counter
         incrementCounter();

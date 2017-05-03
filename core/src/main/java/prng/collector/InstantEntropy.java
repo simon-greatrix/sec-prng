@@ -38,10 +38,10 @@ public class InstantEntropy implements Runnable {
      */
     static class Counter {
         /** The current count of ready blocks */
-        private int count_ = 0;
+        private int count = 0;
 
         /** Number of entropy updates */
-        private int updates_ = 0;
+        private int updates = 0;
 
 
         /**
@@ -49,7 +49,7 @@ public class InstantEntropy implements Runnable {
          */
         public void decrement() {
             synchronized (this) {
-                count_--;
+                count--;
             }
         }
 
@@ -59,12 +59,12 @@ public class InstantEntropy implements Runnable {
          */
         public void increment() {
             synchronized (this) {
-                count_++;
+                count++;
 
                 // every 64 updates, save the new ISAAC entropy.
-                updates_++;
-                if( updates_ >= 64 ) {
-                    updates_ = 0;
+                updates++;
+                if( updates >= 64 ) {
+                    updates = 0;
 
                     // Save the ISAAC entropy.
                     FUTURE_RUNNER.submit(new Runnable() {
@@ -93,7 +93,7 @@ public class InstantEntropy implements Runnable {
          */
         public void lookFor() throws InterruptedException {
             synchronized (this) {
-                if( count_ > 0 ) return;
+                if( count > 0 ) return;
                 wait();
             }
 
@@ -108,7 +108,7 @@ public class InstantEntropy implements Runnable {
      */
     static class Holder implements Runnable {
         /** The entropy */
-        byte[] entropy_ = null;
+        byte[] entropy = null;
 
 
         /**
@@ -123,10 +123,10 @@ public class InstantEntropy implements Runnable {
          */
         public byte[] get(long millis) throws InterruptedException {
             synchronized (this) {
-                while( entropy_ == null ) {
+                while( entropy == null ) {
                     wait(millis);
                 }
-                return entropy_;
+                return entropy;
             }
         }
 
@@ -136,9 +136,9 @@ public class InstantEntropy implements Runnable {
          */
         public void reset() {
             synchronized (this) {
-                if( entropy_ != null ) {
+                if( entropy != null ) {
                     COUNTER.decrement();
-                    entropy_ = null;
+                    entropy = null;
                 }
             }
             FUTURE_RUNNER.submit(this);
@@ -164,14 +164,14 @@ public class InstantEntropy implements Runnable {
         /**
          * Set the entropy
          *
-         * @param entropy
+         * @param newEntropy
          *            the entropy.
          */
-        public void set(byte[] entropy) {
-            if( entropy == null ) entropy = new byte[0];
+        public void set(byte[] newEntropy) {
+            if( newEntropy == null ) newEntropy = new byte[0];
             synchronized (this) {
-                byte[] oldEntropy = entropy_;
-                entropy_ = entropy;
+                byte[] oldEntropy = entropy;
+                entropy = newEntropy;
                 if( oldEntropy == null ) {
                     COUNTER.increment();
                     notifyAll();
@@ -187,7 +187,7 @@ public class InstantEntropy implements Runnable {
          */
         public byte[] tryGet() {
             synchronized (this) {
-                return entropy_;
+                return entropy;
             }
         }
     }
@@ -201,10 +201,10 @@ public class InstantEntropy implements Runnable {
      */
     static class Result implements SeedSource {
         /** Current batch of entropy */
-        byte[] entropy_ = new byte[0];
+        byte[] entropy = new byte[0];
 
         /** Current position in this entropy batch */
-        int pos_ = 0;
+        int pos = 0;
 
 
         @Override
@@ -215,22 +215,22 @@ public class InstantEntropy implements Runnable {
             synchronized (this) {
                 while( len > 0 ) {
                     // do we need more entropy?
-                    if( pos_ >= entropy_.length ) {
-                        entropy_ = get();
-                        pos_ = 0;
+                    if( pos >= entropy.length ) {
+                        entropy = get();
+                        pos = 0;
                     }
 
-                    int rem = entropy_.length - pos_;
+                    int rem = entropy.length - pos;
                     if( rem <= len ) {
                         // insufficient bytes remain in current batch
-                        System.arraycopy(output, offset, entropy_, pos_, rem);
+                        System.arraycopy(output, offset, entropy, pos, rem);
                         len -= rem;
-                        pos_ += rem;
+                        pos += rem;
                     } else {
                         // we have enough bytes in this batch
-                        System.arraycopy(output, offset, entropy_, pos_, len);
+                        System.arraycopy(output, offset, entropy, pos, len);
                         len = 0;
-                        pos_ += len;
+                        pos += len;
                     }
                 }
             }
@@ -532,18 +532,18 @@ public class InstantEntropy implements Runnable {
     /**
      * This generator's ID
      */
-    private final int id_;
+    private final int id;
 
     /** Synchronizing latch */
-    private final CountDownLatch latch_;
+    private final CountDownLatch latch;
 
     /** The entropy output sink */
-    private final DigestDataOutput output_;
+    private final DigestDataOutput output;
 
     /**
      * Time this generator started
      */
-    private final long startTime_ = System.nanoTime();
+    private final long startTime = System.nanoTime();
 
 
     /**
@@ -557,9 +557,9 @@ public class InstantEntropy implements Runnable {
      *            the output sink
      */
     InstantEntropy(int id, CountDownLatch latch, DigestDataOutput output) {
-        id_ = id;
-        latch_ = latch;
-        output_ = output;
+        this.id = id;
+        this.latch = latch;
+        this.output = output;
     }
 
 
@@ -577,10 +577,10 @@ public class InstantEntropy implements Runnable {
      */
     @Override
     public void run() {
-        synchronized (output_) {
-            output_.writeBoolean(true);
-            output_.write(id_);
-            output_.writeLong(Thread.currentThread().getId());
+        synchronized (output) {
+            output.writeBoolean(true);
+            output.write(id);
+            output.writeLong(Thread.currentThread().getId());
         }
 
         int p = tryFindPrime();
@@ -591,16 +591,16 @@ public class InstantEntropy implements Runnable {
         }
 
         // We did find a prime
-        long e = System.nanoTime() - startTime_;
+        long e = System.nanoTime() - startTime;
 
         // write out entropy
-        synchronized (output_) {
-            output_.writeBoolean(false);
-            output_.write(id_);
-            output_.writeLong(Thread.currentThread().getId());
-            output_.writeInt(p);
-            output_.writeInt((int) e);
+        synchronized (output) {
+            output.writeBoolean(false);
+            output.write(id);
+            output.writeLong(Thread.currentThread().getId());
+            output.writeInt(p);
+            output.writeInt((int) e);
         }
-        latch_.countDown();
+        latch.countDown();
     }
 }

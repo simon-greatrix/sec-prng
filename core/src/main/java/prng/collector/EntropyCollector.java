@@ -180,10 +180,10 @@ abstract public class EntropyCollector extends EntropySource
     }
 
     /** The future entropy collection */
-    private ScheduledFuture<?> future_ = null;
+    private ScheduledFuture<?> future = null;
 
     /** Delay in milliseconds between entropy collections */
-    private final int delay_;
+    private final int delay;
 
 
     /**
@@ -195,15 +195,15 @@ abstract public class EntropyCollector extends EntropySource
      *            the default collection delay
      */
     protected EntropyCollector(Config config, int dfltDelay) {
-        delay_ = config.getInt("delay", dfltDelay);
+        delay = config.getInt("delay", dfltDelay);
     }
 
 
     /** Cancel this entropy collection */
     private synchronized void cancel() {
-        ScheduledFuture<?> future = future_;
-        future_ = null;
-        if( future != null ) future.cancel(false);
+        ScheduledFuture<?> oldFuture = future;
+        future = null;
+        if( oldFuture != null ) oldFuture.cancel(false);
     }
 
 
@@ -213,7 +213,7 @@ abstract public class EntropyCollector extends EntropySource
      * @return requested delay
      */
     protected final int getDelay() {
-        return delay_;
+        return delay;
     }
 
 
@@ -236,13 +236,13 @@ abstract public class EntropyCollector extends EntropySource
             LOG.error("Error during entropy collection", re);
         }
 
-        int delay = getDelay();
+        int myDelay = getDelay();
         long time = System.currentTimeMillis() - RESET_TIME;
         if( time > SLOW_DOWN_PERIOD ) {
             double factor = (double) time / SLOW_DOWN_PERIOD;
-            delay *= factor;
+            myDelay *= factor;
         }
-        SERVICE.schedule(this, delay, TimeUnit.MILLISECONDS);
+        SERVICE.schedule(this, myDelay, TimeUnit.MILLISECONDS);
     }
 
 
@@ -260,7 +260,7 @@ abstract public class EntropyCollector extends EntropySource
         if( !isOK ) return;
 
         cancel();
-        future_ = SERVICE.schedule(this, getDelay(), TimeUnit.MILLISECONDS);
+        future = SERVICE.schedule(this, getDelay(), TimeUnit.MILLISECONDS);
     }
 
 
