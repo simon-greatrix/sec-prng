@@ -35,5 +35,6 @@
   	<module>core</module>
   	<module>image</module>
   	<module>configurator</module>
+  	<module>utilities</module>
   </modules>
 </project>
