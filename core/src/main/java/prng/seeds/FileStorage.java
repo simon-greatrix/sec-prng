@@ -171,7 +171,7 @@ public class FileStorage extends SeedStorage {
             while( true ) {
                 boolean flag = data.readBoolean();
                 if( flag ) break;
-                LOG.info("Reading item {}", Integer.valueOf(storage.size()));
+                LOG.debug("Reading item {}", Integer.valueOf(storage.size()));
 
                 // get the key
                 String key = data.readUTF();
@@ -181,7 +181,7 @@ public class FileStorage extends SeedStorage {
                 data.readFully(value);
 
                 if( LOG.isDebugEnabled() ) {
-                    LOG.info("Value for {} is:\n{}", key,
+                    LOG.debug("Value for {} is:\n{}", key,
                             BLOBPrint.toString(value));
                 }
                 storage.put(key, value);
@@ -275,7 +275,7 @@ public class FileStorage extends SeedStorage {
                 data.writeBoolean(false);
 
                 // write the key
-                LOG.info("Writing key \"{}\"", key);
+                LOG.debug("Writing key \"{}\"", key);
                 data.writeUTF(key);
 
                 // write the value
