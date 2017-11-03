@@ -14,6 +14,7 @@ import java.awt.image.Kernel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.function.DoubleConsumer;
 
 public class Voronoi extends BasePainter {
 
@@ -270,7 +271,7 @@ public class Voronoi extends BasePainter {
 
 
     @Override
-    public void create() {
+    public void create(DoubleConsumer progress) {
         make();
         int size = points;
 
@@ -342,6 +343,7 @@ public class Voronoi extends BasePainter {
         // create image
         BufferedImage image = new BufferedImage(512, 512,
                 BufferedImage.TYPE_INT_RGB);
+        myImage = image;
         Graphics2D graphics = (Graphics2D) image.getGraphics();
         graphics.setStroke(new BasicStroke(1, BasicStroke.CAP_ROUND,
                 BasicStroke.JOIN_ROUND));
@@ -355,6 +357,7 @@ public class Voronoi extends BasePainter {
             graphics.setColor(Color.WHITE);
             graphics.draw(s);
         }
+        progress.accept(0.4);
 
         for(int j = 0;j < (100 * size);j++) {
             Point2D p = new Point2D.Double();
@@ -368,6 +371,7 @@ public class Voronoi extends BasePainter {
             graphics.setColor(col);
             graphics.fill(dot);
         }
+        progress.accept(0.9);
 
         // create a 3x3 Gaussian blur filter
         float[] blurMatrix = new float[] { 1f / 16, 1f / 8, 1f / 16, 1f / 8,

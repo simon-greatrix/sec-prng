@@ -9,6 +9,7 @@ import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.function.DoubleConsumer;
 
 public class Letters extends BasePainter {
     /** Selected visually distinct characters */
@@ -43,7 +44,7 @@ public class Letters extends BasePainter {
 
 
     @Override
-    public void create() {
+    public void create(DoubleConsumer progress) {
         // Select a font
         GraphicsEnvironment e = GraphicsEnvironment.getLocalGraphicsEnvironment();
         String[] families = e.getAvailableFontFamilyNames();
@@ -55,67 +56,93 @@ public class Letters extends BasePainter {
         }
 
         ArrayList<Area> drawn = new ArrayList<>();
+        ArrayList<Rectangle2D> bounds = new ArrayList<>();
         BufferedImage image = new BufferedImage(512, 512,
                 BufferedImage.TYPE_INT_RGB);
+
+        myImage = image;
+
         Graphics2D graphics = (Graphics2D) image.getGraphics();
         graphics.setStroke(new BasicStroke(1));
         Stroke fatStroke = new BasicStroke(3);
         FontRenderContext frc = graphics.getFontRenderContext();
-        Font font = fonts.get(rand.nextInt(fonts.size()));
-        double scale = 512;
-        while( scale >= 16 ) {
-            double xo = 0;
-            while( xo < 512 ) {
-                double yo = 0;
-                while( yo < 512 ) {
-                    int chr = rand.nextInt(CHARS.length());
-                    GlyphVector vec = font.createGlyphVector(frc,
-                            CHARS.substring(chr, chr + 1));
-                    Shape outline = vec.getGlyphOutline(0);
-                    outline = AffineTransform.getRotateInstance(Math.PI * 2
-                            * rand.nextDouble()).createTransformedShape(
-                                    outline);
-                    Rectangle2D box = outline.getBounds2D();
-                    double xs = scale / box.getWidth();
-                    double ys = scale / box.getHeight();
-                    double as = (Math.min(xs, ys) * 7) / 8;
-                    outline = AffineTransform.getScaleInstance(as,
-                            as).createTransformedShape(outline);
-                    box = outline.getBounds2D();
-                    outline = AffineTransform.getTranslateInstance(
-                            (xo + (0.5 * (scale - box.getWidth())))
-                                    - box.getX(),
-                            (yo + (0.5 * (scale - box.getHeight())))
-                                    - box.getY()).createTransformedShape(
-                                            outline);
-                    Area letter = new Area(
-                            fatStroke.createStrokedShape(outline));
-                    letter.add(new Area(outline));
-                    boolean noHit = true;
-                    for(Area a:drawn) {
-                        Area l2 = (Area) letter.clone();
-                        l2.intersect(a);
-                        if( !l2.isEmpty() ) {
-                            noHit = false;
-                            break;
+
+        int placed;
+        do {
+            placed = 0;
+            graphics.clearRect(0, 0, 512, 512);
+
+            Font font = fonts.get(rand.nextInt(fonts.size()));
+
+            int count = 0;
+            double scale = 512;
+            while( scale >= 16 ) {
+                double xo = 0;
+                while( xo < 512 ) {
+                    double yo = 0;
+                    while( yo < 512 ) {
+                        int chr = rand.nextInt(CHARS.length());
+                        GlyphVector vec = font.createGlyphVector(frc,
+                                CHARS.substring(chr, chr + 1));
+                        Shape outline = vec.getGlyphOutline(0);
+                        outline = AffineTransform.getRotateInstance(Math.PI * 2
+                                * rand.nextDouble()).createTransformedShape(
+                                        outline);
+                        Rectangle2D box = outline.getBounds2D();
+                        double xs = scale / box.getWidth();
+                        double ys = scale / box.getHeight();
+                        double as = (Math.min(xs, ys) * 7) / 8;
+                        outline = AffineTransform.getScaleInstance(as,
+                                as).createTransformedShape(outline);
+                        box = outline.getBounds2D();
+                        outline = AffineTransform.getTranslateInstance(
+                                (xo + (0.5 * (scale - box.getWidth())))
+                                        - box.getX(),
+                                (yo + (0.5 * (scale - box.getHeight())))
+                                        - box.getY()).createTransformedShape(
+                                                outline);
+                        Area letter = new Area(
+                                fatStroke.createStrokedShape(outline));
+                        letter.add(new Area(outline));
+                        box = letter.getBounds2D();
+                        boolean noHit = true;
+                        for(int i=0;i<drawn.size();i++) {
+                            // quick check on bounding rectangles
+                            Rectangle2D b = bounds.get(i);
+                            if( b.intersects(box) ) {
+                                // possible area overlap
+                                Area a = drawn.get(i);
+                                Area l2 = (Area) letter.clone();
+                                l2.intersect(a);
+                                if( !l2.isEmpty() ) {
+                                    noHit = false;
+                                    break;
+                                }
+                            }
                         }
-                    }
-                    if( noHit ) {
-                        float r = rand.nextFloat();
-                        graphics.setColor(col(r));
-                        graphics.fill(outline);
-                        graphics.draw(outline);
-                        drawn.add(letter);
-                    }
+                        if( noHit ) {
+                            float r = rand.nextFloat();
+                            graphics.setColor(col(r));
+                            graphics.fill(outline);
+                            graphics.draw(outline);
+                            drawn.add(letter);
+                            bounds.add(box);
+                            placed++;
+                        }
 
-                    yo += scale;
+                        count++;
+                        progress.accept(count / 1365.0);
+
+                        yo += scale;
+                    }
+                    xo += scale;
                 }
-                xo += scale;
+                scale /= 2;
             }
-            scale /= 2;
-        }
 
-        myImage = image;
+            // We have 60 characters to choose from and 60^86 < 2^512 < 60^87.
+            // Hence we require at least 87 characters be placed to guarantee we
+            // have enough bits on the image.
+        } while( placed < 87 );
     }
-
 }

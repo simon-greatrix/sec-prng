@@ -80,7 +80,6 @@ public class Display extends JFrame {
     public Display(Painter painter) {
         super("Security Image Display");
         this.painter = painter;
-        painter.create((d) -> {});
 
         Container pane = getContentPane();
         pane.setSize(new Dimension(512, 512));
@@ -102,8 +101,9 @@ public class Display extends JFrame {
         setPreferredSize(new Dimension(800, 800));
         setMinimumSize(new Dimension(200, 200));
         setSize(new Dimension(800, 800));
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         validate();
         setVisible(true);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        new Updater().start();
     }
 }

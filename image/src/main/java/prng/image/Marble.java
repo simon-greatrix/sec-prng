@@ -1,6 +1,8 @@
 package prng.image;
 
 import java.awt.Color;
+import java.awt.geom.Point2D;
+import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.util.Random;
 
@@ -29,10 +31,11 @@ public class Marble extends BasePainter {
             next = op;
             spacing = 256.0 / (10 * rand.nextDouble());
         }
+       
 
 
         @Override
-        public float getHue(double x, double y) {
+        public int getHue(double x, double y) {
             double dist = Math.abs(((x - 256) * unitX) + ((y - 256) * unitY));
             dist = (spacing / 2) - Math.abs((dist % spacing) - (spacing / 2));
             double scale = (shift * sharpness) / (dist + sharpness);
@@ -42,23 +45,6 @@ public class Marble extends BasePainter {
         }
     }
 
-    public static class Cross implements Op {
-
-        Op next;
-
-
-        public Cross(Op op) {
-            next = op;
-        }
-
-
-        @Override
-        public float getHue(double x, double y) {
-            double test = Math.min(Math.abs(x - 256), Math.abs(y - 256));
-            return test < 4 ? 0f : next.getHue(x, y);
-        }
-
-    }
 
     public static class Ink implements Op {
         double area;
@@ -67,7 +53,7 @@ public class Marble extends BasePainter {
 
         double centY;
 
-        float hue;
+        int hue;
 
         Op next;
 
@@ -78,14 +64,11 @@ public class Marble extends BasePainter {
             centY = rand.nextInt(512);
 
             double theta = Math.atan2(centX - 256, centY - 256);
-            hue = (float) ((((theta / Math.PI) + 1) / 2))
-                    + (0.1f * rand.nextFloat());
+            hue = rand.nextInt(128);
 
             if( ink != null ) {
-                float oldHue = ink.getHue(centX, centY);
-                if( Math.abs(hue - oldHue) < 0.1 ) {
-                    hue = oldHue + ((rand.nextBoolean() ? -1 : 1)
-                            * (0.1f + (0.1f * rand.nextFloat())));
+                while( hue == ink.getHue(centX, centY) ) {
+                    hue = rand.nextInt(128);
                 }
             }
 
@@ -97,7 +80,7 @@ public class Marble extends BasePainter {
 
 
         @Override
-        public float getHue(double x, double y) {
+        public int getHue(double x, double y) {
             double dx = x - centX;
             double dy = y - centY;
             double dist2 = (dx * dx) + (dy * dy);
@@ -106,21 +89,21 @@ public class Marble extends BasePainter {
                 return hue;
             }
             if( next == null ) {
-                return 0;
+                return 128;
             }
 
             double fact = Math.sqrt(1 - (area / dist2));
             double ox = centX + (dx * fact);
             double oy = centY + (dy * fact);
-            return 0.1f + next.getHue(ox, oy);
+            return next.getHue(ox, oy);
         }
     }
 
     public interface Op {
-        float getHue(double x, double y);
+        int getHue(double x, double y);
     }
 
-    public class Ripple implements Op {
+    public class Ripple {
         double centX;
 
         double centY;
@@ -138,8 +121,7 @@ public class Marble extends BasePainter {
         }
 
 
-        @Override
-        public float getHue(double x, double y) {
+        public float getModifier(double x, double y) {
             double dist = Math.hypot(x - centX, y - centY);
             return (float) (min
                     + ((1 - min) * 0.5 * (1 + Math.cos(dist / wavelength))));
@@ -169,14 +151,13 @@ public class Marble extends BasePainter {
 
 
         @Override
-        public float getHue(double x, double y) {
+        public int getHue(double x, double y) {
             double dist = ((x - 256) * unitX) + ((y - 256) * unitY);
             double eff = amplitude * Math.sin(dist / wavelength);
             double nx = x - (eff * unitY);
             double ny = y + (eff * unitX);
             return next.getHue(nx, ny);
         }
-
     }
 
 
@@ -198,10 +179,14 @@ public class Marble extends BasePainter {
         float hueOffset = rand.nextFloat();
         double scale = 1000;
         Op ink = new Ink(null, scale, rand);
+        double area = ((Ink) ink).area;
         for(int i = 0;i < 100;i++) {
             ink = new Ink(ink, scale, rand);
+            area += ((Ink) ink).area;
             scale *= 0.975;
         }
+        
+        /*
         switch (rand.nextInt(3)) {
         case 0:
             ink = new Wave(ink, rand);
@@ -211,14 +196,41 @@ public class Marble extends BasePainter {
             break;
         default:
         }
+        */
 
+        double size = Math.sqrt(area);
+        Rectangle2D bound = new Rectangle2D.Double(256-size,256-size,size*2,size*2);
+        System.out.println(bound);
+        
+        int[] pallette = new int[129];
+        float base = rand.nextFloat();
+        for(int i0=0;i0<4;i0++) {
+            float s = 1.0f - 0.1f * i0;
+            for(int i1=0;i1<4;i1++) {
+                float b = 1.0f - 0.1f * i1;
+                int o = 8*(i0*4+i1);
+                pallette[o] = Color.HSBtoRGB(base,s,b);
+                pallette[o+1] = Color.HSBtoRGB(base+0.08f,s,b);
+                pallette[o+2] = Color.HSBtoRGB(base+0.16f,s,b);
+                pallette[o+3] = Color.HSBtoRGB(base+0.24f,s,b);
+                pallette[o+4] = Color.HSBtoRGB(base+0.5f,s,b);
+                pallette[o+5] = Color.HSBtoRGB(base+0.58f,s,b);
+                pallette[o+6] = Color.HSBtoRGB(base+0.66f,s,b);
+                pallette[o+7] = Color.HSBtoRGB(base+0.74f,s,b);
+            }
+        }
+        pallette[128]=0;
+        
         Ripple sat = new Ripple(rand, 0.2f);
         Ripple bright = new Ripple(rand, 0.5f);
         for(int x = 0;x < 512;x++) {
             for(int y = 0;y < 512;y++) {
-                float hue = ink.getHue(x, y);
-                int rgb = Color.HSBtoRGB(hue + hueOffset, sat.getHue(x, y),
-                        bright.getHue(x, y));
+                double x0 = bound.getMinX() + x * bound.getWidth() / 512;
+                double y0 = bound.getMinY() + y * bound.getHeight() / 512;
+                int hue = ink.getHue(x0, y0);
+                int rgb = pallette[hue];
+//                int rgb = Color.HSBtoRGB(hue + hueOffset, sat.getHue(x, y),
+//                        bright.getHue(x, y));
                 image.setRGB(x, y, rgb);
             }
         }

@@ -47,6 +47,7 @@ public class Combined implements Painter {
             if( p != null ) {
                 final int j = i;
                 Thread t = new Thread() {
+                    @Override
                     public void run() {
                         p.create((d) -> prog.update(j, d));
                         prog.update(j, 1);

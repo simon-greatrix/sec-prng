@@ -13,8 +13,7 @@ public abstract class BasePainter implements Painter {
     BufferedImage myImage;
 
     Random rand;
-
-
+    
     BasePainter() {
         // do nothing
     }
@@ -32,7 +31,9 @@ public abstract class BasePainter implements Painter {
     }
 
 
-    abstract public void create();
+    public void create() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
 
 
     @Override
