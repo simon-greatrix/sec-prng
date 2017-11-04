@@ -9,6 +9,10 @@ import prng.generator.SeedSource;
  *
  */
 public class ZeroSeedSource implements SeedSource {
+    /**
+     * A singleton source as all seeds are identical.
+     */
+    public static final SeedSource SOURCE = new ZeroSeedSource();
 
     @Override
     public byte[] getSeed(int size) {
