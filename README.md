@@ -22,7 +22,7 @@ To use this library in an application, you should do one of the following:
 SecureRandom rand = new SecureRandom("Nist-SHA256",new prng.SecureRandomProvider());
 ```
 
-### As a default security Provider
+### As a default security Provider
 
 ```java
 prng.SecureRandomProvider.install(true);
