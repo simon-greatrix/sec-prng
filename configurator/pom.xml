@@ -5,7 +5,7 @@
     <artifactId>SecurePRNG</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
-  <artifactId>configurator</artifactId>
+  <artifactId>SecurePRNG-configurator</artifactId>
   <name>configurator</name>
   <description>GUI configurator for SecurePRNG</description>
   <dependencies>

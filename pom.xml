@@ -2,7 +2,8 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.pippsford</groupId>
   <artifactId>SecurePRNG</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <!-- <version>0.2-SNAPSHOT</version> -->
+  <version>0.1</version>
   <name>SecurePRNG</name>
   <description>Implementation of NIST compliant secure random number generators and related tools.</description>
   <url>https://github.com/simon-greatrix/sec-prng</url>
@@ -15,7 +16,18 @@
     </license>
   </licenses>
 
+  <developers>
+    <developer>
+      <name>Simon Greatrix</name>
+      <email>simon@pippsford.com</email>
+      <organization>N/A</organization>
+      <organizationUrl>https://github.com/simon-greatrix</organizationUrl>
+    </developer>
+  </developers>
+
   <scm>
+    <connection>scm:git:https://github.com/simon-greatrix/sec-prng.git</connection>
+    <developerConnection>scm:git:https://github.com/simon-greatrix/sec-prng.git</developerConnection>
     <url>https://github.com/simon-greatrix/sec-prng.git</url>
   </scm>
 
