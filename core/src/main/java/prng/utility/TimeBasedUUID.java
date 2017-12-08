@@ -99,6 +99,7 @@ public class TimeBasedUUID {
      * 
      * @return the MAC address or null.
      * @throws SecurityException
+     *            if the MAC address remains inaccessible
      */
     static byte[] getAddressWithPrivilege() throws SecurityException {
         try {

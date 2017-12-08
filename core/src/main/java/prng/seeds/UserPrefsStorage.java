@@ -17,6 +17,7 @@ public class UserPrefsStorage extends PreferenceStorage {
     /**
      * New storage using user preferences
      * @throws StorageException
+     *              if the user preferences cannot be accessed
      */
     public UserPrefsStorage() throws StorageException {
         // no-op

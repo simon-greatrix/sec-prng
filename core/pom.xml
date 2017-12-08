@@ -5,9 +5,15 @@
     <artifactId>SecurePRNG</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
+
   <artifactId>SecurePRNG-core</artifactId>
   <name>core</name>
   <description>The core random number generators</description>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+  </properties>
 
   <dependencies>
   	<dependency>

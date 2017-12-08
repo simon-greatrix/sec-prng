@@ -16,6 +16,7 @@ public abstract class PreferenceStorage extends SeedStorage {
      * New preference based storage for seeds/
      * 
      * @throws StorageException
+     *              if preferences cannot be accessed
      */
     protected PreferenceStorage() throws StorageException {
         // test we have access privilege to preferences.

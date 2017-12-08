@@ -29,6 +29,7 @@ public class PBEFileEncrypt {
      * @param cl
      *            the class to include
      * @throws IOException
+     *            if the required class cannot be read, or the jar cannot be appended to
      */
     static void includeClass(JarOutputStream jarOutput, Class<?> cl)
             throws IOException {
@@ -55,7 +56,9 @@ public class PBEFileEncrypt {
      * @param args
      *            arguments
      * @throws GeneralSecurityException
+     *            if decryption fails
      * @throws IOException
+     *            if the file cannot be accessed
      */
     public static void main(String[] args)
             throws GeneralSecurityException, IOException {
@@ -97,6 +100,7 @@ public class PBEFileEncrypt {
      * @param args
      *            command line arguments
      * @throws GeneralSecurityException
+     *            if encryption fails
      */
     public PBEFileEncrypt(String[] args) throws GeneralSecurityException {
         this.args = args;
@@ -173,7 +177,9 @@ public class PBEFileEncrypt {
      * Run the utility
      *
      * @throws GeneralSecurityException
+     *             some kind of cryptographic failure, especially missing algorithms
      * @throws IOException
+     *             if an I/O problem occurs
      */
     void exec() throws GeneralSecurityException, IOException {
         checkArgs();
@@ -219,6 +225,7 @@ public class PBEFileEncrypt {
      * @param tmp
      *            the temporary file (will be deleted)
      * @throws IOException
+     *            if adding the file to the jar fails
      */
     void storeFile(JarOutputStream jarOutput, String name, int index, File tmp)
             throws IOException {
@@ -257,7 +264,9 @@ public class PBEFileEncrypt {
      * @param items
      *            the meta information
      * @throws IOException
+     *            if an I/O failure occurs
      * @throws GeneralSecurityException
+     *            if a cryptographic failure occurs
      */
     void storeMeta(JarOutputStream jarOutput, int id, PBEItem outer,
             PBEItem[] items) throws IOException, GeneralSecurityException {
@@ -314,6 +323,7 @@ public class PBEFileEncrypt {
      * Initialise the PBE items
      *
      * @throws GeneralSecurityException
+     *            if the PBE item cannot be initialised
      */
     void initItems() throws GeneralSecurityException {
         Path cwd = new File(System.getProperty("user.dir")).toPath();
@@ -338,7 +348,9 @@ public class PBEFileEncrypt {
      *            the file's index
      * @return the prepared file
      * @throws GeneralSecurityException
+     *            if encryption fails
      * @throws IOException
+     *            if writing to the file fails
      */
     @SuppressWarnings("resource")
     File prepareFile(int index) throws GeneralSecurityException, IOException {

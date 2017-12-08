@@ -55,7 +55,9 @@ public class PBEFileDecrypt {
      * @param args
      *            command line arguments
      * @throws IOException
+     *            if the file cannot be read
      * @throws GeneralSecurityException
+     *            if decryption fails
      */
     public static void main(String[] args)
             throws IOException, GeneralSecurityException {

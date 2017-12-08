@@ -107,6 +107,7 @@ public class PBEItem {
      * @param input
      *            data
      * @throws IOException
+     *            if the input stream fails
      */
     public PBEItem(DataInputStream input) throws IOException {
         int v = input.readByte();
@@ -136,6 +137,7 @@ public class PBEItem {
      * @param rand
      *            random number generator for initialising keys
      * @throws GeneralSecurityException
+     *            if the default MAC instance cannot be created
      */
     public PBEItem(String path, SecureRandom rand)
             throws GeneralSecurityException {
@@ -159,6 +161,7 @@ public class PBEItem {
      *            the cipher mode
      * @return the cipher instance
      * @throws GeneralSecurityException
+     *            if the cipher cannot be created and configured as required
      */
     public Cipher createCipher(char[] password, int mode)
             throws GeneralSecurityException {
@@ -199,6 +202,7 @@ public class PBEItem {
      *
      * @return a new MAC instance
      * @throws GeneralSecurityException
+     *             if creating or initialising the MAC instance fails
      */
     public Mac getMac() throws GeneralSecurityException {
         Mac m = Mac.getInstance(macAlg);
@@ -237,7 +241,9 @@ public class PBEItem {
      * @param rand
      *            source for initialisation vectors
      * @throws NoSuchPaddingException
+     *            if the required padding algorithm does not exist
      * @throws NoSuchAlgorithmException
+     *            if the required cipher algorithm does not exist
      */
     public void setCipher(String cipherName, SecureRandom rand)
             throws GeneralSecurityException {
@@ -268,6 +274,7 @@ public class PBEItem {
      * @param rand
      *            source for seed creation
      * @throws GeneralSecurityException
+     *            if a MAC algorithm cannot be set up
      */
     public void setMacAlgorithm(String alg, SecureRandom rand)
             throws GeneralSecurityException {
@@ -316,6 +323,7 @@ public class PBEItem {
      * @param output
      *            the output stream
      * @throws IOException
+     *            if the output stream fails
      */
     public void writeTo(DataOutputStream output) throws IOException {
         output.writeByte(1);

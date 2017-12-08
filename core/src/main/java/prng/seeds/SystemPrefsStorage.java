@@ -19,6 +19,7 @@ public class SystemPrefsStorage extends PreferenceStorage {
      * Create storage that used the system preferences.
      * 
      * @throws StorageException
+     *              if the system preferences cannot be accessed
      */
     public SystemPrefsStorage() throws StorageException {
         // no-op

@@ -44,7 +44,7 @@ public class FileStorage extends SeedStorage {
     /**
      * Create new file storage instance
      * 
-     * @throws PrivilegedActionException
+     * @throws StorageException if access to the file is denied
      */
     public FileStorage() throws StorageException {
         Config config = Config.getConfig("config", FileStorage.class);
@@ -80,7 +80,7 @@ public class FileStorage extends SeedStorage {
     /**
      * Initialise this instance, loading the stored seed data
      * 
-     * @throws StorageException
+     * @throws StorageException if reading the file fails
      */
     private void init() throws StorageException {
         if( lock != null ) return;
@@ -114,6 +114,7 @@ public class FileStorage extends SeedStorage {
      * Initialise this instance having acquired the requisite privilege.
      * 
      * @throws StorageException
+     *            if the privileges cannot be accessed
      */
     void initWithPrivilege() throws StorageException {
         try {
@@ -258,6 +259,7 @@ public class FileStorage extends SeedStorage {
     /**
      * Close the storage after ascerting privilege
      * @throws StorageException
+     *             if the preferences cannot be written to
      */
     void closeRawWithPrivilege() throws StorageException {
         TreeSet<String> keys = new TreeSet<String>(storage.keySet());

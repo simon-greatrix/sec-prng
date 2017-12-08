@@ -84,6 +84,10 @@ public class AESWrap {
      * @param cipherText
      *            the wrapped data
      * @return the unwrapped data
+     * @throws GeneralSecurityException
+     *            if the decryption fails
+     * @throws IllegalArgumentException
+     *            if the input does not conform to the expectations for key wrapped data
      */
     public synchronized byte[] unwrap(byte[] cipherText)
             throws GeneralSecurityException {
@@ -201,6 +205,8 @@ public class AESWrap {
      * @param plainText
      *            the plain data
      * @return the wrapped data
+     * @throws GeneralSecurityException
+     *            if encryption fails
      */
     public synchronized byte[] wrap(byte[] plainText)
             throws GeneralSecurityException {
