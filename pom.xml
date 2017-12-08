@@ -80,6 +80,7 @@
         <version>2.10.4</version>
         <configuration>
           <outputDirectory>${project.basedir}/docs</outputDirectory>
+          <reportOutputDirectory>${project.basedir}/docs</reportOutputDirectory>
           <aggregate>true</aggregate>
           <show>package</show>
           <nohelp>true</nohelp>
