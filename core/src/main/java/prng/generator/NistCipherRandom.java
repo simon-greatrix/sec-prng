@@ -101,7 +101,7 @@ public class NistCipherRandom extends BaseRandom {
      */
     public NistCipherRandom(SeedSource source, int resistance, byte[] entropy,
             byte[] nonce, byte[] personalization) {
-        super(source, resistance, 48, 16);
+        super(source, new InitialMaterial(source,entropy,nonce,personalization,32,48), resistance, 48, 16);
 
         try {
             cipher = Cipher.getInstance("AES/ECB/NoPadding");
@@ -111,12 +111,8 @@ public class NistCipherRandom extends BaseRandom {
             throw new Error("NoPadding not supported");
         }
 
-        byte[] seedMaterial = combineMaterials(entropy, nonce, personalization,
-                32, 48);
-
         key = new byte[32];
         value = new byte[16];
-        implSetSeed(seedMaterial);
     }
 
 

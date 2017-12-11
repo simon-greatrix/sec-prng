@@ -3,7 +3,6 @@ package prng.generator;
 import java.security.SecureRandomSpi;
 
 import prng.Fortuna;
-import prng.utility.NonceFactory;
 
 /**
  * Common NIST secure random number functionality.
@@ -18,7 +17,7 @@ abstract public class BaseRandom extends SecureRandomSpi {
     /**
      * The re-seed counter
      */
-    private int counter = 1;
+    private int counter = Integer.MAX_VALUE;
 
     /**
      * A counter for how often this can generate bytes before needing reseeding.
@@ -40,12 +39,17 @@ abstract public class BaseRandom extends SecureRandomSpi {
     /** Storage for spare bytes */
     private final byte[] spares;
 
+    /** The initial material. */
+    private InitialMaterial initial;
+
 
     /**
      * New instance.
      * 
      * @param source
      *            source of seed information
+     * @param initial
+     *            the initial material
      * @param resistance
      *            number of operations between re-seeds
      * @param seedSize
@@ -53,55 +57,26 @@ abstract public class BaseRandom extends SecureRandomSpi {
      * @param spareSize
      *            the maximum space required for spare bytes
      */
-    protected BaseRandom(SeedSource source, int resistance, int seedSize,
-            int spareSize) {
+    protected BaseRandom(SeedSource source, InitialMaterial initial,
+            int resistance, int seedSize, int spareSize) {
         this.source = (source == null) ? Fortuna.SOURCE : source;
-        this.resistance = resistance;
+        this.initial = initial;
+
+        // the initial value of the counter must be higher than resistance to
+        // force the initial seed to be set.
+        this.resistance = Math.min(0x7ffffffe, resistance);
         this.seedSize = seedSize;
         spares = new byte[spareSize];
     }
 
 
-    /**
-     * Concatenate the standard material inputs
-     * 
-     * @param entropy
-     *            the supplied entropy
-     * @param nonce
-     *            the supplied nonce
-     * @param personalization
-     *            the supplied personalization
-     * @param minEntropy
-     *            the minimum bytes of entropy
-     * @param desiredEntropy
-     *            the desired bytes of entropy if none supplied
-     * @return concatenated data
-     */
-    protected byte[] combineMaterials(byte[] entropy, byte[] nonce,
-            byte[] personalization, int minEntropy, int desiredEntropy) {
-        if( entropy == null ) entropy = source.getSeed(desiredEntropy);
-        if( entropy.length < minEntropy ) {
-            byte[] newEntropy = Fortuna.getSeed(minEntropy);
-            System.arraycopy(entropy, 0, newEntropy, 0, entropy.length);
-            entropy = newEntropy;
-        }
-        if( nonce == null ) nonce = NonceFactory.create();
-        if( personalization == null )
-            personalization = NonceFactory.personalization();
-
-        int inputLength = entropy.length + nonce.length
-                + personalization.length;
-        byte[] seedMaterial = new byte[inputLength];
-        System.arraycopy(entropy, 0, seedMaterial, 0, entropy.length);
-        System.arraycopy(nonce, 0, seedMaterial, entropy.length, nonce.length);
-        System.arraycopy(personalization, 0, seedMaterial,
-                entropy.length + nonce.length, personalization.length);
-        return seedMaterial;
-    }
-
-
     @Override
     protected final byte[] engineGenerateSeed(int size) {
+        InitialMaterial myInitial = initial;
+        if( myInitial!=null ) {
+            initial = null;
+            return myInitial.combineMaterials();
+        }
         return source.getSeed(size);
     }
 

@@ -107,17 +107,16 @@ public class NistHmacRandom extends BaseRandom {
      */
     public NistHmacRandom(SeedSource source, HashSpec spec, int resistance,
             byte[] entropy, byte[] nonce, byte[] personalization) {
-        super(source, resistance, spec.seedLength, spec.outputLength);
+        super(source,
+                new InitialMaterial(source, entropy, nonce, personalization,
+                        spec.seedLength, spec.seedLength),
+                resistance, spec.seedLength, spec.outputLength);
         this.spec = spec;
         digest = spec.getInstance();
-
-        byte[] seedMaterial = combineMaterials(entropy, nonce, personalization,
-                spec.seedLength, spec.seedLength);
 
         key = new byte[spec.outputLength];
         value = new byte[spec.outputLength];
         Arrays.fill(value, (byte) 1);
-        update(seedMaterial);
     }
 
 
@@ -138,7 +137,7 @@ public class NistHmacRandom extends BaseRandom {
         if( lastSize > 0 ) {
             value = hmac(key, value);
             System.arraycopy(value, 0, bytes, off, lastSize);
-            setSpares(value,lastSize,outLen - lastSize);
+            setSpares(value, lastSize, outLen - lastSize);
         }
 
         update(NO_BYTES);
@@ -192,7 +191,8 @@ public class NistHmacRandom extends BaseRandom {
      *            HMAC message part 3
      * @return hmac value
      */
-    private byte[] hmac(byte[] myKey, byte[] myValue, byte extra, byte[] message) {
+    private byte[] hmac(byte[] myKey, byte[] myValue, byte extra,
+            byte[] message) {
         byte[] ipad = myKey.clone();
         byte[] opad = myKey.clone();
         int len = myKey.length;

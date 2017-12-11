@@ -109,14 +109,9 @@ public class NistHashRandom extends BaseRandom {
      */
     public NistHashRandom(SeedSource source, HashSpec spec, int resistance,
             byte[] entropy, byte[] nonce, byte[] personalization) {
-        super(source, resistance, spec.seedLength, spec.outputLength);
+        super(source, new InitialMaterial(source,entropy,nonce,personalization,spec.seedLength,spec.seedLength), resistance, spec.seedLength, spec.outputLength);
         this.spec = spec;
         digest = spec.getInstance();
-        byte[] seedMaterial = combineMaterials(entropy, nonce, personalization,
-                spec.seedLength, spec.seedLength);
-
-        value = hashDF(false, seedMaterial);
-        constant = hashDF(true, value);
 
         // The maximum bytes per request is 512Kb. To avoid getting close to
         // that we break up large requests into 128Kb sections. Or at least as
