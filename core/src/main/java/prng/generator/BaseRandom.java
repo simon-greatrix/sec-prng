@@ -40,7 +40,7 @@ abstract public class BaseRandom extends SecureRandomSpi {
     private final byte[] spares;
 
     /** The initial material. */
-    private InitialMaterial initial;
+    protected InitialMaterial initial;
 
 
     /**
@@ -69,20 +69,24 @@ abstract public class BaseRandom extends SecureRandomSpi {
         spares = new byte[spareSize];
     }
 
-
-    @Override
-    protected final byte[] engineGenerateSeed(int size) {
+    private void checkInitialised() {
         InitialMaterial myInitial = initial;
         if( myInitial!=null ) {
             initial = null;
-            return myInitial.combineMaterials();
+            initialise(myInitial.combineMaterials());
         }
+    }
+
+
+    @Override
+    protected final byte[] engineGenerateSeed(int size) {
         return source.getSeed(size);
     }
 
 
     @Override
     protected final synchronized void engineNextBytes(byte[] bytes) {
+        checkInitialised();
         int offset = 0;
         if( spareBytes > 0 ) {
             int toUse = Math.min(spareBytes, bytes.length);
@@ -104,6 +108,8 @@ abstract public class BaseRandom extends SecureRandomSpi {
 
     @Override
     protected final synchronized void engineSetSeed(byte[] seed) {
+        checkInitialised();
+
         implSetSeed(seed);
 
         // reset the counter
@@ -121,6 +127,10 @@ abstract public class BaseRandom extends SecureRandomSpi {
      */
     abstract protected void implNextBytes(int offset, byte[] bytes);
 
+    /**
+     * Initialise this instance with the provided material.
+     */
+    abstract protected void initialise(byte[] material);
 
     /**
      * The implementation for updating the seed, ignoring reseed tracking

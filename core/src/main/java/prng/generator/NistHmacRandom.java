@@ -145,6 +145,12 @@ public class NistHmacRandom extends BaseRandom {
 
 
     @Override
+    protected void initialise(byte[] material) {
+        update(material);
+    }
+
+
+    @Override
     protected void implSetSeed(byte[] seed) {
         if( seed == null ) seed = new byte[0];
         update(seed);

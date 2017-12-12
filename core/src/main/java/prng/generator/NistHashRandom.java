@@ -286,6 +286,13 @@ public class NistHashRandom extends BaseRandom {
 
 
     @Override
+    protected void initialise(byte[] material) {
+        value = hashDF(false, material);
+        constant = hashDF(true, value);
+    }
+
+
+    @Override
     protected void implSetSeed(byte[] seed) {
         int inputLength = 1 + value.length + seed.length;
         byte[] seedMaterial = new byte[inputLength];

@@ -37,7 +37,8 @@ public class SecureRandomProvider extends Provider {
     private static final long serialVersionUID = 2l;
 
     static {
-        // add services to provider
+        // Add services to provider. The first added service is the
+        // default.
         SecureRandomProvider prov = new SecureRandomProvider();
         prov.putService(new Service(prov, "SecureRandom", "Nist/SHA256",
                 NistHashRandom.RandomSHA256.class.getName(),

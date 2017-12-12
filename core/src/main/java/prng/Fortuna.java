@@ -33,8 +33,26 @@ import prng.seeds.SeedStorage;
  */
 public class Fortuna {
 
-    /** The singleton instance of Fortuna */
-    private static final Fortuna INSTANCE;
+    /**
+     * Lazily initialise Fortuna to minimise the risk of a
+     * circular dependency because ciphers need random numbers
+     * but Fortuna needs a cipher.
+     */
+    private static class InstanceHolder {
+        static {
+            INSTANCE = new Fortuna();
+
+            // Net manager requires HTTPS, which uses ciphers.
+            NetManager.load();
+
+            // Entropy collector uses random numbers
+            EntropyCollector.restart();
+        }
+
+        /** The singleton instance of Fortuna */
+        static final Fortuna INSTANCE;
+    }
+
 
     /**
      * Derive entropy from Fortuna
@@ -46,11 +64,6 @@ public class Fortuna {
         }
     };
 
-    static {
-        INSTANCE = new Fortuna();
-        EntropyCollector.restart();
-        NetManager.load();
-    }
 
     /**
      * Get a seed from a random implementation
@@ -91,7 +104,7 @@ public class Fortuna {
      */
     protected static void addEvent(int pool, byte[] data) {
         pool = pool & 31;
-        Fortuna instance = Fortuna.INSTANCE;
+        Fortuna instance = InstanceHolder.INSTANCE;
         synchronized (instance) {
             SecureRandomImpl impl = instance.pool[pool];
             impl.setSeed(data);
@@ -109,7 +122,7 @@ public class Fortuna {
      * @return the seed value
      */
     public static byte[] getSeed(int bytes) {
-        Fortuna instance = INSTANCE;
+        Fortuna instance = InstanceHolder.INSTANCE;
         synchronized (instance) {
             EntropyCollector.resetSpeed();
             return instance.randomData(bytes);

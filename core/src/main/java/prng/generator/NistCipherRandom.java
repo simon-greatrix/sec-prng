@@ -144,6 +144,12 @@ public class NistCipherRandom extends BaseRandom {
     }
 
 
+    @Override
+    protected void initialise(byte[] material) {
+        implSetSeed(material);
+    }
+
+
     /**
      * Update this PRNG with new seed material
      *
