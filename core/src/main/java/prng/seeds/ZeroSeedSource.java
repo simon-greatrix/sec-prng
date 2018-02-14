@@ -4,19 +4,20 @@ import prng.generator.SeedSource;
 
 /**
  * All requested seeds consist wholly of zeros.
- * 
- * @author Simon Greatrix
  *
+ * @author Simon Greatrix
  */
 public class ZeroSeedSource implements SeedSource {
-    /**
-     * A singleton source as all seeds are identical.
-     */
-    public static final SeedSource SOURCE = new ZeroSeedSource();
 
-    @Override
-    public byte[] getSeed(int size) {
-        return new byte[size];
-    }
+  /**
+   * A singleton source as all seeds are identical.
+   */
+  public static final SeedSource SOURCE = new ZeroSeedSource();
+
+
+  @Override
+  public byte[] getSeed(int size) {
+    return new byte[size];
+  }
 
 }

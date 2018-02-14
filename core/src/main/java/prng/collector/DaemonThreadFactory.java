@@ -5,34 +5,33 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A creator of daemon threads for the PRNG background processes.
- * 
- * @author Simon
  *
+ * @author Simon
  */
 public class DaemonThreadFactory implements ThreadFactory {
-    /** Generator for unique ID numbers for the threads */
-    private AtomicInteger idSrc = new AtomicInteger();
 
-    /** Thread name prefix */
-    private final String name;
+  /** Thread name prefix */
+  private final String name;
 
-
-    /**
-     * Create a new factory
-     * 
-     * @param name
-     *            the name prefix for threads
-     */
-    public DaemonThreadFactory(String name) {
-        this.name = name;
-    }
+  /** Generator for unique ID numbers for the threads */
+  private AtomicInteger idSrc = new AtomicInteger();
 
 
-    @Override
-    public Thread newThread(Runnable r) {
-        Thread thread = new Thread(r, name + "-" + idSrc.incrementAndGet());
-        thread.setDaemon(true);
-        return thread;
-    }
+  /**
+   * Create a new factory
+   *
+   * @param name the name prefix for threads
+   */
+  public DaemonThreadFactory(String name) {
+    this.name = name;
+  }
+
+
+  @Override
+  public Thread newThread(Runnable r) {
+    Thread thread = new Thread(r, name + "-" + idSrc.incrementAndGet());
+    thread.setDaemon(true);
+    return thread;
+  }
 
 }

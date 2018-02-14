@@ -1,0 +1,24 @@
+package prng;
+
+import java.security.SecureRandom;
+
+/**
+ * @author Simon Greatrix on 12/12/2017.
+ */
+public class WorksAsPrimary {
+  public static void main(String[] args) throws Exception {
+
+    SecureRandomProvider.install(true);
+
+    SecureRandom random = new SecureRandom();
+    byte[] bytes = new byte[32];
+
+    System.out.println("Invoking PRNG");
+
+    random.nextBytes(bytes);
+    System.out.println("PRNG complete");
+
+    System.out.println("Sleeping 5 seconds");
+    Thread.currentThread().sleep(5000);
+  }
+}

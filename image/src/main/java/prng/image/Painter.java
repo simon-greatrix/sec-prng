@@ -6,11 +6,11 @@ import java.util.function.DoubleConsumer;
 
 public interface Painter {
 
-    public void create(DoubleConsumer progress);
+    void create(DoubleConsumer progress);
 
 
-    public void paint(Graphics2D graphics);
+    void paint(Graphics2D graphics);
 
 
-    public void setRandom(Random rand);
+    void setRandom(Random rand);
 }
