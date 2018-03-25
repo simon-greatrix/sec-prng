@@ -254,6 +254,7 @@ public class SystemRandom implements Runnable {
     getRandom().nextBytes(rand);
   }
 
+
   static {
     Provider[] provs = Security.getProviders();
     ArrayList<Service> servs = new ArrayList<>();
@@ -316,7 +317,7 @@ public class SystemRandom implements Runnable {
    * will be undertaken asynchronously to prevent blocking.
    *
    * @param prov the provider
-   * @param alg the algorithm
+   * @param alg  the algorithm
    */
   SystemRandom(final Provider prov, final String alg) {
     EXECUTOR.execute(new Runnable() {
@@ -354,22 +355,22 @@ public class SystemRandom implements Runnable {
    * Fetch new bytes
    */
   private void fetchBytes() {
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("Generating bytes from "
+          + random.getProvider().getName() + ":"
+          + random.getAlgorithm());
+    }
+
+    // Generate random bytes. This may block.
+    random.nextBytes(block);
+
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("Finished generating bytes from "
+          + random.getProvider().getName() + ":"
+          + random.getAlgorithm());
+    }
+
     synchronized (this) {
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("Generating bytes from "
-            + random.getProvider().getName() + ":"
-            + random.getAlgorithm());
-      }
-
-      // generate random bytes
-      random.nextBytes(block);
-
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("Finished generating bytes from "
-            + random.getProvider().getName() + ":"
-            + random.getAlgorithm());
-      }
-
       // update the state
       available = BLOCK_LEN;
     }
@@ -380,7 +381,7 @@ public class SystemRandom implements Runnable {
    * Get one byte from this generator, if possible
    *
    * @param output the output array
-   * @param pos where to put the byte
+   * @param pos    where to put the byte
    *
    * @return true if a byte could be supplied
    */
@@ -420,7 +421,7 @@ public class SystemRandom implements Runnable {
    * Asynchronously initialise this.
    *
    * @param prov the provider
-   * @param alg the algorithm
+   * @param alg  the algorithm
    */
   void init(Provider prov, String alg) {
     // get the specific instance
@@ -435,7 +436,7 @@ public class SystemRandom implements Runnable {
       return;
     }
 
-    // load the first block
+    // Load the first block. This may block.
     random.nextBytes(block);
 
     // set when this reseeds
