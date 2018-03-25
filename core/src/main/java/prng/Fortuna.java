@@ -60,10 +60,10 @@ public class Fortuna {
   private static class Pool {
 
     /** A byte consisting of 4 randomly chosen bits that starts the digest stream. */
-    private static final byte DIGEST_START = (byte) 0x5a;
+    private static final byte DIGEST_START = (byte) 0x6a;
 
     /** A byte, the complement of the DIGEST_START, that starts the seed stream. */
-    private static final byte SEED_START = (byte) 0x9a;
+    private static final byte SEED_START = (byte) 0x95;
 
     private final MessageDigest digest;
 

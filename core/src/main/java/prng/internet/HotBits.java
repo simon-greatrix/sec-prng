@@ -17,6 +17,7 @@ public class HotBits extends NetRandom {
 
   static {
     try {
+      // https://www.fourmilab.ch/cgi-bin/Hotbits.api?nbytes=128&fmt=bin&apikey=HB1RNFWeh9e8HTTZm06b5sRSUPU
       HOT_BITS = new URL(
           "https://www.fourmilab.ch/cgi-bin/Hotbits?nbytes=128&fmt=bin&apikey=Pseudorandom");
     } catch (MalformedURLException e) {

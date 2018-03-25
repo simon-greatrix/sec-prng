@@ -22,18 +22,6 @@ import prng.config.Config;
 abstract public class EntropyCollector extends EntropySource
     implements Runnable {
 
-  /** Report of entropy fulfillment. */
-  public static class Fulfillment {
-    /** Amount of entropy used this period. */
-    public long used;
-
-    /** Amount of entropy provided this period. */
-    public long provided;
-
-    /** Cumulative back log in entropy collection. */
-    public long excess;
-  }
-
   /**
    * Logger for entropy collectors
    */
@@ -45,10 +33,19 @@ abstract public class EntropyCollector extends EntropySource
    */
   private static final long SLOW_DOWN_PERIOD;
 
+  /** Should collection be suspended if no entropy was used and the speed is already at the minimum?. */
+  private static boolean ALLOW_SUSPEND;
+
   /**
    * Is entropy collection suspended?
    */
   private static boolean IS_SUSPENDED = false;
+
+  /** The maximum ratio of the collection speed to the base speed. This is the slowest it can go. */
+  private static double MAX_RATIO;
+
+  /** The minimum ratio of the collection speed to the base speed. This the fastest it can go. */
+  private static double MIN_RATIO;
 
   /**
    * Scheduler for entropy gathering processes
@@ -77,20 +74,36 @@ abstract public class EntropyCollector extends EntropySource
 
         // check edge condition
         if (used == 0) {
-          if( excess>0 ) {
-            if( ! IS_SUSPENDED ) {
-              // No entropy was used, and we have an excess. We can stop collecting.
-              LOG.info("No entropy used, {} bytes provided", provided);
-              ratio = 1.0;
-              suspend();
+          if (ALLOW_SUSPEND && (1.05 * ratio >= MAX_RATIO)) {
+            if (excess > 0) {
+              if (!IS_SUSPENDED) {
+                // No entropy was used, and we have an excess. We can stop collecting.
+                LOG.info("No entropy used, {} bytes provided", provided);
+                ratio = 1.0;
+                suspend();
+              }
+              LOG.debug("No entropy used. No entropy needed. System already suspended.");
+              return;
             }
-            LOG.debug("No entropy used. No entropy needed. System already suspended.");
+
+            // None used but we are in debt. Keep collecting at default rate.
+            LOG.info("No entropy used, {} bytes provided, working to remove debt of {}", provided, -excess);
+            ratio = 1.0;
             return;
           }
 
-          // None used but we are in debt. Keep collecting at default rate.
-          LOG.info("No entropy used, {} bytes provided, working to remove debt of {}", provided,-excess);
-          ratio = 1.0;
+          // can't suspend, so slow down by increasing the ratio
+          double oldRatio = ratio;
+          if (Math.abs(oldRatio - MAX_RATIO) < 4 * Math.ulp(MAX_RATIO)) {
+            if (used != 0 || provided != 0) {
+              LOG.info("Entropy fullfillment ratio was {} out of {}. Ratio unchanged.", used, provided);
+            }
+            return;
+          }
+
+          double newRatio = Math.min(MAX_RATIO, 1.05 * ratio);
+          ratio = newRatio;
+          LOG.info("Entropy fullfillment ratio was {} out of {}. Changed delay ratio from {} to {}.", used, provided, oldRatio, newRatio);
           return;
         }
 
@@ -103,8 +116,8 @@ abstract public class EntropyCollector extends EntropySource
         }
 
         // If we are in debt, keep collecting at normal rate
-        if( excess<0 ) {
-          LOG.info("Provided {} bytes of entropy and used {}, with an entropy debt of {}.",provided,used,-excess);
+        if (excess < 0) {
+          LOG.info("Provided {} bytes of entropy and used {}, with an entropy debt of {}.", provided, used, -excess);
           ratio = 1.0;
           return;
         }
@@ -118,13 +131,28 @@ abstract public class EntropyCollector extends EntropySource
         // Nudge the ratio towards this
         double newRatio = 0.95 * oldRatio + 0.05 * requiredRatio;
 
-        // Never go below 1.0 - we slow down but we do not speed up.
-        ratio = Math.max(1.0, newRatio);
+        // Never go below min - we slow down but we do not speed up.
+        ratio = Math.min(MAX_RATIO, Math.max(MIN_RATIO, newRatio));
 
         LOG.info("Entropy fullfillment ratio was {} out of {}. Changed delay ratio from {} to {}.", used, provided, oldRatio, newRatio);
       }
     }
   };
+
+
+
+  /** Report of entropy fulfillment. */
+  public static class Fulfillment {
+
+    /** Cumulative back log in entropy collection. */
+    public long excess;
+
+    /** Amount of entropy provided this period. */
+    public long provided;
+
+    /** Amount of entropy used this period. */
+    public long used;
+  }
 
 
   /**
@@ -231,6 +259,10 @@ abstract public class EntropyCollector extends EntropySource
     Config config = Config.getConfig("", EntropyCollector.class);
     SLOW_DOWN_PERIOD = config.getLong("slowDownPeriod", 5000);
 
+    MIN_RATIO = Math.max(0.0001, config.getDouble("minRatio", 1.0));
+    MAX_RATIO = Math.max(MIN_RATIO, config.getDouble("maxRatio", 1000.0));
+    ALLOW_SUSPEND = config.getBoolean("allowSuspend", true);
+
     SERVICE.scheduleAtFixedRate(SPEED_CHECK, SLOW_DOWN_PERIOD, SLOW_DOWN_PERIOD, TimeUnit.MILLISECONDS);
   }
 
@@ -248,7 +280,7 @@ abstract public class EntropyCollector extends EntropySource
   /**
    * Create new entropy collector
    *
-   * @param config configuration for this collector
+   * @param config    configuration for this collector
    * @param dfltDelay the default collection delay
    */
   protected EntropyCollector(Config config, int dfltDelay) {
@@ -299,7 +331,7 @@ abstract public class EntropyCollector extends EntropySource
     int myDelay = getDelay();
 
     // Only reschedule if not suspended.
-    if(! IS_SUSPENDED ) {
+    if (!IS_SUSPENDED) {
       SERVICE.schedule(this, myDelay, TimeUnit.MILLISECONDS);
     }
   }

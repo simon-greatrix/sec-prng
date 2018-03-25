@@ -1,5 +1,6 @@
 package prng.collector;
 
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
 import javax.sound.sampled.AudioFormat;
@@ -10,6 +11,8 @@ import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.Mixer;
 import javax.sound.sampled.TargetDataLine;
 import prng.config.Config;
+import prng.generator.HashSpec;
+import prng.generator.IsaacRandom;
 
 /**
  * Collect entropy from audio sources.
@@ -64,6 +67,9 @@ public class AudioEntropy extends EntropyCollector {
      */
     byte[] sample() {
       AudioFormat af = format.getFormats()[0];
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Sampling audio from {}({}) at {} Hz", mixer.getMixerInfo().getName(), mixer.getMixerInfo().getDescription(), af.getSampleRate());
+      }
 
       // Record some data
       TargetDataLine target;
@@ -86,17 +92,16 @@ public class AudioEntropy extends EntropyCollector {
 
       // Verify there is some variation across the frames.
       boolean doesVary = false;
-      loop:
-      for (int i = 1; i < 128; i++) {
-        int offset = frameSize * i;
-        for (int j = 0; j < frameSize; j++) {
-          if (seedData[j] != seedData[offset + j]) {
-            doesVary = true;
-            break loop;
-          }
+      for (int i = seedData.length - 1; i >= frameSize; i--) {
+        if (seedData[i] != seedData[i - frameSize]) {
+          doesVary = true;
+          break;
         }
       }
 
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Audio Sample gathered {} data.", doesVary ? (Integer.toString(seedData.length) + " bytes of") : "no");
+      }
       return doesVary ? seedData : null;
     }
   }
@@ -134,7 +139,7 @@ public class AudioEntropy extends EntropyCollector {
   /**
    * Get all the source from the provided mixer and add them to the list
    *
-   * @param list the list we are building
+   * @param list  the list we are building
    * @param mixer the mixer to get sources from
    */
   protected static void getSources(List<AudioSource> list, Mixer mixer) {
@@ -246,6 +251,9 @@ public class AudioEntropy extends EntropyCollector {
   }
 
 
+  protected List<AudioSource> availableSources;
+
+
   /**
    * Create new audio entropy collector
    *
@@ -258,14 +266,25 @@ public class AudioEntropy extends EntropyCollector {
 
   @Override
   protected boolean initialise() {
-    // TODO Auto-generated method stub
-    return false;
+    availableSources = getSources();
+    LOG.debug("Identified {} sources of audio entropy.", availableSources.size());
+    return !availableSources.isEmpty();
   }
 
 
   @Override
   protected void runImpl() {
-    // TODO Auto-generated method stub
-
+    int index = availableSources.size();
+    if (index > 1) {
+      index = IsaacRandom.getSharedInstance().nextInt(index);
+    } else {
+      index = 0;
+    }
+    AudioSource source = availableSources.get(index);
+    byte[] seedData = source.sample();
+    if (seedData != null) {
+      MessageDigest digest = HashSpec.SPEC_SHA256.getInstance();
+      setEvent(digest.digest(seedData));
+    }
   }
 }
