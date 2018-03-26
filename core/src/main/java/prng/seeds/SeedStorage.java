@@ -84,7 +84,7 @@ public abstract class SeedStorage implements AutoCloseable {
    * @param seed the updated seed
    */
   public static void enqueue(Seed seed) {
-    LOG.debug("Enqueued {}", seed.getName());
+    LOG.trace("Enqueued {}", seed.getName());
     synchronized (QUEUE) {
       QUEUE.add(seed);
       long now = System.currentTimeMillis();
@@ -370,9 +370,9 @@ public abstract class SeedStorage implements AutoCloseable {
    * @param seed the seed to save
    */
   public void put(Seed seed) {
-    LOG.debug("Putting seed into store\n{}", seed);
     SeedOutput output = new SeedOutput();
     seed.save(output);
+    LOG.debug("Putting seed into store\n{}", seed);
     byte[] data = output.toByteArray();
     try {
       putRaw(seed.getName(), data);
