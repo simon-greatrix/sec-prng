@@ -25,7 +25,7 @@ public class SeedOutput implements DataOutput {
   protected int count;
 
   /** Buffer for encoding primitives */
-  private byte[] writeBuffer = new byte[8];
+  private final byte[] writeBuffer = new byte[8];
 
 
   /**

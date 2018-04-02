@@ -37,7 +37,7 @@ public class InstantEntropy implements Runnable {
 
   /** Thread pool for handling requests for entropy */
   static final ExecutorService FUTURE_RUNNER = new ThreadPoolExecutor(2, 2,
-      100, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(),
+      100, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(),
       new DaemonThreadFactory("PRNG-SeedGenerator"));
 
   /**
@@ -70,8 +70,8 @@ public class InstantEntropy implements Runnable {
   private static final Holder[] STORE = new Holder[64];
 
   /** Thread pool for generating entropy */
-  private static ExecutorService ENTROPY_RUNNER = new ThreadPoolExecutor(20,
-      20, 100, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(),
+  private static final ExecutorService ENTROPY_RUNNER = new ThreadPoolExecutor(20,
+      20, 100, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(),
       new DaemonThreadFactory("PRNG-EntropyFactory"));
 
 
@@ -113,14 +113,11 @@ public class InstantEntropy implements Runnable {
           updates = 0;
 
           // Save the ISAAC entropy.
-          FUTURE_RUNNER.submit(new Runnable() {
-            @Override
-            public void run() {
-              byte[] data = new byte[1024];
-              RAND.nextBytes(data);
-              Seed seed = new Seed("instant", data);
-              SeedStorage.enqueue(seed);
-            }
+          FUTURE_RUNNER.submit(() -> {
+            byte[] data = new byte[1024];
+            RAND.nextBytes(data);
+            Seed seed = new Seed("instant", data);
+            SeedStorage.enqueue(seed);
           });
         }
 
@@ -333,7 +330,7 @@ public class InstantEntropy implements Runnable {
    * @return some entropy
    */
   public static byte[] get() {
-    int id = 0;
+    int id;
     byte[] ret = null;
     try {
       synchronized (STORE) {
@@ -377,12 +374,6 @@ public class InstantEntropy implements Runnable {
     }
     return p;
   }
-
-  /**
-   * Get some entropy
-   *
-   * @return some entropy
-   */
 
 
   /**

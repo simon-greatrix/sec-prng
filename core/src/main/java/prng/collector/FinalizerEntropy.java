@@ -38,7 +38,7 @@ public class FinalizerEntropy extends EntropyCollector {
   /**
    * Array where objects are held for a while before they are garbage collected.
    */
-  Object[] objects = new Object[HASH_SIZE];
+  final Object[] objects = new Object[HASH_SIZE];
 
 
   /**

@@ -51,7 +51,7 @@ public class ThreadTimeEntropy extends EntropyCollector {
     long[] ids = bean.getAllThreadIds();
     long sum = 0;
     for (long id : ids) {
-      long t1 = -1, t2 = -1;
+      long t1, t2;
       try {
         t1 = bean.getThreadCpuTime(id);
         t2 = bean.getThreadUserTime(id);

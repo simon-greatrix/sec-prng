@@ -6,4 +6,4 @@
 *.iml
 .idea/
 **/docs/
-
+.DS_Store

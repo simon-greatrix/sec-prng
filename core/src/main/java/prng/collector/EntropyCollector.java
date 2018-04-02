@@ -34,7 +34,7 @@ abstract public class EntropyCollector extends EntropySource
   private static final long SLOW_DOWN_PERIOD;
 
   /** Should collection be suspended if no entropy was used and the speed is already at the minimum?. */
-  private static boolean ALLOW_SUSPEND;
+  private static final boolean ALLOW_SUSPEND;
 
   /**
    * Is entropy collection suspended?
@@ -42,21 +42,21 @@ abstract public class EntropyCollector extends EntropySource
   private static boolean IS_SUSPENDED = false;
 
   /** The maximum ratio of the collection speed to the base speed. This is the slowest it can go. */
-  private static double MAX_RATIO;
+  private static final double MAX_RATIO;
 
   /** The minimum ratio of the collection speed to the base speed. This the fastest it can go. */
-  private static double MIN_RATIO;
+  private static final double MIN_RATIO;
 
   /**
    * Scheduler for entropy gathering processes
    */
-  private static ScheduledExecutorService SERVICE = Executors.newSingleThreadScheduledExecutor(
+  private static final ScheduledExecutorService SERVICE = Executors.newSingleThreadScheduledExecutor(
       new DaemonThreadFactory("PRNG-EntropyCollector"));
 
   /**
    * Set of all known collectors
    */
-  private static Set<EntropyCollector> SOURCES = new HashSet<EntropyCollector>();
+  private static final Set<EntropyCollector> SOURCES = new HashSet<>();
 
   /**
    * Slow down ratio.
@@ -71,6 +71,13 @@ abstract public class EntropyCollector extends EntropySource
         long provided = fulfillment.provided;
         long used = fulfillment.used;
         long excess = fulfillment.excess;
+
+        // If we are in debt, keep collecting at normal rate
+        if (excess < 0) {
+          LOG.info("Provided {} bytes of entropy and used {}, with an entropy debt of {}.", provided, used, -excess);
+          ratio = 1.0;
+          return;
+        }
 
         // check edge condition
         if (used == 0) {
@@ -95,15 +102,15 @@ abstract public class EntropyCollector extends EntropySource
           // can't suspend, so slow down by increasing the ratio
           double oldRatio = ratio;
           if (Math.abs(oldRatio - MAX_RATIO) < 4 * Math.ulp(MAX_RATIO)) {
-            if (used != 0 || provided != 0) {
-              LOG.info("Entropy fullfillment ratio was {} out of {}. Ratio unchanged.", used, provided);
+            if (provided != 0) {
+              LOG.info("Entropy fulfillment ratio was 0 out of {}. Ratio unchanged.", provided);
             }
             return;
           }
 
           double newRatio = Math.min(MAX_RATIO, 1.05 * ratio);
           ratio = newRatio;
-          LOG.info("Entropy fullfillment ratio was {} out of {}. Changed delay ratio from {} to {}.", used, provided, oldRatio, newRatio);
+          LOG.info("Entropy fulfillment ratio was {} out of {}. Changed delay ratio from {} to {}.", used, provided, oldRatio, newRatio);
           return;
         }
 
@@ -112,13 +119,6 @@ abstract public class EntropyCollector extends EntropySource
           LOG.info("No bytes provided. {} bytes used", used);
           ratio = 1.0;
           restart();
-          return;
-        }
-
-        // If we are in debt, keep collecting at normal rate
-        if (excess < 0) {
-          LOG.info("Provided {} bytes of entropy and used {}, with an entropy debt of {}.", provided, used, -excess);
-          ratio = 1.0;
           return;
         }
 
@@ -134,7 +134,7 @@ abstract public class EntropyCollector extends EntropySource
         // Never go below min - we slow down but we do not speed up.
         ratio = Math.min(MAX_RATIO, Math.max(MIN_RATIO, newRatio));
 
-        LOG.info("Entropy fullfillment ratio was {} out of {}. Changed delay ratio from {} to {}.", used, provided, oldRatio, newRatio);
+        LOG.info("Entropy fulfillment ratio was {} out of {}. Changed delay ratio from {} to {}.", used, provided, oldRatio, newRatio);
       }
     }
   };
@@ -193,8 +193,7 @@ abstract public class EntropyCollector extends EntropySource
         Class<?> clazz1 = Class.forName(cl);
         Class<? extends EntropyCollector> clazz2 = clazz1.asSubclass(
             EntropyCollector.class);
-        Constructor<? extends EntropyCollector> cons = clazz2.getConstructor(
-            new Class<?>[]{Config.class});
+        Constructor<? extends EntropyCollector> cons = clazz2.getConstructor(Config.class);
 
         // get configuration
         Config ecConfig = Config.getConfig("config." + cl);
@@ -301,7 +300,17 @@ abstract public class EntropyCollector extends EntropySource
 
 
   /**
-   * Get the delay between invocations in milliseconds.
+   * Get the base delay between milliseconds in milliseconds.
+   *
+   * @return the delay
+   */
+  protected final int getBaseDelay() {
+    return delay;
+  }
+
+
+  /**
+   * Get the delay between invocations in milliseconds. This may increase if entropy collection is backing off.
    *
    * @return requested delay
    */

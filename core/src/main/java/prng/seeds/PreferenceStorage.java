@@ -62,9 +62,7 @@ public abstract class PreferenceStorage extends SeedStorage {
       Preferences prefs = getPreferences();
       prefs.remove(name);
       prefs.flush();
-    } catch (StorageException e) {
-      LOG.error("Failed to remove {} from storage", name, e);
-    } catch (BackingStoreException e) {
+    } catch (StorageException | BackingStoreException e) {
       LOG.error("Failed to remove {} from storage", name, e);
     }
   }

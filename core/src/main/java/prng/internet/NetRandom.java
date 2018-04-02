@@ -174,12 +174,7 @@ abstract public class NetRandom {
     byte[] newData;
     try {
       newData = AccessController.doPrivileged(
-          new PrivilegedExceptionAction<byte[]>() {
-            @Override
-            public byte[] run() throws IOException {
-              return fetch();
-            }
-          });
+          (PrivilegedExceptionAction<byte[]>) this::fetch);
       if (newData == null || newData.length != 128) {
         // Failed to fetch data. It happens.
         LOG.warn("Invalid data received. Got {} bytes instead of 128",

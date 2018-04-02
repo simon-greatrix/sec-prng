@@ -30,8 +30,8 @@ public class SimpleJSONParser {
   private static final char[] LITERAL_TRUE = new char[]{'R', 'r', 'U', 'u',
       'E', 'e'};
 
-  /** Hexidecimal digits */
-  private static char[] HEX = new char[]{'0', '1', '2', '3', '4', '5', '6',
+  /** Hexadecimal digits */
+  private static final char[] HEX = new char[]{'0', '1', '2', '3', '4', '5', '6',
       '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
 
@@ -90,7 +90,7 @@ public class SimpleJSONParser {
   static public class JSONArray extends ArrayList<Primitive> {
 
     /** serial version UID */
-    private static final long serialVersionUID = 2l;
+    private static final long serialVersionUID = 2L;
 
 
     /**
@@ -143,7 +143,7 @@ public class SimpleJSONParser {
   static public class JSONObject extends LinkedHashMap<String, Primitive> {
 
     /** serial version UID */
-    private static final long serialVersionUID = 1l;
+    private static final long serialVersionUID = 1L;
 
 
     /**
@@ -454,7 +454,7 @@ public class SimpleJSONParser {
         return prim;
       }
       if (r != ',') {
-        throw new IOException("Array coninuation was not ',' but 0x"
+        throw new IOException("Array continuation was not ',' but 0x"
             + Integer.toHexString(r));
       }
     }
@@ -504,14 +504,18 @@ public class SimpleJSONParser {
     StringBuilder buf = new StringBuilder();
     // process first character
     int s = 1;
-    if (r == '-') {
-      buf.append('-');
-      s = 0;
-    } else if (r == '.') {
-      buf.append("0.");
-      s = 2;
-    } else {
-      buf.append((char) r);
+    switch (r) {
+      case '-':
+        buf.append('-');
+        s = 0;
+        break;
+      case '.':
+        buf.append("0.");
+        s = 2;
+        break;
+      default:
+        buf.append((char) r);
+        break;
     }
 
     // read rest of number
@@ -651,7 +655,7 @@ public class SimpleJSONParser {
         return prim;
       }
       if (r != ',') {
-        throw new IOException("Object coninuation was not ',' but 0x"
+        throw new IOException("Object continuation was not ',' but 0x"
             + Integer.toHexString(r));
       }
     }

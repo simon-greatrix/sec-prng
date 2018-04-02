@@ -49,7 +49,7 @@ public class HashSpec {
   /**
    * Create new algorithm specification
    *
-   * @param provider Provider implementation, if neeeded
+   * @param provider Provider implementation, if needed
    * @param algorithm algorithm name
    * @param bitSeedLength seed length in bits
    * @param bitOutputLength output length in bits
@@ -91,7 +91,7 @@ public class HashSpec {
       }
       return MessageDigest.getInstance(algorithm, provider);
     } catch (NoSuchAlgorithmException e) {
-      throw new Error("Algorithm " + algorithm + " not available");
+      throw new InternalError("Algorithm " + algorithm + " not available");
     }
   }
 }

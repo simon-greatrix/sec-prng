@@ -17,7 +17,7 @@ public class IsaacRandom extends Random {
   private static final long serialVersionUID = 1L;
 
   /** Architecture instance */
-  private static IsaacRandom INSTANCE = null;
+  private static final IsaacRandom INSTANCE = new IsaacRandom();
 
 
   /**
@@ -53,13 +53,6 @@ public class IsaacRandom extends Random {
    * @return a instance that can be shared by different architecture components.
    */
   public static IsaacRandom getSharedInstance() {
-    if (INSTANCE == null) {
-      synchronized (IsaacRandom.class) {
-        if (INSTANCE == null) {
-          INSTANCE = new IsaacRandom();
-        }
-      }
-    }
     return INSTANCE;
   }
 
@@ -217,9 +210,7 @@ public class IsaacRandom extends Random {
         initState[j] += seed[i + j];
       }
       mix(initState);
-      for (int j = 0; j < 8; j++) {
-        state[i + j] = initState[j];
-      }
+      System.arraycopy(initState, 0, state, i, 8);
     }
 
     // mix the state with itself
@@ -228,9 +219,7 @@ public class IsaacRandom extends Random {
         initState[j] += state[i + j];
       }
       mix(initState);
-      for (int j = 0; j < 8; j++) {
-        state[i + j] = initState[j];
-      }
+      System.arraycopy(initState, 0, state, i, 8);
     }
 
     // Make sure generateMoreResults() will be called by

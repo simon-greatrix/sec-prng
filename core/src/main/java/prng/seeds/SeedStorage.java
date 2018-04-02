@@ -25,7 +25,7 @@ public abstract class SeedStorage implements AutoCloseable {
   /**
    * Set of queued seeds to be written at the next scheduled storage update.
    */
-  final static Set<Seed> QUEUE = new HashSet<Seed>();
+  final static Set<Seed> QUEUE = new HashSet<>();
 
   /**
    * Additive increase in the milliseconds between successive saves. For example, if this was set to 5000 the the time between saves in seconds would be 5, 10,
@@ -64,7 +64,7 @@ public abstract class SeedStorage implements AutoCloseable {
   /**
    * Lock for the storage to ensure only a single thread manipulates the storage at a time.
    */
-  private static Lock LOCK = new ReentrantLock();
+  private static final Lock LOCK = new ReentrantLock();
 
   /**
    * RNG used by the Scrambler. Initially we use the InstantEntropy source, and then switch to SystemRandom once that is available.
@@ -72,10 +72,10 @@ public abstract class SeedStorage implements AutoCloseable {
   private static Random RAND = IsaacRandom.getSharedInstance();
 
   /** Last time entropy was saved */
-  private static long SAVE_DUE = 0;
+  private static long SAVE_DUE;
 
   /** Last time entropy was saved */
-  private static long SAVE_WAIT = 5000;
+  private static long SAVE_WAIT;
 
 
   /**
@@ -205,26 +205,23 @@ public abstract class SeedStorage implements AutoCloseable {
 
   static {
     // save any unsaved seeds at shutdown
-    Runtime.getRuntime().addShutdownHook(new Thread() {
-      @Override
-      public void run() {
-        synchronized (QUEUE) {
-          if (QUEUE.isEmpty()) {
-            return;
-          }
+    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+      synchronized (QUEUE) {
+        if (QUEUE.isEmpty()) {
+          return;
+        }
 
-          // save the enqueued seeds
-          SeedStorage storage = null;
-          try {
-            storage = getInstance();
-          } finally {
-            if (storage != null) {
-              storage.close();
-            }
+        // save the enqueued seeds
+        SeedStorage storage = null;
+        try {
+          storage = getInstance();
+        } finally {
+          if (storage != null) {
+            storage.close();
           }
         }
       }
-    });
+    }));
     SAVE_WAIT = SAVE_PERIOD;
     SAVE_DUE = System.currentTimeMillis() + SAVE_WAIT;
   }

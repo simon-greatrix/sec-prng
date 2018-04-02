@@ -68,7 +68,7 @@ public class Display extends JFrame {
     public static void main(String[] args)
             throws NoSuchAlgorithmException, NoSuchProviderException {
         SecureRandomProvider.install(false);
-        Random rand = SecureRandom.getInstance("Nist-SHA256",
+        Random rand = SecureRandom.getInstance("Nist/SHA256",
                 SecureRandomProvider.NAME);
         Painter p = new Combined(rand);
         new Display(p);
@@ -98,9 +98,9 @@ public class Display extends JFrame {
         });
         pane.add(button, BorderLayout.SOUTH);
 
-        setPreferredSize(new Dimension(800, 800));
+        setPreferredSize(new Dimension(1024, 1024));
         setMinimumSize(new Dimension(200, 200));
-        setSize(new Dimension(800, 800));
+        setSize(new Dimension(1024, 1024));
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         validate();
         setVisible(true);

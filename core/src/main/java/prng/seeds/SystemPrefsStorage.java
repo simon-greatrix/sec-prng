@@ -26,13 +26,8 @@ public class SystemPrefsStorage extends PreferenceStorage {
   protected Preferences getPreferences() throws StorageException {
     try {
       return AccessController.doPrivileged(
-          new PrivilegedAction<Preferences>() {
-            @Override
-            public Preferences run() {
-              return Preferences.systemNodeForPackage(
-                  SeedStorage.class);
-            }
-          });
+          (PrivilegedAction<Preferences>) () -> Preferences.systemNodeForPackage(
+              SeedStorage.class));
     } catch (SecurityException e) {
       SecureRandomProvider.LOG.warn(
           "Lacking permission \"RuntimePermission preferences\" or access to system preferences - cannot access seed data in system preferences");

@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class EntropySource {
 
   /** Generator for unique event wrapper sources */
-  private static AtomicInteger EVENT_WRAPPER_ID_SRC = new AtomicInteger(1);
+  private static final AtomicInteger EVENT_WRAPPER_ID_SRC = new AtomicInteger(1);
 
   /** Unique identifier for this source */
   private final int hashID;

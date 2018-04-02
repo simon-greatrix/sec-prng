@@ -11,10 +11,10 @@ import prng.generator.SeedSource;
 public class PermutingSeedSource implements SeedSource {
 
   /** The numbers 0 to 255 in some order */
-  byte[] data = new byte[256];
+  final byte[] data = new byte[256];
 
   /** Counts for Heap's algorithm */
-  private short[] count = new short[256];
+  private final short[] count = new short[256];
 
   /** State for Heap's algorithm */
   private int state = 0;

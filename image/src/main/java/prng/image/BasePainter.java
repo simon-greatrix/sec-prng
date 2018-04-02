@@ -10,46 +10,52 @@ import java.util.function.DoubleConsumer;
 
 public abstract class BasePainter implements Painter {
 
-    BufferedImage myImage;
+  BufferedImage myImage;
 
-    Random rand;
-    
-    BasePainter() {
-        // do nothing
-    }
+  Random rand;
 
 
-    BasePainter(Random rand) {
-        this.rand = rand;
-    }
+  BasePainter() {
+    // do nothing
+  }
 
 
-    @Override
-    public void create(DoubleConsumer progress) {
-        create();
-        progress.accept(1d);
-    }
+  BasePainter(Random rand) {
+    this.rand = rand;
+  }
 
 
-    public void create() {
-        throw new UnsupportedOperationException("Not implemented");
-    }
+  @Override
+  public void create(DoubleConsumer progress) {
+    create();
+    progress.accept(1d);
+  }
 
 
-    @Override
-    public void paint(Graphics2D graphics) {
-        Rectangle bounds = graphics.getClipBounds();
-        AffineTransform trans = AffineTransform.getScaleInstance(
-                bounds.getWidth() / 512, bounds.getHeight() / 512);
-        AffineTransformOp op = new AffineTransformOp(trans,
-                AffineTransformOp.TYPE_BICUBIC);
-        graphics.drawImage(myImage, op, (int) bounds.getX(),
-                (int) bounds.getY());
-    }
+  public void create() {
+    throw new UnsupportedOperationException("Not implemented");
+  }
 
 
-    @Override
-    public void setRandom(Random newRand) {
-        rand = newRand;
-    }
+  public BufferedImage getImage() {
+    return myImage;
+  }
+
+
+  @Override
+  public void paint(Graphics2D graphics) {
+    Rectangle bounds = graphics.getClipBounds();
+    AffineTransform trans = AffineTransform.getScaleInstance(
+        bounds.getWidth() / 512, bounds.getHeight() / 512);
+    AffineTransformOp op = new AffineTransformOp(trans,
+        AffineTransformOp.TYPE_BICUBIC);
+    graphics.drawImage(myImage, op, (int) bounds.getX(),
+        (int) bounds.getY());
+  }
+
+
+  @Override
+  public void setRandom(Random newRand) {
+    rand = newRand;
+  }
 }

@@ -14,7 +14,7 @@ public class NistHmacRandom extends BaseRandom {
   private final static byte[] NO_BYTES = new byte[0];
 
   /** Serial version UID */
-  private static final long serialVersionUID = 1l;
+  private static final long serialVersionUID = 1L;
 
 
 
@@ -26,7 +26,7 @@ public class NistHmacRandom extends BaseRandom {
   public static class RandomHmacSHA1 extends NistHmacRandom {
 
     /** serial version UID */
-    private static final long serialVersionUID = 1l;
+    private static final long serialVersionUID = 1L;
 
 
     /** New instance */
@@ -45,7 +45,7 @@ public class NistHmacRandom extends BaseRandom {
   public static class RandomHmacSHA256 extends NistHmacRandom {
 
     /** serial version UID */
-    private static final long serialVersionUID = 1l;
+    private static final long serialVersionUID = 1L;
 
 
     /** New instance */
@@ -64,7 +64,7 @@ public class NistHmacRandom extends BaseRandom {
   public static class RandomHmacSHA512 extends NistHmacRandom {
 
     /** serial version UID */
-    private static final long serialVersionUID = 1l;
+    private static final long serialVersionUID = 1L;
 
 
     /** New instance */

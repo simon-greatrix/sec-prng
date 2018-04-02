@@ -35,7 +35,7 @@ public class Config implements Iterable<String> {
   static final URI URI_PREFERENCE_USER;
 
   /** The raw configuration */
-  private static final Map<String, String> CONFIG = new TreeMap<String, String>();
+  private static final Map<String, String> CONFIG = new TreeMap<>();
 
 
   /**
@@ -138,19 +138,15 @@ public class Config implements Iterable<String> {
    * @return the value, or null if the variable does not exist or we lack the privilege to get it.
    */
   public static String getEnv(String key) {
-    return AccessController.doPrivileged(new PrivilegedAction<String>() {
-
-      @Override
-      public String run() {
-        try {
-          return System.getProperty(key);
-        } catch (SecurityException se) {
-          RuntimePermission p = new RuntimePermission(
-              "getenv." + key);
-          LOG.warn("Unable to read environment variable \"" + key
-              + "\". Missing permission " + p);
-          return null;
-        }
+    return AccessController.doPrivileged((PrivilegedAction<String>) () -> {
+      try {
+        return System.getProperty(key);
+      } catch (SecurityException se) {
+        RuntimePermission p = new RuntimePermission(
+            "getenv." + key);
+        LOG.warn("Unable to read environment variable \"" + key
+            + "\". Missing permission " + p);
+        return null;
       }
     });
   }
@@ -164,18 +160,14 @@ public class Config implements Iterable<String> {
    * @return the property, or null if the property does not exist or we lack the privilege to get it.
    */
   public static String getProperty(String key) {
-    return AccessController.doPrivileged(new PrivilegedAction<String>() {
-
-      @Override
-      public String run() {
-        try {
-          return System.getProperty(key);
-        } catch (SecurityException se) {
-          PropertyPermission p = new PropertyPermission(key, "read");
-          LOG.warn("Unable to read system property \"" + key
-              + "\". Missing permission " + p);
-          return null;
-        }
+    return AccessController.doPrivileged((PrivilegedAction<String>) () -> {
+      try {
+        return System.getProperty(key);
+      } catch (SecurityException se) {
+        PropertyPermission p = new PropertyPermission(key, "read");
+        LOG.warn("Unable to read system property \"" + key
+            + "\". Missing permission " + p);
+        return null;
       }
     });
   }
@@ -221,7 +213,7 @@ public class Config implements Iterable<String> {
   }
 
   /** Configuration for the specified category */
-  protected Map<String, String> config = new HashMap<String, String>();
+  protected final Map<String, String> config = new HashMap<>();
 
 
   /**

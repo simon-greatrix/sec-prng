@@ -58,12 +58,7 @@ public class TimeBasedUUID {
   private static byte[] getAddress() {
     try {
       byte[] data = AccessController.doPrivileged(
-          new PrivilegedAction<byte[]>() {
-            @Override
-            public byte[] run() {
-              return getAddressWithPrivilege();
-            }
-          });
+          (PrivilegedAction<byte[]>) TimeBasedUUID::getAddressWithPrivilege);
       if (data != null) {
         return data;
       }
@@ -120,7 +115,7 @@ public class TimeBasedUUID {
     LOG.info("Failed to get hardware address for localhost. Enumerating network interfaces.");
 
     // now try all interfaces
-    LinkedList<NetworkInterface> list = new LinkedList<NetworkInterface>();
+    LinkedList<NetworkInterface> list = new LinkedList<>();
     try {
       Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces();
       while (en.hasMoreElements()) {
@@ -146,7 +141,7 @@ public class TimeBasedUUID {
         }
 
         // queue up sub-interfaces in order
-        LinkedList<NetworkInterface> tmp = new LinkedList<NetworkInterface>();
+        LinkedList<NetworkInterface> tmp = new LinkedList<>();
         Enumeration<NetworkInterface> en = nint.getSubInterfaces();
         while (en.hasMoreElements()) {
           tmp.addLast(en.nextElement());
@@ -219,16 +214,16 @@ public class TimeBasedUUID {
     final int sequence = time.getSequence();
 
     // first 32 bits are the lowest 32 bits of the time
-    long l1 = (rawTimestamp & 0xffffffffl) << 32;
+    long l1 = (rawTimestamp & 0xffffffffL) << 32;
 
     // next 16 bits are the middle of the time
-    l1 |= (rawTimestamp & 0xffff00000000l) >> 16;
+    l1 |= (rawTimestamp & 0xffff00000000L) >> 16;
 
     // next 4 bits are the version code
     l1 |= 0x1000;
 
     // last 12 bits are the next 12 bits of the time
-    l1 |= (rawTimestamp & 0xfff000000000000l) >> 48;
+    l1 |= (rawTimestamp & 0xfff000000000000L) >> 48;
 
     // the top 4 bits of the time are lost
 

@@ -11,7 +11,7 @@ import prng.generator.BaseRandom;
 class SecureRandomImpl extends SecureRandom {
 
   /** serial version UID */
-  private static final long serialVersionUID = 2l;
+  private static final long serialVersionUID = 2L;
 
   /** The actual PRNG */
   private final BaseRandom base;

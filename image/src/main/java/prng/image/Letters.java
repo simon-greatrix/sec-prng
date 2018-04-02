@@ -7,13 +7,20 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.Area;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.function.DoubleConsumer;
 
+
+/**
+ * <p>Creates a display of at least 87 letters selected from a set of 59 characters. 59^87 exceeds 2^512.</p>
+ *
+ * <p>Each character has a color selected from 1536 possibles, </p>
+ */
 public class Letters extends BasePainter {
     /** Selected visually distinct characters */
-    private static final String CHARS = "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabdefghijnpqrt$%&*+@#?<>";
+    private static final String CHARS = "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabdefghijnpqrt$%&*+@#?{";
 
 
     private static Color col(float r) {
@@ -140,7 +147,7 @@ public class Letters extends BasePainter {
                 scale /= 2;
             }
 
-            // We have 60 characters to choose from and 60^86 < 2^512 < 60^87.
+            // We have 59 characters to choose from and 59^86 < 2^512 < 59^87.
             // Hence we require at least 87 characters be placed to guarantee we
             // have enough bits on the image.
         } while( placed < 87 );

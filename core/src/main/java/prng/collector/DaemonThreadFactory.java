@@ -14,7 +14,7 @@ public class DaemonThreadFactory implements ThreadFactory {
   private final String name;
 
   /** Generator for unique ID numbers for the threads */
-  private AtomicInteger idSrc = new AtomicInteger();
+  private final AtomicInteger idSrc = new AtomicInteger();
 
 
   /**

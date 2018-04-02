@@ -11,7 +11,7 @@ import prng.Fortuna;
 abstract public class BaseRandom extends SecureRandomSpi {
 
   /** serial version UID */
-  private static final long serialVersionUID = 1l;
+  private static final long serialVersionUID = 1L;
 
   /**
    * A counter for how often this can generate bytes before needing reseeding. Counter-intuitively, higher values of resistance are less secure.

@@ -28,7 +28,7 @@ public class NetManager implements Runnable {
   private double expectedUsage;
 
   /** Seed data drawn from network sources */
-  private Seed[] seeds = new Seed[64];
+  private final Seed[] seeds = new Seed[64];
 
   /** Number of seeds injected into Fortuna */
   private int seedsUsed;

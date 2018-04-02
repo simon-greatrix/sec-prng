@@ -228,7 +228,7 @@ public class AudioEntropy extends EntropyCollector {
   }
 
 
-  public static void main(String[] args) throws Exception {
+  public static void main(String[] args) {
     // A recordable line is a target data line
     Line.Info targetDataType = new Line.Info(TargetDataLine.class);
 

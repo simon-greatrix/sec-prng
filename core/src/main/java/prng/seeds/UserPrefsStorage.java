@@ -26,13 +26,8 @@ public class UserPrefsStorage extends PreferenceStorage {
   protected Preferences getPreferences() throws StorageException {
     try {
       return AccessController.doPrivileged(
-          new PrivilegedAction<Preferences>() {
-            @Override
-            public Preferences run() {
-              return Preferences.userNodeForPackage(
-                  SeedStorage.class);
-            }
-          });
+          (PrivilegedAction<Preferences>) () -> Preferences.userNodeForPackage(
+              SeedStorage.class));
     } catch (SecurityException e) {
       SecureRandomProvider.LOG.warn(
           "Lacking permission \"RuntimePermission preferences\" or access to user preferences - cannot access seed data in user preferences");

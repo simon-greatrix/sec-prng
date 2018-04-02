@@ -42,12 +42,7 @@ public class Props extends Properties {
     // Get the preferences using a privileged action.
     try {
       prefs = AccessController.doPrivileged(
-          new PrivilegedAction<Preferences>() {
-            @Override
-            public Preferences run() {
-              return prefSupplier.get();
-            }
-          });
+          (PrivilegedAction<Preferences>) prefSupplier::get);
     } catch (SecurityException se) {
       Config.LOG.info("Unable to access preferences for \""
           + src.toASCIIString() + "\"", se);
@@ -130,8 +125,7 @@ public class Props extends Properties {
     for (Map.Entry<Object, Object> e : entrySet()) {
       Object k = e.getKey();
       Object v = e.getValue();
-      if ((!map.containsKey(k)) && (k instanceof String)
-          && (v instanceof String)) {
+      if ((k instanceof String) && (v instanceof String) && (!map.containsKey(k))) {
         map.put((String) k, (String) v);
       }
     }

@@ -41,7 +41,7 @@ public class FileStorage extends SeedStorage {
   FileLock lock = null;
 
   /** Internal map of storage */
-  private Map<String, byte[]> storage = new HashMap<String, byte[]>();
+  private final Map<String, byte[]> storage = new HashMap<>();
 
 
   /**
@@ -56,19 +56,14 @@ public class FileStorage extends SeedStorage {
 
     fileName = new File(file);
     try {
-      AccessController.doPrivileged(new PrivilegedAction<Void>() {
-
-        @Override
-        public Void run() {
-          if (!fileName.canWrite()) {
-            LOG.error("Cannot write to file \"" + fileName.getAbsolutePath() + "\".");
-          }
-          if (fileName.exists() && !fileName.canRead()) {
-            LOG.error("Cannot read from file \"" + fileName.getAbsolutePath() + "\".");
-          }
-          return null;
+      AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
+        if (!fileName.canWrite()) {
+          LOG.error("Cannot write to file \"" + fileName.getAbsolutePath() + "\".");
         }
-
+        if (fileName.exists() && !fileName.canRead()) {
+          LOG.error("Cannot read from file \"" + fileName.getAbsolutePath() + "\".");
+        }
+        return null;
       });
     } catch (SecurityException se) {
       SecureRandomProvider.LOG.warn(
@@ -87,14 +82,9 @@ public class FileStorage extends SeedStorage {
     }
 
     try {
-      AccessController.doPrivileged(new PrivilegedExceptionAction<Void>() {
-
-        @Override
-        public Void run() throws StorageException {
-          closeRawWithPrivilege();
-          return null;
-        }
-
+      AccessController.doPrivileged((PrivilegedExceptionAction<Void>) () -> {
+        closeRawWithPrivilege();
+        return null;
       });
     } catch (PrivilegedActionException e) {
       // It will be a storage exception
@@ -116,7 +106,7 @@ public class FileStorage extends SeedStorage {
    * @throws StorageException if the preferences cannot be written to
    */
   void closeRawWithPrivilege() throws StorageException {
-    TreeSet<String> keys = new TreeSet<String>(storage.keySet());
+    TreeSet<String> keys = new TreeSet<>(storage.keySet());
     IOException ioe = null;
     try {
       // if not modified, skip straight to the finally block to close the
@@ -206,14 +196,9 @@ public class FileStorage extends SeedStorage {
     }
 
     try {
-      AccessController.doPrivileged(new PrivilegedExceptionAction<Void>() {
-
-        @Override
-        public Void run() throws StorageException {
-          initWithPrivilege();
-          return null;
-        }
-
+      AccessController.doPrivileged((PrivilegedExceptionAction<Void>) () -> {
+        initWithPrivilege();
+        return null;
       });
     } catch (PrivilegedActionException e) {
       // Storage access failed
@@ -311,7 +296,7 @@ public class FileStorage extends SeedStorage {
       }
       isModified = false;
 
-      LOG.info("File read finised");
+      LOG.info("File read finished");
     } catch (IOException ioe) {
       throw new StorageException("Loading storage from "
           + fileName.getAbsolutePath() + " failed", ioe);

@@ -21,7 +21,7 @@ public class HotBits extends NetRandom {
       HOT_BITS = new URL(
           "https://www.fourmilab.ch/cgi-bin/Hotbits?nbytes=128&fmt=bin&apikey=Pseudorandom");
     } catch (MalformedURLException e) {
-      throw new Error("Impossible exception", e);
+      throw new InternalError("Impossible exception", e);
     }
   }
 

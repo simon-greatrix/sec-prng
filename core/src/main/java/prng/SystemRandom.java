@@ -76,17 +76,12 @@ public class SystemRandom implements Runnable {
    * "Random" selection for which source gets reseeded. The intention is to all sources of seed data to influence all other sources by "randomly" assigning seed
    * data to a source.
    */
-  private static Random RESEED = new Random();
+  private static final Random RESEED = new Random();
 
   /**
    * Source for getting entropy from the system
    */
-  public static final SeedSource SOURCE = new SeedSource() {
-    @Override
-    public byte[] getSeed(int size) {
-      return SystemRandom.getSeed(size);
-    }
-  };
+  public static final SeedSource SOURCE = SystemRandom::getSeed;
 
 
 
@@ -281,9 +276,9 @@ public class SystemRandom implements Runnable {
     SOURCE_LEN = len;
     SOURCES = new SystemRandom[len];
     EXECUTOR = new ThreadPoolExecutor(0, 2 * len, 0, TimeUnit.NANOSECONDS,
-        new LinkedBlockingQueue<Runnable>(),
+        new LinkedBlockingQueue<>(),
         new DaemonThreadFactory("PRNG-SystemRandom"));
-    SEED_MAKER = new ExecutorCompletionService<Seed>(EXECUTOR);
+    SEED_MAKER = new ExecutorCompletionService<>(EXECUTOR);
 
     // create the PRNGs
     for (int i = 0; i < len; i++) {
@@ -300,7 +295,7 @@ public class SystemRandom implements Runnable {
   private int available = -1;
 
   /** Random bytes drawn from the system PRNG */
-  private byte[] block = new byte[BLOCK_LEN];
+  private final byte[] block = new byte[BLOCK_LEN];
 
   /** Can this PRNG accept new seed information? (Not all of them can.) */
   private boolean canSeed = true;
@@ -320,12 +315,7 @@ public class SystemRandom implements Runnable {
    * @param alg  the algorithm
    */
   SystemRandom(final Provider prov, final String alg) {
-    EXECUTOR.execute(new Runnable() {
-      @Override
-      public void run() {
-        SystemRandom.this.init(prov, alg);
-      }
-    });
+    EXECUTOR.execute(() -> SystemRandom.this.init(prov, alg));
   }
 
 

@@ -200,7 +200,7 @@ public class SeedInput implements DataInput {
                   + (p - 1));
         }
         int y = input[p] & 0xff;
-        if (y < 0b1000_0000 || 0b1100_000 <= y) {
+        if (y < 0b1000_0000 || 0b1100_0000 <= y) {
           throw new UTFDataFormatException(
               "Malformed input. Saw bytes was 0x"
                   + Integer.toHexString((x << 8) | y)
@@ -219,7 +219,7 @@ public class SeedInput implements DataInput {
                   + (p - 1));
         }
         int y = input[p] & 0xff;
-        if (y < 0b1000_0000 || 0b1100_000 <= y) {
+        if (y < 0b1000_0000 || 0b1100_0000 <= y) {
           throw new UTFDataFormatException(
               "Malformed input. Saw bytes was 0x"
                   + Integer.toHexString((x << 8) | y)
@@ -235,7 +235,7 @@ public class SeedInput implements DataInput {
                   + " at position " + (p - 1));
         }
         int z = input[p] & 0xff;
-        if (z < 0b1000_0000 || 0b1100_000 <= z) {
+        if (z < 0b1000_0000 || 0b1100_0000 <= z) {
           throw new UTFDataFormatException(
               "Malformed input. Saw bytes was 0x"
                   + Integer.toHexString(

@@ -17,7 +17,7 @@ public class DigestDataOutput implements DataOutput {
   private final MessageDigest digest;
 
   /** Buffer for numeric output */
-  private byte[] buffer = new byte[8];
+  private final byte[] buffer = new byte[8];
 
 
   /**

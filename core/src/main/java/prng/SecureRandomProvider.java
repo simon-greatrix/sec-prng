@@ -1,12 +1,12 @@
 package prng;
 
 import java.security.AccessController;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivilegedAction;
 import java.security.Provider;
 import java.security.Security;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
@@ -39,11 +39,11 @@ public class SecureRandomProvider extends Provider {
    * Pattern to recognise the supported algorithm names
    */
   private static final Pattern ALG_PATTERN = Pattern.compile(
-      "^(?:nist/)?(aes(?:256)?|(?:hmac)?sha(?:1|256|512))\\?(.*)$",
+      "^(?:nist/)?(aes(?:256)?|(?:hmac)?sha(?:1|256|512))/?(.*)$",
       Pattern.CASE_INSENSITIVE);
 
   /** serial version UID */
-  private static final long serialVersionUID = 2l;
+  private static final long serialVersionUID = 2L;
 
 
 
@@ -74,8 +74,7 @@ public class SecureRandomProvider extends Provider {
 
 
     @Override
-    public Object newInstance(Object constructorParameter)
-        throws NoSuchAlgorithmException {
+    public Object newInstance(Object constructorParameter) {
       return builder.buildSpi();
     }
   }
@@ -100,13 +99,10 @@ public class SecureRandomProvider extends Provider {
 
     // Inserting a provider is a privileged action
     try {
-      AccessController.doPrivileged(new PrivilegedAction<Void>() {
-        @Override
-        public Void run() {
-          Security.insertProviderAt(SecureRandomProvider.PROVIDER,
-              position);
-          return null;
-        }
+      AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
+        Security.insertProviderAt(SecureRandomProvider.PROVIDER,
+            position);
+        return null;
       });
     } catch (SecurityException se) {
       LOG.error(
@@ -138,17 +134,17 @@ public class SecureRandomProvider extends Provider {
     SecureRandomProvider prov = new SecureRandomProvider();
     prov.putService(new Service(prov, "SecureRandom", "Nist/SHA256",
         NistHashRandom.RandomSHA256.class.getName(),
-        Arrays.asList("SHA256"), null));
+        Collections.singletonList("SHA256"), null));
     prov.putService(new Service(prov, "SecureRandom", "Nist/HmacSHA256",
         NistHmacRandom.RandomHmacSHA256.class.getName(),
         Arrays.asList("Nist", "HmacSHA256"), null));
 
     prov.putService(new Service(prov, "SecureRandom", "Nist/SHA512",
         NistHashRandom.RandomSHA512.class.getName(),
-        Arrays.asList("SHA512"), null));
+        Collections.singletonList("SHA512"), null));
     prov.putService(new Service(prov, "SecureRandom", "Nist/HmacSHA512",
         NistHmacRandom.RandomHmacSHA512.class.getName(),
-        Arrays.asList("HmacSHA512"), null));
+        Collections.singletonList("HmacSHA512"), null));
 
     prov.putService(new Service(prov, "SecureRandom", "Nist/AES256",
         NistCipherRandom.class.getName(),
@@ -156,10 +152,10 @@ public class SecureRandomProvider extends Provider {
 
     prov.putService(new Service(prov, "SecureRandom", "Nist/SHA1",
         NistHashRandom.RandomSHA1.class.getName(),
-        Arrays.asList("SHA1"), null));
+        Collections.singletonList("SHA1"), null));
     prov.putService(new Service(prov, "SecureRandom", "Nist/HmacSHA1",
         NistHmacRandom.RandomHmacSHA1.class.getName(),
-        Arrays.asList("HmacSHA1"), null));
+        Collections.singletonList("HmacSHA1"), null));
 
     // Allow for the SHA1PRNG algorithm to be over-ridden with another
     Config config = Config.getConfig("", SecureRandomProvider.class);
@@ -178,24 +174,21 @@ public class SecureRandomProvider extends Provider {
     }
 
     // Set the strong algorithm (a privileged action)
-    String strongAlg = config.get("strongAlgorithm", "Nist-HmacSHA512")
+    String strongAlg = config.get("strongAlgorithm", "Nist/HmacSHA512")
         + ":" + NAME;
     LOG.info("Installing {} as a strong algorithm", strongAlg);
     try {
-      AccessController.doPrivileged(new PrivilegedAction<Void>() {
-        @Override
-        public Void run() {
-          String algs = Security.getProperty(
-              "securerandom.strongAlgorithms");
-          if (algs == null || algs.trim().length() == 0) {
-            algs = strongAlg;
-          } else {
-            algs = strongAlg + "," + algs;
-          }
-          Security.setProperty("securerandom.strongAlgorithms", algs);
-
-          return null;
+      AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
+        String algs = Security.getProperty(
+            "securerandom.strongAlgorithms");
+        if (algs == null || algs.trim().length() == 0) {
+          algs = strongAlg;
+        } else {
+          algs = strongAlg + "," + algs;
         }
+        Security.setProperty("securerandom.strongAlgorithms", algs);
+
+        return null;
       });
     } catch (SecurityException se) {
       LOG.error(

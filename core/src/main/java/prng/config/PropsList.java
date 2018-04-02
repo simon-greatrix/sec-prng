@@ -22,10 +22,10 @@ import prng.SecureRandomProvider;
 public class PropsList {
 
   /** The loaded properties */
-  ArrayList<Props> props = new ArrayList<>();
+  final ArrayList<Props> props = new ArrayList<>();
 
   /** Combined properties */
-  private Map<String, String> merged = new TreeMap<>();
+  private final Map<String, String> merged = new TreeMap<>();
 
 
   /**
@@ -54,12 +54,9 @@ public class PropsList {
    * Load the configuration.
    */
   public void load() {
-    AccessController.doPrivileged(new PrivilegedAction<Void>() {
-      @Override
-      public Void run() {
-        loadWithPrivilege();
-        return null;
-      }
+    AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
+      loadWithPrivilege();
+      return null;
     });
   }
 

@@ -32,7 +32,7 @@ public class Combined implements Painter {
 
     public Combined(Random rand) {
         paintings[0] = new Fractal(rand);
-        paintings[1] = new Voronoi(256, rand);
+        paintings[1] = new Voronoi(rand);
         paintings[2] = new Letters(rand);
         paintings[3] = new Marble(rand);
     }
@@ -49,7 +49,7 @@ public class Combined implements Painter {
                 Thread t = new Thread() {
                     @Override
                     public void run() {
-                        p.create((d) -> prog.update(j, d));
+                        p.create(d -> prog.update(j, d));
                         prog.update(j, 1);
                     }
                 };

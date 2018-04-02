@@ -49,13 +49,7 @@ public class AWTEntropy extends EntropyCollector {
       device = d;
       try {
         robot = AccessController.doPrivileged(
-            new PrivilegedExceptionAction<Robot>() {
-              @Override
-              public Robot run()
-                  throws AWTException, SecurityException {
-                return new Robot(device);
-              }
-            });
+            (PrivilegedExceptionAction<Robot>) () -> new Robot(device));
       } catch (PrivilegedActionException e) {
         Exception cause = e.getException();
         if (cause instanceof AWTException) {
@@ -101,12 +95,7 @@ public class AWTEntropy extends EntropyCollector {
       try {
         // use privileges to read the screen
         return AccessController.doPrivileged(
-            new PrivilegedAction<BufferedImage>() {
-              @Override
-              public BufferedImage run() {
-                return robot.createScreenCapture(rect);
-              }
-            });
+            (PrivilegedAction<BufferedImage>) () -> robot.createScreenCapture(rect));
       } catch (SecurityException e) {
         // expected
         return null;
@@ -115,10 +104,10 @@ public class AWTEntropy extends EntropyCollector {
   }
 
   /** Selected sample area height */
-  private int sampleHeight = 50;
+  private int sampleHeight;
 
   /** Selected sample area width */
-  private int sampleWidth = 50;
+  private int sampleWidth;
 
   /**
    * Samplers by graphics devices
@@ -160,11 +149,11 @@ public class AWTEntropy extends EntropyCollector {
 
     // for each screen device
     GraphicsDevice[] screens = env.getScreenDevices();
-    ArrayList<Sampler> list = new ArrayList<Sampler>(screens.length);
-    for (int i = 0; i < screens.length; i++) {
+    ArrayList<Sampler> list = new ArrayList<>(screens.length);
+    for (GraphicsDevice screen : screens) {
       try {
         // create and test a sampler
-        Sampler samp = new Sampler(screens[i]);
+        Sampler samp = new Sampler(screen);
         BufferedImage img = samp.sample(sampleWidth, sampleHeight);
         if (img == null) {
           continue;
@@ -175,11 +164,11 @@ public class AWTEntropy extends EntropyCollector {
       } catch (AWTException e) {
         // expected
         LOG.debug("No entropy collection from "
-            + screens[i].getIDstring());
+            + screen.getIDstring());
       } catch (SecurityException e) {
         // also expected
         LOG.debug("Security blocked entropy collection from "
-            + screens[i].getIDstring());
+            + screen.getIDstring());
         SecureRandomProvider.LOG.warn(
             "Lacking permission \"AWTPermission createRobot\" or \"AWTPermission readDisplayPixels\" - cannot access display entropy");
       }

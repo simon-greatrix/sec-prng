@@ -58,7 +58,7 @@ public class DeferredSeed extends Seed {
    * @param input ignored
    */
   @Override
-  public void initialize(SeedInput input) throws Exception {
+  public void initialize(SeedInput input) {
     throw new UnsupportedOperationException();
   }
 

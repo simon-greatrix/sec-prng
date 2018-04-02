@@ -27,12 +27,7 @@ public class Fortuna {
   /**
    * Derive entropy from Fortuna
    */
-  public static final SeedSource SOURCE = new SeedSource() {
-    @Override
-    public byte[] getSeed(int bytes) {
-      return Fortuna.getSeed(bytes);
-    }
-  };
+  public static final SeedSource SOURCE = Fortuna::getSeed;
 
 
 
@@ -218,25 +213,25 @@ public class Fortuna {
 
 
   /** A buffer to hold a single block */
-  private byte[] blockBuffer = new byte[16];
+  private final byte[] blockBuffer = new byte[16];
 
   /** AES with 256-bit key */
   private Cipher cipher;
 
   /** An 128-bit counter */
-  private byte[] counter = new byte[16];
+  private final byte[] counter = new byte[16];
 
   /** SHA-256 digest */
   private MessageDigest digest;
 
   /** Amount of entropy added since last reset. */
-  private Fulfillment fulfillment = new Fulfillment();
+  private final Fulfillment fulfillment = new Fulfillment();
 
   /** A 256-bit cipher key */
   private byte[] key = new byte[32];
 
   /** Entropy accumulators */
-  private Pool[] pool = new Pool[32];
+  private final Pool[] pool = new Pool[32];
 
   /** Number of times this instance has been reseeded. */
   private int reseedCount = 0;

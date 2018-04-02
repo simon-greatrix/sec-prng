@@ -11,7 +11,7 @@ import prng.SystemRandom;
 public class FakedStorage extends SeedStorage {
 
   @Override
-  protected byte[] getRaw(String name) throws StorageException {
+  protected byte[] getRaw(String name) {
     SystemRandom.injectSeed(name.getBytes(StandardCharsets.UTF_8));
     // No record of what size might be expected, so just go with 512 bits.
     byte[] seed = new byte[64];
@@ -21,7 +21,7 @@ public class FakedStorage extends SeedStorage {
 
 
   @Override
-  protected void putRaw(String name, byte[] data) throws StorageException {
+  protected void putRaw(String name, byte[] data) {
     SystemRandom.injectSeed(name.getBytes(StandardCharsets.UTF_8));
     SystemRandom.injectSeed(data);
   }

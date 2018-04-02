@@ -10,7 +10,7 @@ import java.security.MessageDigest;
 public class NistHashRandom extends BaseRandom {
 
   /** Serial version UID */
-  private static final long serialVersionUID = 1l;
+  private static final long serialVersionUID = 1L;
 
 
 
@@ -22,7 +22,7 @@ public class NistHashRandom extends BaseRandom {
   public static class RandomSHA1 extends NistHashRandom {
 
     /** serial version UID */
-    private static final long serialVersionUID = 1l;
+    private static final long serialVersionUID = 1L;
 
 
     /** New instance */
@@ -41,7 +41,7 @@ public class NistHashRandom extends BaseRandom {
   public static class RandomSHA256 extends NistHashRandom {
 
     /** serial version UID */
-    private static final long serialVersionUID = 1l;
+    private static final long serialVersionUID = 1L;
 
 
     /** New instance */
@@ -60,7 +60,7 @@ public class NistHashRandom extends BaseRandom {
   public static class RandomSHA512 extends NistHashRandom {
 
     /** serial version UID */
-    private static final long serialVersionUID = 1l;
+    private static final long serialVersionUID = 1L;
 
 
     /** New instance */

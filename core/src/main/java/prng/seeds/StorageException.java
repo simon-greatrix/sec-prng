@@ -8,11 +8,11 @@ package prng.seeds;
 public class StorageException extends Exception {
 
   /** serial version UID */
-  private static final long serialVersionUID = 1l;
+  private static final long serialVersionUID = 1L;
 
 
   /**
-   * New excetion
+   * New exception
    *
    * @param message explanatory message
    * @param cause causative exception

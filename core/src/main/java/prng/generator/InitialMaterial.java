@@ -15,13 +15,13 @@ import prng.utility.NonceFactory;
 class InitialMaterial {
 
   /** The desired initial entropy. */
-  private int desiredEntropy;
+  private final int desiredEntropy;
 
   /** The supplied entropy. Will be augmented from Fortuna if necessary. */
   private byte[] entropy;
 
   /** The minimum initial entropy required. */
-  private int minEntropy;
+  private final int minEntropy;
 
   /**
    * The supplied nonce. Data from the nonce factory will be used if none is supplied.
@@ -34,7 +34,7 @@ class InitialMaterial {
   private byte[] personalization;
 
   /** Entropy source, if additional data is required. */
-  private SeedSource source;
+  private final SeedSource source;
 
 
   /**

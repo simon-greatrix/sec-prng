@@ -88,12 +88,7 @@ public class NonceFactory {
     try {
       // requires ManagementPermission monitor
       args = AccessController.doPrivileged(
-          new PrivilegedAction<List<String>>() {
-            @Override
-            public List<String> run() {
-              return runBean.getInputArguments();
-            }
-          });
+          (PrivilegedAction<List<String>>) runBean::getInputArguments);
     } catch (SecurityException e) {
       SecureRandomProvider.LOG.warn(
           "Lacking permission \"ManagementPermission monitor\" - cannot fully personalize nonce factory");
@@ -114,15 +109,10 @@ public class NonceFactory {
     try {
       // requires PropertyPermission * read,write
       env = AccessController.doPrivileged(
-          new PrivilegedAction<Map<String, String>>() {
-            @Override
-            public Map<String, String> run() {
-              return runBean.getSystemProperties();
-            }
-          });
+          (PrivilegedAction<Map<String, String>>) runBean::getSystemProperties);
     } catch (SecurityException se) {
       SecureRandomProvider.LOG.warn(
-          "Lacking permission \"PropertyPermisson * read,write\" - cannot fully personalize nonce factory");
+          "Lacking permission \"PropertyPermission * read,write\" - cannot fully personalize nonce factory");
       env = null;
     }
 
@@ -139,12 +129,7 @@ public class NonceFactory {
     try {
       // requires RuntimePermission getenv.*
       env = AccessController.doPrivileged(
-          new PrivilegedAction<Map<String, String>>() {
-            @Override
-            public Map<String, String> run() {
-              return System.getenv();
-            }
-          });
+          (PrivilegedAction<Map<String, String>>) System::getenv);
     } catch (SecurityException se) {
       SecureRandomProvider.LOG.warn(
           "Lacking permission \"RuntimePermission getenv.*\" - cannot fully personalize nonce factory");

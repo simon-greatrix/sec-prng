@@ -22,7 +22,7 @@ public class NistCipherRandom extends BaseRandom {
   private static final MessageDigest KEY_DF;
 
   /** Serial version UID */
-  private static final long serialVersionUID = 1l;
+  private static final long serialVersionUID = 1L;
 
 
   /**
