@@ -43,6 +43,7 @@ public class NistCipherRandom extends BaseRandom {
     }
   }
 
+
   static {
     try {
       KEY_DF = MessageDigest.getInstance("SHA-384");
@@ -83,10 +84,10 @@ public class NistCipherRandom extends BaseRandom {
   /**
    * Create a new deterministic random number generator
    *
-   * @param source entropy source (null means use the default source)
-   * @param resistance number of operations between reseeds. Zero reseeds on every operation, one reseeds on every alternate operation, and so on.
-   * @param entropy optional initial entropy
-   * @param nonce an optional nonce
+   * @param source          entropy source (null means use the default source)
+   * @param resistance      number of operations between reseeds. Zero reseeds on every operation, one reseeds on every alternate operation, and so on.
+   * @param entropy         optional initial entropy
+   * @param nonce           an optional nonce
    * @param personalization an optional personalization value
    */
   public NistCipherRandom(SeedSource source, int resistance, byte[] entropy,
@@ -115,7 +116,7 @@ public class NistCipherRandom extends BaseRandom {
     try {
       for (int i = 0; i < fullLoops; i++) {
         incr();
-        cipher.update(value, 0, 16, bytes, i * 16);
+        cipher.update(value, 0, 16, bytes, off + i * 16);
         off += 16;
       }
 

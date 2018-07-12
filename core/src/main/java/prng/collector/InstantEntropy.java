@@ -51,6 +51,11 @@ public class InstantEntropy implements Runnable {
   private static final int[] ADD_CONST = new int[]{1, 7, 11, 13, 17, 19, 23,
       29};
 
+  /** Thread pool for generating entropy */
+  private static final ExecutorService ENTROPY_RUNNER = new ThreadPoolExecutor(20,
+      20, 100, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(),
+      new DaemonThreadFactory("PRNG-EntropyFactory"));
+
   /** Bit for 256-bit FNV hash */
   private static final BigInteger FNV_MASK = BigInteger.ZERO.setBit(
       256).subtract(BigInteger.ONE);
@@ -68,11 +73,6 @@ public class InstantEntropy implements Runnable {
    * add another layer of security to the implementation.
    */
   private static final Holder[] STORE = new Holder[64];
-
-  /** Thread pool for generating entropy */
-  private static final ExecutorService ENTROPY_RUNNER = new ThreadPoolExecutor(20,
-      20, 100, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(),
-      new DaemonThreadFactory("PRNG-EntropyFactory"));
 
 
 
@@ -483,17 +483,10 @@ public class InstantEntropy implements Runnable {
     return p;
   }
 
+
   static {
     // start off with our personalization value
     setSeed(NonceFactory.personalization());
-
-    Seed seed;
-    try (SeedStorage storage = SeedStorage.getInstance()) {
-      seed = storage.get("instant");
-    }
-    if (seed != null) {
-      setSeed(seed.getSeed());
-    }
 
     ((ThreadPoolExecutor) FUTURE_RUNNER).allowCoreThreadTimeOut(true);
     ((ThreadPoolExecutor) ENTROPY_RUNNER).allowCoreThreadTimeOut(true);
@@ -505,17 +498,17 @@ public class InstantEntropy implements Runnable {
     for (int i = 0; i < 64; i++) {
       Holder h = new Holder();
       STORE[p[i]] = h;
-      if (seed != null) {
-        if (RAND.nextBoolean()) {
-          byte[] b = new byte[64];
-          RAND.nextBytes(b);
-          h.set(b);
-        } else {
-          h.reset();
-        }
-      } else {
-        h.reset();
-      }
+      h.reset();
+    }
+
+    // Seed storage may need random numbers, but now we are creating instant entropy, we can safely read our stored seed information confident that the
+    // random number initialisation will go through.
+    Seed seed;
+    try (SeedStorage storage = SeedStorage.getInstance()) {
+      seed = storage.get("instant");
+    }
+    if (seed != null) {
+      setSeed(seed.getSeed());
     }
   }
 
@@ -539,8 +532,8 @@ public class InstantEntropy implements Runnable {
   /**
    * Create a thread that could generate some entropy
    *
-   * @param id an ID
-   * @param latch synchronization latch
+   * @param id     an ID
+   * @param latch  synchronization latch
    * @param output the output sink
    */
   InstantEntropy(int id, CountDownLatch latch, DigestDataOutput output) {
