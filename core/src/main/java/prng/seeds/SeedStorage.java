@@ -62,7 +62,7 @@ public abstract class SeedStorage implements AutoCloseable {
       100);
 
   /**
-   * Lock for the storage to ensure only a single thread manipulates the storage at a time.
+   * Lock for the storage to ensure only a single thread manipulates the storage at a time. NEVER lock this whilst holding a sync on QUEUE.
    */
   private static final Lock LOCK = new ReentrantLock();
 
@@ -87,18 +87,21 @@ public abstract class SeedStorage implements AutoCloseable {
     LOG.trace("Enqueued {}", seed.getName());
     synchronized (QUEUE) {
       QUEUE.add(seed);
-      long now = System.currentTimeMillis();
-      if (now < SAVE_DUE) {
-        return;
-      }
+    }
 
-      SeedStorage storage = null;
-      try {
-        storage = getInstance();
-      } finally {
-        if (storage != null) {
-          storage.close();
-        }
+    // Is a save due?
+    long now = System.currentTimeMillis();
+    if (now < SAVE_DUE) {
+      return;
+    }
+
+    // A save is due - just open and close the store to save it.
+    SeedStorage storage = null;
+    try {
+      storage = getInstance();
+    } finally {
+      if (storage != null) {
+        storage.close();
       }
     }
   }
