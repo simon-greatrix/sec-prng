@@ -283,7 +283,7 @@ abstract public class EntropyCollector extends EntropySource
    * @param dfltDelay the default collection delay
    */
   protected EntropyCollector(Config config, int dfltDelay) {
-    delay = config.getInt("delay", dfltDelay);
+    delay = Math.max(1,config.getInt("delay", dfltDelay));
   }
 
 
