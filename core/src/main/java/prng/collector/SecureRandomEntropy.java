@@ -82,8 +82,9 @@ public class SecureRandomEntropy extends EntropyCollector {
     }
 
     entropyQueue = new LinkedBlockingQueue<>();
-    service = new ThreadPoolExecutor(0, randoms.length, 2 * getBaseDelay(), TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(),
+    service = new ThreadPoolExecutor(randoms.length, randoms.length, 2L * getBaseDelay(), TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(),
         new DaemonThreadFactory("PRNG-collect-secure-random"));
+    ((ThreadPoolExecutor) service).allowCoreThreadTimeOut(true);
     for (int i = 0; i < randoms.length; i++) {
       Runner r = new Runner();
       r.index = i;

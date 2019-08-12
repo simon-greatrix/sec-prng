@@ -275,9 +275,10 @@ public class SystemRandom implements Runnable {
     int len = servs.size();
     SOURCE_LEN = len;
     SOURCES = new SystemRandom[len];
-    EXECUTOR = new ThreadPoolExecutor(0, 2 * len, 0, TimeUnit.NANOSECONDS,
-        new LinkedBlockingQueue<>(),
-        new DaemonThreadFactory("PRNG-SystemRandom"));
+    ThreadPoolExecutor threadPool = new ThreadPoolExecutor( 2 * len, 2 * len, 0, TimeUnit.NANOSECONDS,
+        new LinkedBlockingQueue<>(), new DaemonThreadFactory("PRNG-SystemRandom"));
+    threadPool.allowCoreThreadTimeOut(true);
+    EXECUTOR = threadPool;
     SEED_MAKER = new ExecutorCompletionService<>(EXECUTOR);
 
     // create the PRNGs

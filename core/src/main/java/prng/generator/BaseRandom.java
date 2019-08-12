@@ -127,6 +127,8 @@ abstract public class BaseRandom extends SecureRandomSpi {
 
   /**
    * Initialise this instance with the provided material.
+   *
+   * @param material the starting material
    */
   abstract protected void initialise(byte[] material);
 
