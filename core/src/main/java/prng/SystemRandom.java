@@ -18,7 +18,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import prng.collector.DaemonThreadFactory;
 import prng.collector.InstantEntropy;
 import prng.generator.HashSpec;
@@ -31,9 +30,9 @@ import prng.utility.NonceFactory;
 /**
  * System provided secure random sources. We assume there is at least one such source. The sources are multiplexed, with one byte taken from each source in
  * turn. This means that if any source has a good entropic seed, its entropy will be included in all outputs. <p>
- *
+ * <p>
  * The sources are periodically cross-pollinated with entropy from each other. <p>
- *
+ * <p>
  * Note that since some system provided random sources will block whilst they wait for entropy to arrive (e.g. reading from /dev/random), this class may delay
  * start-up. <p>
  *
@@ -42,7 +41,7 @@ import prng.utility.NonceFactory;
 public class SystemRandom implements Runnable {
 
   /** Logger for this class */
-  static final Logger LOG = LoggerFactory.getLogger(SystemRandom.class);
+  static final Logger LOG = LoggersFactory.getLogger(SystemRandom.class);
 
   /**
    * Fetching seed data may block. To prevent waits on re-seeding we use this completion service.
@@ -61,6 +60,12 @@ public class SystemRandom implements Runnable {
   private static final LinkedBlockingQueue<byte[]> INJECTED = new LinkedBlockingQueue<>(
       100);
 
+  /**
+   * "Random" selection for which source gets reseeded. The intention is to all sources of seed data to influence all other sources by "randomly" assigning seed
+   * data to a source.
+   */
+  private static final Random RESEED = new Random();
+
   /** System provided secure random number generators */
   private final static SystemRandom[] SOURCES;
 
@@ -68,20 +73,14 @@ public class SystemRandom implements Runnable {
   private static final int SOURCE_LEN;
 
   /**
-   * Random number generator that draws from the System random number sources
-   */
-  private static SecureRandom RANDOM = null;
-
-  /**
-   * "Random" selection for which source gets reseeded. The intention is to all sources of seed data to influence all other sources by "randomly" assigning seed
-   * data to a source.
-   */
-  private static final Random RESEED = new Random();
-
-  /**
    * Source for getting entropy from the system
    */
   public static final SeedSource SOURCE = SystemRandom::getSeed;
+
+  /**
+   * Random number generator that draws from the System random number sources
+   */
+  private static SecureRandom RANDOM = null;
 
 
 
@@ -167,7 +166,8 @@ public class SystemRandom implements Runnable {
         if (rand == null) {
           byte[] entropy = getSeed(HashSpec.SPEC_SHA512.seedLength);
           rand = new SecureRandomImpl(new NistHashRandom(SOURCE,
-              HashSpec.SPEC_SHA512, 0, entropy, new byte[0], NonceFactory.personalization()));
+              HashSpec.SPEC_SHA512, 0, entropy, new byte[0], NonceFactory.personalization()
+          ));
           RANDOM = rand;
         }
       }
@@ -275,8 +275,9 @@ public class SystemRandom implements Runnable {
     int len = servs.size();
     SOURCE_LEN = len;
     SOURCES = new SystemRandom[len];
-    ThreadPoolExecutor threadPool = new ThreadPoolExecutor( 2 * len, 2 * len, 10, TimeUnit.MILLISECONDS,
-        new LinkedBlockingQueue<>(), new DaemonThreadFactory("PRNG-SystemRandom"));
+    ThreadPoolExecutor threadPool = new ThreadPoolExecutor(2 * len, 2 * len, 10, TimeUnit.MILLISECONDS,
+        new LinkedBlockingQueue<>(), new DaemonThreadFactory("PRNG-SystemRandom")
+    );
     threadPool.allowCoreThreadTimeOut(true);
     EXECUTOR = threadPool;
     SEED_MAKER = new ExecutorCompletionService<>(EXECUTOR);
@@ -290,13 +291,13 @@ public class SystemRandom implements Runnable {
     }
   }
 
+  /** Random bytes drawn from the system PRNG */
+  private final byte[] block = new byte[BLOCK_LEN];
+
   /**
    * Number of bytes available in the current block. A value of -1 means not initialised.
    */
   private int available = -1;
-
-  /** Random bytes drawn from the system PRNG */
-  private final byte[] block = new byte[BLOCK_LEN];
 
   /** Can this PRNG accept new seed information? (Not all of them can.) */
   private boolean canSeed = true;

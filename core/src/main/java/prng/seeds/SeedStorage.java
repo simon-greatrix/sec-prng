@@ -6,7 +6,7 @@ import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import prng.LoggersFactory;
 import prng.SystemRandom;
 import prng.config.Config;
 import prng.generator.IsaacRandom;
@@ -20,12 +20,17 @@ import prng.utility.BLOBPrint;
 public abstract class SeedStorage implements AutoCloseable {
 
   /** Logger for seed storage operations */
-  public static final Logger LOG = LoggerFactory.getLogger(SeedStorage.class);
+  public static final Logger LOG = LoggersFactory.getLogger(SeedStorage.class);
 
   /**
    * Set of queued seeds to be written at the next scheduled storage update.
    */
   final static Set<Seed> QUEUE = new HashSet<>();
+
+  /**
+   * Lock for the storage to ensure only a single thread manipulates the storage at a time. NEVER lock this whilst holding a sync on QUEUE.
+   */
+  private static final Lock LOCK = new ReentrantLock();
 
   /**
    * Additive increase in the milliseconds between successive saves. For example, if this was set to 5000 the the time between saves in seconds would be 5, 10,
@@ -34,7 +39,8 @@ public abstract class SeedStorage implements AutoCloseable {
   private static final int SAVE_ADD = Math.max(
       Config.getConfig("config", SeedStorage.class).getInt(
           "savePeriodAdd", 5000),
-      0);
+      0
+  );
 
   /**
    * The maximum amount of time between saves. Takes the value of "savePeriodMax" from the "config" section and defaults to 24 hours.
@@ -42,7 +48,8 @@ public abstract class SeedStorage implements AutoCloseable {
   private static final int SAVE_MAX = Math.max(
       Config.getConfig("config", SeedStorage.class).getInt(
           "savePeriodMax", 1000 * 60 * 60 * 24),
-      1000);
+      1000
+  );
 
   /**
    * Multiplicative increase in the time between successive saves. For example, if this was set to 2, the time between saves in seconds would be 5, 10, 20, 40,
@@ -51,20 +58,19 @@ public abstract class SeedStorage implements AutoCloseable {
   private static final double SAVE_MULTIPLY = Math.max(
       Config.getConfig("config", SeedStorage.class).getDouble(
           "savePeriodMultiplier", 1),
-      1);
+      1
+  );
 
   /**
    * Number of milliseconds between storage saves. Takes the value of "savePeriod" from the "config" section and defaults to 5000 milliseconds.
    */
   private static final int SAVE_PERIOD = Math.max(
-      Config.getConfig("config", SeedStorage.class).getInt("savePeriod",
-          5000),
-      100);
-
-  /**
-   * Lock for the storage to ensure only a single thread manipulates the storage at a time. NEVER lock this whilst holding a sync on QUEUE.
-   */
-  private static final Lock LOCK = new ReentrantLock();
+      Config.getConfig("config", SeedStorage.class).getInt(
+          "savePeriod",
+          5000
+      ),
+      100
+  );
 
   /**
    * RNG used by the Scrambler. Initially we use the InstantEntropy source, and then switch to SystemRandom once that is available.
@@ -117,8 +123,10 @@ public abstract class SeedStorage implements AutoCloseable {
     Config config = Config.getConfig("config", SeedStorage.class);
 
     // Get the class name and try to create it
-    String className = config.get("class",
-        UserPrefsStorage.class.getName());
+    String className = config.get(
+        "class",
+        UserPrefsStorage.class.getName()
+    );
     SeedStorage store = null;
     try {
       Class<?> cl = Class.forName(className);
@@ -140,8 +148,10 @@ public abstract class SeedStorage implements AutoCloseable {
       LOG.error("Specified class of " + className + " failed to load", e);
     } catch (IllegalAccessException e) {
       // unexpected
-      LOG.error("Specified class of " + className + " was not accessible",
-          e);
+      LOG.error(
+          "Specified class of " + className + " was not accessible",
+          e
+      );
     }
 
     // If we didn't create a store, try a fall-back
@@ -149,13 +159,17 @@ public abstract class SeedStorage implements AutoCloseable {
       try {
         store = new UserPrefsStorage();
       } catch (StorageException se) {
-        LOG.error("Failed to use user preferences for seed storage.",
-            se);
+        LOG.error(
+            "Failed to use user preferences for seed storage.",
+            se
+        );
         try {
           store = new FileStorage();
         } catch (StorageException se2) {
-          LOG.error("Failed to use file system for seed storage.",
-              se2);
+          LOG.error(
+              "Failed to use file system for seed storage.",
+              se2
+          );
           store = new FakedStorage();
         }
       }
@@ -205,6 +219,7 @@ public abstract class SeedStorage implements AutoCloseable {
   public static void upgradeScrambler() {
     RAND = SystemRandom.getRandom();
   }
+
 
   static {
     // save any unsaved seeds at shutdown
@@ -281,7 +296,7 @@ public abstract class SeedStorage implements AutoCloseable {
    *
    * @param type the seed's type
    * @param name the seed's name
-   * @param <T> type of seed
+   * @param <T>  type of seed
    *
    * @return the seed or null
    */
@@ -311,7 +326,8 @@ public abstract class SeedStorage implements AutoCloseable {
       seed.initialize(input);
     } catch (Exception e) {
       LOG.error("Seed data for {} was corrupt:\n", name,
-          BLOBPrint.toString(data), e);
+          BLOBPrint.toString(data), e
+      );
       remove(name);
     }
     return seed;
@@ -346,7 +362,8 @@ public abstract class SeedStorage implements AutoCloseable {
     } catch (Exception e) {
       // log the details of the problem
       LOG.error("Seed data for {} was corrupt:\n{}", name,
-          BLOBPrint.toString(data), e);
+          BLOBPrint.toString(data), e
+      );
       remove(name);
     }
     return seed;
@@ -359,6 +376,7 @@ public abstract class SeedStorage implements AutoCloseable {
    * @param name the seed's name
    *
    * @return the raw data
+   *
    * @throws StorageException if the storage cannot be read
    */
   abstract protected byte[] getRaw(String name) throws StorageException;

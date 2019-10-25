@@ -10,7 +10,6 @@ import java.util.Collections;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import prng.SecureRandomBuilder.Hash;
 import prng.SecureRandomBuilder.Source;
 import prng.config.Config;
@@ -26,7 +25,7 @@ import prng.generator.NistHmacRandom;
 public class SecureRandomProvider extends Provider {
 
   /** Logger for instantiating this provider */
-  public static final Logger LOG = LoggerFactory.getLogger(
+  public static final Logger LOG = LoggersFactory.getLogger(
       SecureRandomProvider.class);
 
   /** The name of this provider */
@@ -40,7 +39,8 @@ public class SecureRandomProvider extends Provider {
    */
   private static final Pattern ALG_PATTERN = Pattern.compile(
       "^(?:nist/)?(aes(?:256)?|(?:hmac)?sha(?:1|256|512))/?(.*)$",
-      Pattern.CASE_INSENSITIVE);
+      Pattern.CASE_INSENSITIVE
+  );
 
   /** serial version UID */
   private static final long serialVersionUID = 2L;
@@ -61,14 +61,17 @@ public class SecureRandomProvider extends Provider {
     /**
      * New instance
      *
-     * @param provider the SecureRandom provider
+     * @param provider  the SecureRandom provider
      * @param algorithm the algorithm implemented
-     * @param builder the builder for new instances
+     * @param builder   the builder for new instances
      */
-    public CustomService(Provider provider, String algorithm,
-        SecureRandomBuilder builder) {
+    public CustomService(
+        Provider provider, String algorithm,
+        SecureRandomBuilder builder
+    ) {
       super(provider, "SecureRandom", algorithm, builder.getClassName(),
-          null, null);
+          null, null
+      );
       this.builder = builder;
     }
 
@@ -93,21 +96,26 @@ public class SecureRandomProvider extends Provider {
     } else {
       Provider[] provs = Security.getProviders();
       position = provs.length;
-      LOG.info("Installing provider as preference {}",
-          Integer.valueOf(position));
+      LOG.info(
+          "Installing provider as preference {}",
+          Integer.valueOf(position)
+      );
     }
 
     // Inserting a provider is a privileged action
     try {
       AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
-        Security.insertProviderAt(SecureRandomProvider.PROVIDER,
-            position);
+        Security.insertProviderAt(
+            SecureRandomProvider.PROVIDER,
+            position
+        );
         return null;
       });
     } catch (SecurityException se) {
       LOG.error(
           "Cannot install security provider as lacking privilege \"insertProvider\" or \"insertProvider.SecureRandomProvider\"",
-          se);
+          se
+      );
     }
   }
 
@@ -128,34 +136,42 @@ public class SecureRandomProvider extends Provider {
     install(isPrimary);
   }
 
+
   static {
     // Add services to provider. The first added service is the
     // default.
     SecureRandomProvider prov = new SecureRandomProvider();
     prov.putService(new Service(prov, "SecureRandom", "Nist/SHA256",
         NistHashRandom.RandomSHA256.class.getName(),
-        Collections.singletonList("SHA256"), null));
+        Collections.singletonList("SHA256"), null
+    ));
     prov.putService(new Service(prov, "SecureRandom", "Nist/HmacSHA256",
         NistHmacRandom.RandomHmacSHA256.class.getName(),
-        Arrays.asList("Nist", "HmacSHA256"), null));
+        Arrays.asList("Nist", "HmacSHA256"), null
+    ));
 
     prov.putService(new Service(prov, "SecureRandom", "Nist/SHA512",
         NistHashRandom.RandomSHA512.class.getName(),
-        Collections.singletonList("SHA512"), null));
+        Collections.singletonList("SHA512"), null
+    ));
     prov.putService(new Service(prov, "SecureRandom", "Nist/HmacSHA512",
         NistHmacRandom.RandomHmacSHA512.class.getName(),
-        Collections.singletonList("HmacSHA512"), null));
+        Collections.singletonList("HmacSHA512"), null
+    ));
 
     prov.putService(new Service(prov, "SecureRandom", "Nist/AES256",
         NistCipherRandom.class.getName(),
-        Arrays.asList("AES256", "Nist/AES", "AES"), null));
+        Arrays.asList("AES256", "Nist/AES", "AES"), null
+    ));
 
     prov.putService(new Service(prov, "SecureRandom", "Nist/SHA1",
         NistHashRandom.RandomSHA1.class.getName(),
-        Collections.singletonList("SHA1"), null));
+        Collections.singletonList("SHA1"), null
+    ));
     prov.putService(new Service(prov, "SecureRandom", "Nist/HmacSHA1",
         NistHmacRandom.RandomHmacSHA1.class.getName(),
-        Collections.singletonList("HmacSHA1"), null));
+        Collections.singletonList("HmacSHA1"), null
+    ));
 
     // Allow for the SHA1PRNG algorithm to be over-ridden with another
     Config config = Config.getConfig("", SecureRandomProvider.class);
@@ -165,11 +181,14 @@ public class SecureRandomProvider extends Provider {
       Service s = prov.getService("SecureRandom", replace);
       if (s != null) {
         Service s2 = new Service(prov, "SecureRandom", "SHA1PRNG",
-            s.getClassName(), null, null);
+            s.getClassName(), null, null
+        );
         prov.putService(s2);
       } else {
-        LOG.error("Cannot replace SHA1PRNG with unknown algorithm {}",
-            replace);
+        LOG.error(
+            "Cannot replace SHA1PRNG with unknown algorithm {}",
+            replace
+        );
       }
     }
 
@@ -193,7 +212,9 @@ public class SecureRandomProvider extends Provider {
     } catch (SecurityException se) {
       LOG.error(
           "Cannot install {} as a strong algorithm as lacking privilege \"getProperty.securerandom.strongAlgorithms\" or \"setProperty.securerandom.strongAlgorithms\"",
-          strongAlg, se);
+          strongAlg,
+          se
+      );
     }
 
     PROVIDER = prov;
@@ -278,7 +299,8 @@ public class SecureRandomProvider extends Provider {
             builder = builder.entropy(Base64.getUrlDecoder().decode(v));
           } catch (IllegalArgumentException exc) {
             LOG.debug("Value '{}' passed for 'entropy' was invalid", v,
-                exc);
+                exc
+            );
             return null;
           }
           break;
@@ -292,7 +314,8 @@ public class SecureRandomProvider extends Provider {
             builder = builder.laziness(Integer.decode(v).intValue());
           } catch (IllegalArgumentException exc) {
             LOG.debug("Value '{}' passed for 'laziness' was invalid", v,
-                exc);
+                exc
+            );
             return null;
           }
           break;
@@ -306,7 +329,8 @@ public class SecureRandomProvider extends Provider {
             builder = builder.nonce(Base64.getUrlDecoder().decode(v));
           } catch (IllegalArgumentException exc) {
             LOG.debug("Value '{}' passed for 'nonce' was invalid", v,
-                exc);
+                exc
+            );
             return null;
           }
           break;
@@ -322,7 +346,8 @@ public class SecureRandomProvider extends Provider {
           } catch (IllegalArgumentException exc) {
             LOG.debug(
                 "Value '{}' passed for 'personalization' was invalid",
-                v, exc);
+                v, exc
+            );
             return null;
           }
           break;

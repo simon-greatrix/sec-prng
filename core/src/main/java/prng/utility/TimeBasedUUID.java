@@ -12,7 +12,7 @@ import java.util.LinkedList;
 import java.util.Random;
 import java.util.UUID;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import prng.LoggersFactory;
 import prng.SecureRandomProvider;
 import prng.SystemRandom;
 
@@ -27,7 +27,7 @@ import prng.SystemRandom;
 public class TimeBasedUUID {
 
   /** Logger for this class */
-  private static final Logger LOG = LoggerFactory.getLogger(
+  private static final Logger LOG = LoggersFactory.getLogger(
       TimeBasedUUID.class);
 
   /** Secure random number generator */
@@ -84,6 +84,7 @@ public class TimeBasedUUID {
    * Attempt to get the local MAC address after privilege has been asserted
    *
    * @return the MAC address or null.
+   *
    * @throws SecurityException if the MAC address remains inaccessible
    */
   static byte[] getAddressWithPrivilege() throws SecurityException {
@@ -154,7 +155,8 @@ public class TimeBasedUUID {
         LOG.warn(
             "Failed to get localhost hardware address or sub-interfaces for "
                 + nint.getDisplayName(),
-            se);
+            se
+        );
       }
     }
 
@@ -175,6 +177,7 @@ public class TimeBasedUUID {
     buf.setLength(buf.length() - 1);
     return buf.toString();
   }
+
 
   /** The Ethernet address this generator is associated with */
   protected final long ethernetAddress;
@@ -331,7 +334,7 @@ final class UUIDTime {
    * New time and sequence
    *
    * @param timeStamp the time stamp
-   * @param sequence the sequence
+   * @param sequence  the sequence
    */
   private UUIDTime(long timeStamp, short sequence) {
     this.timeStamp = timeStamp;

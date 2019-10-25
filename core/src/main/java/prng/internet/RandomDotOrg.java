@@ -28,8 +28,7 @@ public class RandomDotOrg extends NetRandom {
 
   static {
     try {
-      RANDOM_DOT_ORG = new URL(
-          "https://api.random.org/json-rpc/1/invoke");
+      RANDOM_DOT_ORG = new URL("https://api.random.org/json-rpc/2/invoke");
     } catch (MalformedURLException e) {
       throw new Error("Impossible exception", e);
     }
@@ -43,15 +42,13 @@ public class RandomDotOrg extends NetRandom {
       obj.put("method", new Primitive(Type.STRING, "generateIntegers"));
       JSONObject params = new JSONObject();
       obj.put("params", new Primitive(Type.OBJECT, params));
-      obj.put("id", new Primitive(Type.STRING, "seed"));
       params.put("apiKey", new Primitive(Type.STRING, apiKey));
       params.put("n", new Primitive(Type.NUMBER, Integer.valueOf(128)));
       params.put("min", new Primitive(Type.NUMBER, Integer.valueOf(0)));
       params.put("max", new Primitive(Type.NUMBER, Integer.valueOf(255)));
       RANDOM_REQUEST = obj.toString().getBytes(StandardCharsets.US_ASCII);
     } else {
-      NetRandom.LOG.info(
-          "random.org RNG not in use as no API key provided");
+      NetRandom.LOG.info("random.org RNG not in use as no API key provided");
       RANDOM_REQUEST = null;
     }
   }
@@ -61,6 +58,7 @@ public class RandomDotOrg extends NetRandom {
    * Read data from random.org's service.
    *
    * @return the bits
+   *
    * @throws IOException if communicating with the service fails
    */
   @Override
@@ -72,8 +70,10 @@ public class RandomDotOrg extends NetRandom {
 
     try {
       Primitive result = SimpleJSONParser.parse(
-          new InputStreamReader(new ByteArrayInputStream(data),
-              StandardCharsets.ISO_8859_1));
+          new InputStreamReader(
+              new ByteArrayInputStream(data),
+              StandardCharsets.ISO_8859_1
+          ));
       if (result.getType() != Type.OBJECT) {
         throw new IOException(RANDOM_DOT_ORG.getHost()
             + " returned JSON type: " + result.getType());
@@ -131,7 +131,8 @@ public class RandomDotOrg extends NetRandom {
       return bits;
     } catch (IOException ioe) {
       LOG.error("Bad data received from {}\n\n{}",
-          RANDOM_DOT_ORG.getHost(), BLOBPrint.toString(data));
+          RANDOM_DOT_ORG.getHost(), BLOBPrint.toString(data)
+      );
       throw ioe;
     }
   }

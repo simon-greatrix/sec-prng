@@ -5,11 +5,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import prng.LoggersFactory;
 import prng.SecureRandomProvider;
 import prng.config.Config;
 import prng.seeds.SeedStorage;
@@ -19,7 +20,7 @@ import prng.seeds.SeedStorage;
  *
  * <ol> <li>www.random.org : Generates random data from radio static. <li>qrng.anu.edu.au : Generates random data from quantum vacuum fluctuations.
  * <li>www.fourmilab.ch/hotbits : Generates random data from the radioactive decay of Kr-85. </ol>
- *
+ * <p>
  * Each service is only asked for 1024 bits (128 bytes) at a time.
  *
  * @author Simon Greatrix
@@ -27,8 +28,7 @@ import prng.seeds.SeedStorage;
 abstract public class NetRandom {
 
   /** Logger for this class */
-  protected static final Logger LOG = LoggerFactory.getLogger(
-      NetRandom.class);
+  protected static final Logger LOG = LoggersFactory.getLogger(NetRandom.class);
 
   /** Number of milliseconds before a connection attempt times out */
   private static final int CONNECT_TIMEOUT;
@@ -43,6 +43,7 @@ abstract public class NetRandom {
    * @param url the url to connect to
    *
    * @return the connection
+   *
    * @throws IOException if connecting to the server fails
    */
   protected static HttpURLConnection connect(URL url) throws IOException {
@@ -65,10 +66,11 @@ abstract public class NetRandom {
   /**
    * Connect to a URL and set appropriate timeout parameters
    *
-   * @param url the url to connect to
+   * @param url     the url to connect to
    * @param request the JSON-RPC request
    *
    * @return the connection
+   *
    * @throws IOException if connecting to the server or reading the response fails
    */
   protected static byte[] connectRPC(URL url, byte[] request)
@@ -81,10 +83,8 @@ abstract public class NetRandom {
     conn.setDoInput(true);
     conn.setDoOutput(true);
     conn.setRequestMethod("POST");
-    conn.setRequestProperty("Content-Type",
-        "application/json-rpc; charset=us-ascii");
-    conn.setRequestProperty("Content-Length",
-        Integer.toString(request.length));
+    conn.setRequestProperty("Content-Type", "application/json");
+    conn.setRequestProperty("Content-Length", Integer.toString(request.length));
     conn.connect();
 
     // send the JSON request
@@ -104,8 +104,7 @@ abstract public class NetRandom {
     // get the response
     if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
       conn.disconnect();
-      throw new IOException(url.getHost() + " returned status "
-          + conn.getResponseCode());
+      throw new IOException(url.getHost() + " returned status " + conn.getResponseCode());
     }
 
     // read the data
@@ -126,6 +125,7 @@ abstract public class NetRandom {
    * @param conn the connection
    *
    * @return the response
+   *
    * @throws IOException if communicating with the service fails
    */
   protected static byte[] read(HttpURLConnection conn) throws IOException {
@@ -149,6 +149,7 @@ abstract public class NetRandom {
     return output;
   }
 
+
   static {
     Config config = Config.getConfig("network");
     CONNECT_TIMEOUT = config.getInt("connectionTimeOut", 120000);
@@ -160,6 +161,7 @@ abstract public class NetRandom {
    * Fetch data from the internet source, if possible
    *
    * @return the entropy, a 128 byte value
+   *
    * @throws IOException if fetch failed
    */
   abstract byte[] fetch() throws IOException;
@@ -177,9 +179,10 @@ abstract public class NetRandom {
           (PrivilegedExceptionAction<byte[]>) this::fetch);
       if (newData == null || newData.length != 128) {
         // Failed to fetch data. It happens.
-        LOG.warn("Invalid data received. Got {} bytes instead of 128",
-            newData == null ? "null"
-                : Integer.toString(newData.length));
+        LOG.warn(
+            "Invalid data received. Got {} bytes instead of 128",
+            newData == null ? "null" : Integer.toString(newData.length)
+        );
 
         // blank the entropy to indicate it is no good
         newData = new byte[0];
@@ -194,7 +197,8 @@ abstract public class NetRandom {
     } catch (SecurityException e) {
       SecureRandomProvider.LOG.warn(
           "Lacking permission \"SocketPermission {} resolve,connect\" or \"URLPermission {} GET,POST\". Cannot access to internet entropy source",
-          url(), url());
+          url(), url()
+      );
       newData = new byte[0];
     }
 

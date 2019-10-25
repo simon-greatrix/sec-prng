@@ -15,7 +15,7 @@ import java.util.PropertyPermission;
 import java.util.Set;
 import java.util.TreeMap;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import prng.LoggersFactory;
 
 /**
  * Configuration data. The configuration is stored in a properties file. Different sections of the configuration file are distinguished by different prefixes on
@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 public class Config implements Iterable<String> {
 
   /** Logger for configuration related matters */
-  public static final Logger LOG = LoggerFactory.getLogger(Config.class);
+  public static final Logger LOG;
 
   /** URI used to indicate configuration from system preferences */
   static final URI URI_PREFERENCE_SYSTEM;
@@ -36,6 +36,8 @@ public class Config implements Iterable<String> {
 
   /** The raw configuration */
   private static final Map<String, String> CONFIG = new TreeMap<>();
+
+  private static final boolean loggingEnabled;
 
 
   /**
@@ -116,7 +118,7 @@ public class Config implements Iterable<String> {
   /**
    * Get the configuration for a specified prefix in the context of a given class
    *
-   * @param prefix the prefix
+   * @param prefix  the prefix
    * @param context the class
    *
    * @return the configuration
@@ -196,7 +198,27 @@ public class Config implements Iterable<String> {
     }
   }
 
+
+  public static boolean isLoggingEnabled() {
+    return loggingEnabled;
+  }
+
+
   static {
+    String v = getEnv("PRNG_LOGGING");
+    if (v != null && !v.isEmpty()) {
+      loggingEnabled = Boolean.parseBoolean(v);
+    } else {
+      v = getProperty("prng.logging");
+      if (v != null && !v.isEmpty()) {
+        loggingEnabled = Boolean.parseBoolean(v);
+      } else {
+        // Off by default
+        loggingEnabled = false;
+      }
+    }
+
+    LOG = LoggersFactory.getLogger(Config.class);
     URI_PREFERENCE_SYSTEM = URI.create("prefs:system");
     String userId = getProperty("user.name");
     if (userId == null) {
@@ -248,7 +270,7 @@ public class Config implements Iterable<String> {
   /**
    * Get a textual property
    *
-   * @param key the lookup key
+   * @param key  the lookup key
    * @param dflt the default value
    *
    * @return the value
@@ -274,7 +296,7 @@ public class Config implements Iterable<String> {
   /**
    * Get a boolean property
    *
-   * @param key the lookup key
+   * @param key  the lookup key
    * @param dflt the default value
    *
    * @return the value
@@ -309,7 +331,7 @@ public class Config implements Iterable<String> {
   /**
    * Get a double property.
    *
-   * @param key the lookup key
+   * @param key  the lookup key
    * @param dflt the default value to use if unspecified
    *
    * @return the value or default if missing
@@ -344,7 +366,7 @@ public class Config implements Iterable<String> {
   /**
    * Get a float property.
    *
-   * @param key the lookup key
+   * @param key  the lookup key
    * @param dflt the default value to use if unspecified
    *
    * @return the value or default if missing
@@ -379,7 +401,7 @@ public class Config implements Iterable<String> {
   /**
    * Get an integer property.
    *
-   * @param key the lookup key
+   * @param key  the lookup key
    * @param dflt the default value to use if unspecified
    *
    * @return the value or default if missing
@@ -414,7 +436,7 @@ public class Config implements Iterable<String> {
   /**
    * Get a long property.
    *
-   * @param key the lookup key
+   * @param key  the lookup key
    * @param dflt the default value to use if unspecified
    *
    * @return the value or default if missing

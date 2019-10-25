@@ -9,9 +9,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import prng.EntropySource;
 import prng.Fortuna;
+import prng.LoggersFactory;
 import prng.config.Config;
 
 /**
@@ -25,21 +25,11 @@ abstract public class EntropyCollector extends EntropySource
   /**
    * Logger for entropy collectors
    */
-  protected static final Logger LOG = LoggerFactory.getLogger(
+  protected static final Logger LOG = LoggersFactory.getLogger(
       EntropyCollector.class);
-
-  /**
-   * Period over which entropy collection slows down.
-   */
-  private static final long SLOW_DOWN_PERIOD;
 
   /** Should collection be suspended if no entropy was used and the speed is already at the minimum?. */
   private static final boolean ALLOW_SUSPEND;
-
-  /**
-   * Is entropy collection suspended?
-   */
-  private static boolean IS_SUSPENDED = false;
 
   /** The maximum ratio of the collection speed to the base speed. This is the slowest it can go. */
   private static final double MAX_RATIO;
@@ -54,9 +44,19 @@ abstract public class EntropyCollector extends EntropySource
       new DaemonThreadFactory("PRNG-EntropyCollector"));
 
   /**
+   * Period over which entropy collection slows down.
+   */
+  private static final long SLOW_DOWN_PERIOD;
+
+  /**
    * Set of all known collectors
    */
   private static final Set<EntropyCollector> SOURCES = new HashSet<>();
+
+  /**
+   * Is entropy collection suspended?
+   */
+  private static boolean IS_SUSPENDED = false;
 
   /**
    * Slow down ratio.
@@ -207,7 +207,8 @@ abstract public class EntropyCollector extends EntropySource
         LOG.error(
             "Class " + cl
                 + " is not a sub-class of EntropyCollector",
-            cce);
+            cce
+        );
       } catch (InvocationTargetException | InstantiationException
           | IllegalAccessException e) {
         LOG.error("Class " + cl + " could not be instantiated", e);
@@ -283,7 +284,7 @@ abstract public class EntropyCollector extends EntropySource
    * @param dfltDelay the default collection delay
    */
   protected EntropyCollector(Config config, int dfltDelay) {
-    delay = Math.max(1,config.getInt("delay", dfltDelay));
+    delay = Math.max(1, config.getInt("delay", dfltDelay));
   }
 
 

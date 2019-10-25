@@ -7,6 +7,7 @@ import java.security.SecureRandom;
  */
 public class WorksAsPrimary {
   public static void main(String[] args) throws Exception {
+    System.setProperty("prng.logging","true");
 
     SecureRandomProvider.install(true);
 
