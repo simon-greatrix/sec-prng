@@ -23,14 +23,15 @@ public abstract class SeedStorage implements AutoCloseable {
   public static final Logger LOG = LoggersFactory.getLogger(SeedStorage.class);
 
   /**
-   * Set of queued seeds to be written at the next scheduled storage update.
-   */
-  final static Set<Seed> QUEUE = new HashSet<>();
-
-  /**
    * Lock for the storage to ensure only a single thread manipulates the storage at a time. NEVER lock this whilst holding a sync on QUEUE.
+   * The lock is acquired by getting an instance of this and released when close() is called.
    */
   private static final Lock LOCK = new ReentrantLock();
+
+  /**
+   * Set of queued seeds to be written at the next scheduled storage update.
+   */
+  private final static Set<Seed> QUEUE = new HashSet<>();
 
   /**
    * Additive increase in the milliseconds between successive saves. For example, if this was set to 5000 the the time between saves in seconds would be 5, 10,
@@ -120,69 +121,74 @@ public abstract class SeedStorage implements AutoCloseable {
    */
   public static SeedStorage getInstance() {
     LOCK.lock();
-    Config config = Config.getConfig("config", SeedStorage.class);
-
-    // Get the class name and try to create it
-    String className = config.get(
-        "class",
-        UserPrefsStorage.class.getName()
-    );
-    SeedStorage store = null;
     try {
-      Class<?> cl = Class.forName(className);
-      Class<? extends SeedStorage> clStore = cl.asSubclass(
-          SeedStorage.class);
-      store = clStore.newInstance();
-    } catch (ClassCastException e) {
-      // bad specification
-      LOG.error("Specified class of " + className
-          + " is not a subclass of " + SeedStorage.class.getName());
-    } catch (ClassNotFoundException e) {
-      // bad specification and classpath
-      LOG.error("Specified class of " + className + " was not found");
-    } catch (InstantiationException e) {
-      // something went wrong
-      if (e.getCause() instanceof StorageException) {
-        LOG.error(e.getCause().getMessage(), e.getCause());
-      }
-      LOG.error("Specified class of " + className + " failed to load", e);
-    } catch (IllegalAccessException e) {
-      // unexpected
-      LOG.error(
-          "Specified class of " + className + " was not accessible",
-          e
-      );
-    }
+      Config config = Config.getConfig("config", SeedStorage.class);
 
-    // If we didn't create a store, try a fall-back
-    if (store == null) {
+      // Get the class name and try to create it
+      String className = config.get(
+          "class",
+          UserPrefsStorage.class.getName()
+      );
+      SeedStorage store = null;
       try {
-        store = new UserPrefsStorage();
-      } catch (StorageException se) {
+        Class<?> cl = Class.forName(className);
+        Class<? extends SeedStorage> clStore = cl.asSubclass(
+            SeedStorage.class);
+        store = clStore.newInstance();
+      } catch (ClassCastException e) {
+        // bad specification
+        LOG.error("Specified class of " + className
+            + " is not a subclass of " + SeedStorage.class.getName());
+      } catch (ClassNotFoundException e) {
+        // bad specification and classpath
+        LOG.error("Specified class of " + className + " was not found");
+      } catch (InstantiationException e) {
+        // something went wrong
+        if (e.getCause() instanceof StorageException) {
+          LOG.error(e.getCause().getMessage(), e.getCause());
+        }
+        LOG.error("Specified class of " + className + " failed to load", e);
+      } catch (IllegalAccessException e) {
+        // unexpected
         LOG.error(
-            "Failed to use user preferences for seed storage.",
-            se
+            "Specified class of " + className + " was not accessible",
+            e
         );
+      }
+
+      // If we didn't create a store, try a fall-back
+      if (store == null) {
         try {
-          store = new FileStorage();
-        } catch (StorageException se2) {
+          store = new UserPrefsStorage();
+        } catch (StorageException se) {
           LOG.error(
-              "Failed to use file system for seed storage.",
-              se2
+              "Failed to use user preferences for seed storage.",
+              se
           );
-          store = new FakedStorage();
+          try {
+            store = new FileStorage();
+          } catch (StorageException se2) {
+            LOG.error(
+                "Failed to use file system for seed storage.",
+                se2
+            );
+            store = new FakedStorage();
+          }
         }
       }
-    }
 
-    // Put all the queued seeds into the store
-    synchronized (QUEUE) {
-      for (Seed s : QUEUE) {
-        store.put(s);
+      // Put all the queued seeds into the store
+      synchronized (QUEUE) {
+        for (Seed s : QUEUE) {
+          store.put(s);
+        }
+        QUEUE.clear();
       }
-      QUEUE.clear();
+      return store;
+    } catch (RuntimeException e) {
+      LOCK.unlock();
+      throw e;
     }
-    return store;
   }
 
 
