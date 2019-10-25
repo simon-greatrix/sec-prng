@@ -3,7 +3,7 @@
   <parent>
     <groupId>com.pippsford</groupId>
     <artifactId>SecurePRNG</artifactId>
-    <version>0.10</version>
+    <version>0.11</version>
   </parent>
 
   <artifactId>SecurePRNG-image</artifactId>
@@ -19,7 +19,7 @@
   	<dependency>
   		<groupId>com.pippsford</groupId>
   		<artifactId>SecurePRNG-core</artifactId>
-  		<version>0.10</version>
+  		<version>0.11</version>
   	</dependency>
   </dependencies>
 </project>
