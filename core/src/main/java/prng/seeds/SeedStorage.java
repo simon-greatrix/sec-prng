@@ -38,40 +38,25 @@ public abstract class SeedStorage implements AutoCloseable {
    * 15, 20, 25, 30 and so on. Takes the value of "savePeriodAdd" from the "config" section and defaults to 5000.
    */
   private static final int SAVE_ADD = Math.max(
-      Config.getConfig("config", SeedStorage.class).getInt(
-          "savePeriodAdd", 5000),
-      0
-  );
+      Config.getConfig("config", SeedStorage.class).getInt("savePeriodAdd", 5000), 0);
 
   /**
    * The maximum amount of time between saves. Takes the value of "savePeriodMax" from the "config" section and defaults to 24 hours.
    */
   private static final int SAVE_MAX = Math.max(
-      Config.getConfig("config", SeedStorage.class).getInt(
-          "savePeriodMax", 1000 * 60 * 60 * 24),
-      1000
-  );
+      Config.getConfig("config", SeedStorage.class).getInt("savePeriodMax", 1000 * 60 * 60 * 24), 1000);
 
   /**
    * Multiplicative increase in the time between successive saves. For example, if this was set to 2, the time between saves in seconds would be 5, 10, 20, 40,
    * 80 and so on. Takes the value of "savePeriodMultiplier" from the "config" section and default to 1.
    */
   private static final double SAVE_MULTIPLY = Math.max(
-      Config.getConfig("config", SeedStorage.class).getDouble(
-          "savePeriodMultiplier", 1),
-      1
-  );
+      Config.getConfig("config", SeedStorage.class).getDouble("savePeriodMultiplier", 1), 1);
 
   /**
    * Number of milliseconds between storage saves. Takes the value of "savePeriod" from the "config" section and defaults to 5000 milliseconds.
    */
-  private static final int SAVE_PERIOD = Math.max(
-      Config.getConfig("config", SeedStorage.class).getInt(
-          "savePeriod",
-          5000
-      ),
-      100
-  );
+  private static final int SAVE_PERIOD = Math.max(Config.getConfig("config", SeedStorage.class).getInt("savePeriod", 5000), 100);
 
   /**
    * RNG used by the Scrambler. Initially we use the InstantEntropy source, and then switch to SystemRandom once that is available.
@@ -177,12 +162,16 @@ public abstract class SeedStorage implements AutoCloseable {
         }
       }
 
-      // Put all the queued seeds into the store
+      // Get all the queued seeds
+      Seed[] toFlush;
       synchronized (QUEUE) {
-        for (Seed s : QUEUE) {
-          store.put(s);
-        }
+        toFlush = QUEUE.toArray(new Seed[0]);
         QUEUE.clear();
+      }
+
+      // put all the seed updates into this
+      for (Seed s : toFlush) {
+        store.put(s);
       }
       return store;
     } catch (RuntimeException e) {
@@ -234,15 +223,15 @@ public abstract class SeedStorage implements AutoCloseable {
         if (QUEUE.isEmpty()) {
           return;
         }
+      }
 
-        // save the enqueued seeds
-        SeedStorage storage = null;
-        try {
-          storage = getInstance();
-        } finally {
-          if (storage != null) {
-            storage.close();
-          }
+      // save the enqueued seeds
+      SeedStorage storage = null;
+      try {
+        storage = getInstance();
+      } finally {
+        if (storage != null) {
+          storage.close();
         }
       }
     }));
@@ -256,6 +245,7 @@ public abstract class SeedStorage implements AutoCloseable {
    */
   @Override
   public void close() {
+    Seed[] toFlush;
     synchronized (QUEUE) {
       long saveTime = System.currentTimeMillis();
       if (saveTime >= SAVE_DUE) {
@@ -271,12 +261,15 @@ public abstract class SeedStorage implements AutoCloseable {
       // set time for next save
       SAVE_DUE = saveTime + SAVE_WAIT;
 
-      // put all the seed updates into this
-      for (Seed s : QUEUE) {
-        put(s);
-      }
+      toFlush = QUEUE.toArray(new Seed[0]);
       QUEUE.clear();
     }
+
+    // put all the seed updates into this
+    for (Seed s : toFlush) {
+      put(s);
+    }
+
     try {
       closeRaw();
     } catch (StorageException e) {
