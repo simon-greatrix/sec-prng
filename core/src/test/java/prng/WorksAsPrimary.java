@@ -19,6 +19,9 @@ public class WorksAsPrimary {
     random.nextBytes(bytes);
     System.out.println("PRNG complete");
 
+    random = SecureRandom.getInstanceStrong();
+    System.out.println(random.getAlgorithm());
+
     System.out.println("Sleeping 5 seconds");
     Thread.currentThread().sleep(5000);
   }
