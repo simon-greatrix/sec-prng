@@ -8,7 +8,6 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.TreeMap;
@@ -22,7 +21,7 @@ import prng.SecureRandomProvider;
  */
 public class PropsList {
 
-  /** The loaded properties */
+  /** The loaded properties. The element in position 0 is the MOST important. */
   final LinkedList<Props> props = new LinkedList<>();
 
   /** Combined properties */
@@ -36,18 +35,6 @@ public class PropsList {
    */
   public Map<String, String> get() {
     return Collections.unmodifiableMap(merged);
-  }
-
-
-  /**
-   * Get the i'th property file
-   *
-   * @param i the index
-   *
-   * @return the property file
-   */
-  public Props get(int i) {
-    return props.get(i);
   }
 
 
@@ -86,8 +73,7 @@ public class PropsList {
     // if we got a URL, load the specified properties
     if (url != null) {
       // local file over-rides anything on class-path
-      props.add(0, new Props(url));
-      merge();
+      props.addFirst(new Props(url));
     }
   }
 
@@ -101,22 +87,38 @@ public class PropsList {
       resources = Collections.emptyEnumeration();
     }
 
-    // load the properties files
+    // Load the properties files. These come as most to least important, so we have to reverse them
+    LinkedList<Props> reversed = new LinkedList<>();
     while (resources.hasMoreElements()) {
       URL url = resources.nextElement();
-      props.add(0, new Props(url));
+      reversed.addLast(new Props(url));
     }
+    // Adding the reverse list at position zero puts the first loaded properties at the start and the later loaded ones further down the list, as required.
+    props.addAll(0, reversed);
   }
 
 
   /**
-   * Load the property files with access privilege
+   * Load the property files with access privilege.
    */
   void loadWithPrivilege() {
+    // We work from least important to most important
     // First load from the class-path
+    loadPropertyResources("prng/secure-prng-defaults.properties");
+    loadPropertyResources("prng/secure-prng.properties");
     loadPropertyResources("prng/secure-prng-override.properties");
-    loadPropertyResources("prng/secure-prng-defaults.properties");
-    loadPropertyResources("prng/secure-prng-defaults.properties");
+
+    // merge to see if system properties are enabled
+    merge();
+
+    if (Boolean.parseBoolean(merged.get("config.preferences.enable.system"))) {
+      // System properties over-ride anything on the deployment
+      props.addFirst(new Props(
+          () -> Preferences.systemNodeForPackage(
+              SecureRandomProvider.class),
+          Config.URI_PREFERENCE_SYSTEM
+      ));
+    }
 
     // Now from files or URLs
     loadFromUrl(Config.getProperty("prng.config.properties.url"), false);
@@ -124,60 +126,30 @@ public class PropsList {
     loadFromUrl(Config.getEnv("PRNG_CONFIG_PROPERTIES_URL"), false);
     loadFromUrl(Config.getEnv("PRNG_CONFIG_PROPERTIES"), true);
 
+    // merge to see if user properties are enabled
     merge();
-
-    // Now from recursively references sources
-    HashSet<String> locations = new HashSet<>();
-    while (true) {
-      String loc = merged.get("prng.config.properties.url");
-      if (loc == null || !locations.add(loc)) {
-        break;
-      }
-      loadFromUrl(loc, false);
-      merge();
-    }
-
-    // Now for files
-    locations.clear();
-    while (true) {
-      String loc = merged.get("prng.config.properties");
-      if (loc == null || !locations.add(loc)) {
-        break;
-      }
-      loadFromUrl(loc, true);
-      merge();
-    }
-
-    if (Boolean.parseBoolean(merged.get("config.preferences.enable.system"))) {
-      // System properties over-ride anything on the deployment
-      props.add(0, new Props(
-          () -> Preferences.systemNodeForPackage(
-              SecureRandomProvider.class),
-          Config.URI_PREFERENCE_SYSTEM
-      ));
-      merge();
-    }
 
     if (Boolean.parseBoolean(merged.get("config.preferences.enable.user"))) {
       // User properties over-ride everything
-      props.add(
-          0,
+      props.addFirst(
           new Props(
               () -> Preferences.userNodeForPackage(
                   SecureRandomProvider.class),
               Config.URI_PREFERENCE_USER
           )
       );
-      merge();
     }
+
+    merge();
   }
 
 
   /**
-   * Merge loaded files in order
+   * Merge loaded files in order.
    */
   private void merge() {
     merged.clear();
+    // Inherit only sets properties that are not already set, so we work from MOST to LEAST important.
     for (Props p : props) {
       p.inherit(merged);
     }

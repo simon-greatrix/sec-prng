@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.pippsford</groupId>
   <artifactId>SecurePRNG</artifactId>
-  <version>0.12</version>
+  <version>0.13-SNAPSHOT</version>
   <name>SecurePRNG</name>
   <description>Implementation of NIST compliant secure random number generators and related tools.</description>
   <url>https://github.com/simon-greatrix/sec-prng</url>
