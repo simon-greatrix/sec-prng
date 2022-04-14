@@ -8,6 +8,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.Callable;
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
+
 import prng.collector.EntropyCollector;
 import prng.collector.EntropyCollector.Fulfillment;
 import prng.generator.SeedSource;
@@ -124,6 +125,7 @@ public class Fortuna {
       seed.update(value);
       return value;
     }
+
   }
 
 
@@ -153,6 +155,7 @@ public class Fortuna {
     public byte[] call() {
       return impl.seed();
     }
+
   }
 
 
@@ -215,23 +218,23 @@ public class Fortuna {
   /** A buffer to hold a single block */
   private final byte[] blockBuffer = new byte[16];
 
-  /** AES with 256-bit key */
-  private Cipher cipher;
-
   /** An 128-bit counter */
   private final byte[] counter = new byte[16];
-
-  /** SHA-256 digest */
-  private MessageDigest digest;
 
   /** Amount of entropy added since last reset. */
   private final Fulfillment fulfillment = new Fulfillment();
 
-  /** A 256-bit cipher key */
-  private byte[] key = new byte[32];
-
   /** Entropy accumulators */
   private final Pool[] pool = new Pool[32];
+
+  /** AES with 256-bit key */
+  private Cipher cipher;
+
+  /** SHA-256 digest */
+  private MessageDigest digest;
+
+  /** A 256-bit cipher key */
+  private byte[] key = new byte[32];
 
   /** Number of times this instance has been reseeded. */
   private int reseedCount = 0;
@@ -268,8 +271,7 @@ public class Fortuna {
     }
 
     for (int i = 0; i < 32; i++) {
-      SeedStorage.enqueue(
-          new DeferredSeed("Fortuna." + i, new SeedMaker(pool[i])));
+      SeedStorage.enqueue(new DeferredSeed("Fortuna." + i, new SeedMaker(pool[i])));
     }
   }
 
@@ -278,8 +280,8 @@ public class Fortuna {
    * Internal function. Generate pseudo random data. The length must be a multiple of 16
    *
    * @param output output buffer
-   * @param off start of output in buffer
-   * @param len number of bytes to generate
+   * @param off    start of output in buffer
+   * @param len    number of bytes to generate
    */
   private void generateBlocks(byte[] output, int off, int len) {
     try {
@@ -401,4 +403,5 @@ public class Fortuna {
     // increment counter
     incrementCounter();
   }
+
 }

@@ -8,6 +8,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+
 import org.slf4j.Logger;
 import prng.EntropySource;
 import prng.Fortuna;
@@ -19,14 +20,13 @@ import prng.config.Config;
  *
  * @author Simon Greatrix
  */
-abstract public class EntropyCollector extends EntropySource
+public abstract class EntropyCollector extends EntropySource
     implements Runnable {
 
   /**
    * Logger for entropy collectors
    */
-  protected static final Logger LOG = LoggersFactory.getLogger(
-      EntropyCollector.class);
+  protected static final Logger LOG = LoggersFactory.getLogger(EntropyCollector.class);
 
   /** Should collection be suspended if no entropy was used and the speed is already at the minimum?. */
   private static final boolean ALLOW_SUSPEND;
@@ -144,7 +144,7 @@ abstract public class EntropyCollector extends EntropySource
   /** Report of entropy fulfillment. */
   public static class Fulfillment {
 
-    /** Cumulative back log in entropy collection. */
+    /** Cumulative backlog in entropy collection. */
     public long excess;
 
     /** Amount of entropy provided this period. */
@@ -152,6 +152,7 @@ abstract public class EntropyCollector extends EntropySource
 
     /** Amount of entropy used this period. */
     public long used;
+
   }
 
 
@@ -202,13 +203,9 @@ abstract public class EntropyCollector extends EntropySource
         // register and initialise collector
         initialise(ec);
       } catch (ClassNotFoundException cnfe) {
-        LOG.error("Class " + cl + " is not available", cnfe);
+        LOG.error("Class {} is not available", cl, cnfe);
       } catch (ClassCastException cce) {
-        LOG.error(
-            "Class " + cl
-                + " is not a sub-class of EntropyCollector",
-            cce
-        );
+        LOG.error("Class {} is not a sub-class of EntropyCollector", cl, cce);
       } catch (InvocationTargetException | InstantiationException
           | IllegalAccessException e) {
         LOG.error("Class " + cl + " could not be instantiated", e);
@@ -325,7 +322,7 @@ abstract public class EntropyCollector extends EntropySource
    *
    * @return true if the collector is operational, false if it is unusable
    */
-  abstract protected boolean initialise();
+  protected abstract boolean initialise();
 
 
   /**
@@ -350,7 +347,7 @@ abstract public class EntropyCollector extends EntropySource
   /**
    * Generate entropy.
    */
-  abstract protected void runImpl();
+  protected abstract void runImpl();
 
 
   /**

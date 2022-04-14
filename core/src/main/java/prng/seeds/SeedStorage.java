@@ -1,10 +1,12 @@
 package prng.seeds;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
 import org.slf4j.Logger;
 import prng.LoggersFactory;
 import prng.SystemRandom;
@@ -31,27 +33,24 @@ public abstract class SeedStorage implements AutoCloseable {
   /**
    * Set of queued seeds to be written at the next scheduled storage update.
    */
-  private final static Set<Seed> QUEUE = new HashSet<>();
+  private static final Set<Seed> QUEUE = new HashSet<>();
 
   /**
    * Additive increase in the milliseconds between successive saves. For example, if this was set to 5000 the the time between saves in seconds would be 5, 10,
    * 15, 20, 25, 30 and so on. Takes the value of "savePeriodAdd" from the "config" section and defaults to 5000.
    */
-  private static final int SAVE_ADD = Math.max(
-      Config.getConfig("config", SeedStorage.class).getInt("savePeriodAdd", 5000), 0);
+  private static final int SAVE_ADD = Math.max(Config.getConfig("config", SeedStorage.class).getInt("savePeriodAdd", 5000), 0);
 
   /**
    * The maximum amount of time between saves. Takes the value of "savePeriodMax" from the "config" section and defaults to 24 hours.
    */
-  private static final int SAVE_MAX = Math.max(
-      Config.getConfig("config", SeedStorage.class).getInt("savePeriodMax", 1000 * 60 * 60 * 24), 1000);
+  private static final int SAVE_MAX = Math.max(Config.getConfig("config", SeedStorage.class).getInt("savePeriodMax", 1000 * 60 * 60 * 24), 1000);
 
   /**
    * Multiplicative increase in the time between successive saves. For example, if this was set to 2, the time between saves in seconds would be 5, 10, 20, 40,
    * 80 and so on. Takes the value of "savePeriodMultiplier" from the "config" section and default to 1.
    */
-  private static final double SAVE_MULTIPLY = Math.max(
-      Config.getConfig("config", SeedStorage.class).getDouble("savePeriodMultiplier", 1), 1);
+  private static final double SAVE_MULTIPLY = Math.max(Config.getConfig("config", SeedStorage.class).getDouble("savePeriodMultiplier", 1), 1);
 
   /**
    * Number of milliseconds between storage saves. Takes the value of "savePeriod" from the "config" section and defaults to 5000 milliseconds.
@@ -88,13 +87,8 @@ public abstract class SeedStorage implements AutoCloseable {
     }
 
     // A save is due - just open and close the store to save it.
-    SeedStorage storage = null;
-    try {
-      storage = getInstance();
-    } finally {
-      if (storage != null) {
-        storage.close();
-      }
+    try (SeedStorage storage = getInstance()) {
+      LOG.debug("Saving entropy seeds");
     }
   }
 
@@ -110,35 +104,32 @@ public abstract class SeedStorage implements AutoCloseable {
       Config config = Config.getConfig("config", SeedStorage.class);
 
       // Get the class name and try to create it
-      String className = config.get(
-          "class",
-          UserPrefsStorage.class.getName()
-      );
+      String className = config.get("class", UserPrefsStorage.class.getName());
       SeedStorage store = null;
       try {
         Class<?> cl = Class.forName(className);
-        Class<? extends SeedStorage> clStore = cl.asSubclass(
-            SeedStorage.class);
-        store = clStore.newInstance();
+        Class<? extends SeedStorage> clStore = cl.asSubclass(SeedStorage.class);
+        store = clStore.getDeclaredConstructor().newInstance();
       } catch (ClassCastException e) {
         // bad specification
-        LOG.error("Specified class of " + className
-            + " is not a subclass of " + SeedStorage.class.getName());
+        LOG.error("Specified class of {} is not a subclass of {}", className, SeedStorage.class.getName());
       } catch (ClassNotFoundException e) {
         // bad specification and classpath
-        LOG.error("Specified class of " + className + " was not found");
+        LOG.error("Specified class of {} was not found", className);
       } catch (InstantiationException e) {
         // something went wrong
         if (e.getCause() instanceof StorageException) {
           LOG.error(e.getCause().getMessage(), e.getCause());
         }
-        LOG.error("Specified class of " + className + " failed to load", e);
+        LOG.error("Specified class of {} failed to load", className, e);
       } catch (IllegalAccessException e) {
         // unexpected
-        LOG.error(
-            "Specified class of " + className + " was not accessible",
-            e
-        );
+        LOG.error("Specified class of {} was not accessible", className, e);
+      } catch (InvocationTargetException e) {
+        Throwable cause = e.getTargetException();
+        LOG.error("Creating seed storage of class {} failed", className, cause);
+      } catch (NoSuchMethodException e) {
+        LOG.error("Specified class of {} lacks a zero argument constructor", className, e);
       }
 
       // If we didn't create a store, try a fall-back
@@ -174,7 +165,7 @@ public abstract class SeedStorage implements AutoCloseable {
         store.put(s);
       }
       return store;
-    } catch (RuntimeException e) {
+    } catch (RuntimeException | Error e) {
       LOCK.unlock();
       throw e;
     }
@@ -226,13 +217,8 @@ public abstract class SeedStorage implements AutoCloseable {
       }
 
       // save the enqueued seeds
-      SeedStorage storage = null;
-      try {
-        storage = getInstance();
-      } finally {
-        if (storage != null) {
-          storage.close();
-        }
+      try (SeedStorage storage = getInstance()) {
+        LOG.debug("Saving seed information");
       }
     }));
     SAVE_WAIT = SAVE_PERIOD;
@@ -245,36 +231,39 @@ public abstract class SeedStorage implements AutoCloseable {
    */
   @Override
   public void close() {
-    Seed[] toFlush;
-    synchronized (QUEUE) {
-      long saveTime = System.currentTimeMillis();
-      if (saveTime >= SAVE_DUE) {
-        // calculate new wait time as a double to avoid overflow
-        double saveWait = (SAVE_WAIT * SAVE_MULTIPLY) + SAVE_ADD;
-        if (saveWait < SAVE_MAX) {
-          SAVE_WAIT = (int) saveWait;
-        } else {
-          SAVE_WAIT = SAVE_MAX;
+    try {
+      Seed[] toFlush;
+      synchronized (QUEUE) {
+        long saveTime = System.currentTimeMillis();
+        if (saveTime >= SAVE_DUE) {
+          // calculate new wait time as a double to avoid overflow
+          double saveWait = (SAVE_WAIT * SAVE_MULTIPLY) + SAVE_ADD;
+          if (saveWait < SAVE_MAX) {
+            SAVE_WAIT = (int) saveWait;
+          } else {
+            SAVE_WAIT = SAVE_MAX;
+          }
         }
+
+        // set time for next save
+        SAVE_DUE = saveTime + SAVE_WAIT;
+
+        toFlush = QUEUE.toArray(new Seed[0]);
+        QUEUE.clear();
       }
 
-      // set time for next save
-      SAVE_DUE = saveTime + SAVE_WAIT;
+      // put all the seed updates into this
+      for (Seed s : toFlush) {
+        put(s);
+      }
 
-      toFlush = QUEUE.toArray(new Seed[0]);
-      QUEUE.clear();
-    }
-
-    // put all the seed updates into this
-    for (Seed s : toFlush) {
-      put(s);
-    }
-
-    try {
-      closeRaw();
-    } catch (StorageException e) {
-      LOG.error("Failed to persist seeds to storage", e);
+      try {
+        closeRaw();
+      } catch (StorageException e) {
+        LOG.error("Failed to persist seeds to storage", e);
+      }
     } finally {
+      // always unlock
       LOCK.unlock();
     }
   }
@@ -315,8 +304,8 @@ public abstract class SeedStorage implements AutoCloseable {
 
     T seed;
     try {
-      seed = type.newInstance();
-    } catch (InstantiationException | IllegalAccessException e) {
+      seed = type.getDeclaredConstructor().newInstance();
+    } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
       // This is a programming error
       throw new Error("Invalid seed type:" + type.getName(), e);
     }
@@ -324,9 +313,7 @@ public abstract class SeedStorage implements AutoCloseable {
     try {
       seed.initialize(input);
     } catch (Exception e) {
-      LOG.error("Seed data for {} was corrupt:\n", name,
-          BLOBPrint.toString(data), e
-      );
+      LOG.error("Seed data for {} was corrupt:\n{}", name, BLOBPrint.toString(data), e);
       remove(name);
     }
     return seed;
@@ -417,4 +404,5 @@ public abstract class SeedStorage implements AutoCloseable {
    * @param name the seed's name
    */
   abstract protected void remove(String name);
+
 }
