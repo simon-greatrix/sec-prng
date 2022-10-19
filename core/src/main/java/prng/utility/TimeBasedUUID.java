@@ -11,24 +11,29 @@ import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.Random;
 import java.util.UUID;
+
 import org.slf4j.Logger;
 import prng.LoggersFactory;
 import prng.SecureRandomProvider;
 import prng.SystemRandom;
 
 /**
- * Implementation of UUID generator that uses time/location based generation method (variant 1). <p> A time based UUID may be used as a nonce where 256-bit
- * security is required. For such usage a nonce should not be expected to repeat more often than a (0.5 * security-strength)-bit random number is expected to
- * repeat. Due to the birthday problem a (0.5 * 256)-bit or 128 bit random number is expected to repeat within 2^64 values. <p> The time-based UUID comprises a
- * 60 bit clock time, a 16 bit sequence number and a 96 bit network ID. The combination of clock time and sequence exceeds the required values before repetition
- * on a particular network address. <p> In order to create nonces that are unique across different processes on the same machine, it is necessary to combine the
- * type 1 UUID with a process identifier.
+ * Implementation of UUID generator that uses time/location based generation method (variant 1).
+ *
+ * <p> A time based UUID may be used as a nonce where 256-bit security is required. For such usage a nonce should not be expected to repeat more often than a
+ * (0.5 * security-strength)-bit random number is expected to repeat. Due to the birthday problem a (0.5 * 256)-bit or 128-bit random number is expected to
+ * repeat within 2^64 values.
+ *
+ * <p> The time-based UUID comprises a* 60 bit clock time, a 16 bit sequence number and a 96 bit network ID. The combination of clock time and sequence exceeds
+ * the required values before repetition on a particular network address.
+ *
+ * <p> In order to create nonces that are unique across different processes on the same machine, it is necessary to combine the type 1 UUID with a process
+ * identifier.
  */
 public class TimeBasedUUID {
 
   /** Logger for this class */
-  private static final Logger LOG = LoggersFactory.getLogger(
-      TimeBasedUUID.class);
+  private static final Logger LOG = LoggersFactory.getLogger(TimeBasedUUID.class);
 
   /** Secure random number generator */
   private static final Random RANDOM = SystemRandom.getRandom();
@@ -235,6 +240,7 @@ public class TimeBasedUUID {
 
     return new UUID(l1, l2);
   }
+
 }
 
 
@@ -247,12 +253,12 @@ final class UUIDTime {
   /**
    * UUIDs need time from the beginning of Gregorian calendar (15-OCT-1582), need to apply this offset from the System current time.
    */
-  private final static long CLOCK_OFFSET = 0x01b21dd213814000L;
+  private static final long CLOCK_OFFSET = 0x01b21dd213814000L;
 
   /**
    * Initial time which may be negative. Used to ensure we get a positive time difference.
    */
-  private final static long INIT_NANO = System.nanoTime();
+  private static final long INIT_NANO = System.nanoTime();
 
   /**
    * Sequence number for a given clock value. The RFC requires it be initialised from a secure random source.
@@ -360,4 +366,5 @@ final class UUIDTime {
   public long getTime() {
     return timeStamp;
   }
+
 }

@@ -12,6 +12,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
 import prng.SystemRandom;
 import prng.generator.HashSpec;
 import prng.generator.IsaacRandom;
@@ -33,12 +34,13 @@ public class InstantEntropy implements Runnable {
   public static final SeedSource SOURCE = new Result();
 
   /** Count of ready sources */
-  final static Counter COUNTER = new Counter();
+  static final Counter COUNTER = new Counter();
 
   /** Thread pool for handling requests for entropy */
   static final ExecutorService FUTURE_RUNNER = new ThreadPoolExecutor(2, 2,
       100, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(),
-      new DaemonThreadFactory("PRNG-SeedGenerator"));
+      new DaemonThreadFactory("PRNG-SeedGenerator")
+  );
 
   /**
    * A random number generator. This is a secure algorithm, but its seed information is only the instant entropy we are able to create.
@@ -48,13 +50,13 @@ public class InstantEntropy implements Runnable {
   /**
    * All prime numbers greater than 30 take the form of 30k+c, where c is one of these values. Of course, not all numbers of the form 30k+c are prime!
    */
-  private static final int[] ADD_CONST = new int[]{1, 7, 11, 13, 17, 19, 23,
-      29};
+  private static final int[] ADD_CONST = {1, 7, 11, 13, 17, 19, 23, 29};
 
   /** Thread pool for generating entropy */
   private static final ExecutorService ENTROPY_RUNNER = new ThreadPoolExecutor(20,
       20, 100, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(),
-      new DaemonThreadFactory("PRNG-EntropyFactory"));
+      new DaemonThreadFactory("PRNG-EntropyFactory")
+  );
 
   /** Bit for 256-bit FNV hash */
   private static final BigInteger FNV_MASK = BigInteger.ZERO.setBit(
@@ -141,6 +143,7 @@ public class InstantEntropy implements Runnable {
       }
 
     }
+
   }
 
 
@@ -162,6 +165,7 @@ public class InstantEntropy implements Runnable {
      * @param millis maximum time to wait for entropy
      *
      * @return the entropy
+     *
      * @throws InterruptedException if the current thread is interrupted before the entropy arrives
      */
     public byte[] get(long millis) throws InterruptedException {
@@ -234,6 +238,7 @@ public class InstantEntropy implements Runnable {
         return entropy;
       }
     }
+
   }
 
 
@@ -253,6 +258,12 @@ public class InstantEntropy implements Runnable {
 
 
     @Override
+    public String getName() {
+      return "InstantEntropy";
+    }
+
+
+    @Override
     public byte[] getSeed(int size) {
       int offset = 0;
       int len = size;
@@ -269,18 +280,19 @@ public class InstantEntropy implements Runnable {
           if (rem <= len) {
             // insufficient bytes remain in current batch
             System.arraycopy(output, offset, entropy, pos, rem);
-            len -= rem;
             pos += rem;
+            len -= rem;
           } else {
             // we have enough bytes in this batch
             System.arraycopy(output, offset, entropy, pos, len);
-            len = 0;
             pos += len;
+            len = 0;
           }
         }
       }
       return output;
     }
+
   }
 
 
@@ -312,8 +324,7 @@ public class InstantEntropy implements Runnable {
       }
     }
 
-    // Get the entropy. It is necessary to synchronize because if we were
-    // interrupted the entropy generation may still be on-going.
+    // Get the entropy. It is necessary to synchronize because if we were interrupted the entropy generation may still be ongoing.
     byte[] out;
     synchronized (dig) {
       out = dig.digest();
@@ -356,7 +367,7 @@ public class InstantEntropy implements Runnable {
 
 
   /**
-   * Permute the numbers 0 .. (size-1).
+   * Permute the numbers 0 ... (size-1).
    *
    * @param size the number of integers to permute
    *
@@ -395,8 +406,7 @@ public class InstantEntropy implements Runnable {
       // hash the previous value
       BigInteger hash = FNV_OFFSET;
       for (int j = 0; j < p.length; j++) {
-        hash = hash.xor(BigInteger.valueOf(0xff & p[j])).multiply(
-            FNV_PRIME).and(FNV_MASK);
+        hash = hash.xor(BigInteger.valueOf(0xff & p[j])).multiply(FNV_PRIME).and(FNV_MASK);
       }
 
       // Add the nano time to the hash. As we are not doing anything
@@ -406,8 +416,7 @@ public class InstantEntropy implements Runnable {
       // counter mode.
       long now = System.nanoTime();
       for (int j = 0; j < 8; j++) {
-        hash = hash.xor(BigInteger.valueOf(0xff & now)).multiply(
-            FNV_PRIME).and(FNV_MASK);
+        hash = hash.xor(BigInteger.valueOf(0xff & now)).multiply(FNV_PRIME).and(FNV_MASK);
         now >>>= 8;
       }
 
@@ -424,8 +433,7 @@ public class InstantEntropy implements Runnable {
     long now = System.nanoTime();
     int bit = Long.numberOfTrailingZeros(now);
     now >>>= (bit + 1);
-    buf.order((now & 1) == 0 ? ByteOrder.BIG_ENDIAN
-        : ByteOrder.LITTLE_ENDIAN);
+    buf.order((now & 1) == 0 ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN);
 
     // Permute the bytes. This breaks up the blocks used to create the seed
     // and used by ISAAC to interpret it.
@@ -547,8 +555,8 @@ public class InstantEntropy implements Runnable {
    * Find prime numbers. As prime numbers are scattered without pattern and our starting points are from a cryptographically secure PRNG, the time it takes to
    * find such prime numbers should be difficult to predict. We also consider which thread produces the prime number, the number itself and the time it takes to
    * do so as useful entropy. <p>
-   *
-   * Each execution of this method tests one number to see if it is prime. If it is not, this task is resubmitted. Otherwise it writes out its entropy and
+   * <p>
+   * Each execution of this method tests one number to see if it is prime. If it is not, this task is resubmitted. Otherwise, it writes out its entropy and
    * terminates.
    */
   @Override
@@ -579,4 +587,5 @@ public class InstantEntropy implements Runnable {
     }
     latch.countDown();
   }
+
 }

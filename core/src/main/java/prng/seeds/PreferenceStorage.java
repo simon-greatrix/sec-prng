@@ -27,7 +27,7 @@ public abstract class PreferenceStorage extends SeedStorage {
    * @return the preferences.
    * @throws StorageException if the preferences cannot be retrieved
    */
-  abstract protected Preferences getPreferences() throws StorageException;
+  protected abstract Preferences getPreferences() throws StorageException;
 
 
   @Override

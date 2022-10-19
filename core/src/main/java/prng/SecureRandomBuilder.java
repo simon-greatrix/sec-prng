@@ -1,6 +1,11 @@
 package prng;
 
 import java.security.SecureRandom;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Supplier;
+
 import prng.generator.BaseRandom;
 import prng.generator.HashSpec;
 import prng.generator.NistCipherRandom;
@@ -9,13 +14,14 @@ import prng.generator.NistHmacRandom;
 import prng.generator.SeedSource;
 import prng.seeds.PermutingSeedSource;
 import prng.seeds.ZeroSeedSource;
+import prng.utility.NonceFactory;
 
 /**
  * A builder of secure random instances.
  *
  * @author Simon
  */
-abstract public class SecureRandomBuilder {
+public abstract class SecureRandomBuilder {
 
   /**
    * Hash algorithms used by the RNGs.
@@ -114,9 +120,16 @@ abstract public class SecureRandomBuilder {
   static class CipherBuilder extends SecureRandomBuilder {
 
     @Override
-    public BaseRandom buildSpi() {
-      return new NistCipherRandom(source.getSource(), laziness, entropy,
-          nonce, personalization);
+    public Supplier<BaseRandom> asTemplate() {
+      SeedSource mySource = source.getSource();
+      byte[] myPersonalization = (personalization != null) ? personalization.clone() : NonceFactory.personalization();
+      return () -> new NistCipherRandom(mySource, laziness, null, null, myPersonalization);
+    }
+
+
+    @Override
+    protected BaseRandom createSpi() {
+      return new NistCipherRandom(source.getSource(), laziness, entropy, nonce, personalization);
     }
 
 
@@ -128,9 +141,18 @@ abstract public class SecureRandomBuilder {
 
     @Override
     public SecureRandomBuilder hash(Hash newHash) {
-      throw new IllegalArgumentException(
-          "Hash valid is not applicable to cipher based algorithms");
+      if (hash != null) {
+        throw new IllegalArgumentException("Hash is not applicable to cipher based algorithms");
+      }
+      return this;
     }
+
+
+    @Override
+    protected SecureRandomBuilder newCopy() {
+      return new CipherBuilder();
+    }
+
   }
 
 
@@ -143,9 +165,17 @@ abstract public class SecureRandomBuilder {
   static class HashBuilder extends SecureRandomBuilder {
 
     @Override
-    public BaseRandom buildSpi() {
-      return new NistHashRandom(source.getSource(), hash.spec, laziness,
-          entropy, nonce, personalization);
+    public Supplier<BaseRandom> asTemplate() {
+      SeedSource mySource = source.getSource();
+      HashSpec mySpec = hash.spec;
+      byte[] myPersonalization = (personalization != null) ? personalization.clone() : NonceFactory.personalization();
+      return () -> new NistHashRandom(mySource, mySpec, laziness, null, null, myPersonalization);
+    }
+
+
+    @Override
+    protected BaseRandom createSpi() {
+      return new NistHashRandom(source.getSource(), hash.spec, laziness, entropy, nonce, personalization);
     }
 
 
@@ -153,6 +183,13 @@ abstract public class SecureRandomBuilder {
     String getClassName() {
       return NistHashRandom.class.getName();
     }
+
+
+    @Override
+    protected SecureRandomBuilder newCopy() {
+      return new HashBuilder();
+    }
+
   }
 
 
@@ -165,9 +202,17 @@ abstract public class SecureRandomBuilder {
   static class HmacBuilder extends SecureRandomBuilder {
 
     @Override
-    public BaseRandom buildSpi() {
-      return new NistHmacRandom(source.getSource(), hash.spec, laziness,
-          entropy, nonce, personalization);
+    public Supplier<BaseRandom> asTemplate() {
+      SeedSource mySource = source.getSource();
+      HashSpec mySpec = hash.spec;
+      byte[] myPersonalization = (personalization != null) ? personalization.clone() : NonceFactory.personalization();
+      return () -> new NistHmacRandom(mySource, mySpec, laziness, null, null, myPersonalization);
+    }
+
+
+    @Override
+    protected BaseRandom createSpi() {
+      return new NistHmacRandom(source.getSource(), hash.spec, laziness, entropy, nonce, personalization);
     }
 
 
@@ -175,6 +220,13 @@ abstract public class SecureRandomBuilder {
     String getClassName() {
       return NistHmacRandom.class.getName();
     }
+
+
+    @Override
+    protected SecureRandomBuilder newCopy() {
+      return new HmacBuilder();
+    }
+
   }
 
 
@@ -226,6 +278,17 @@ abstract public class SecureRandomBuilder {
   /** Entropy source for RNG. */
   protected Source source = Source.FORTUNA;
 
+  /** Multiplex generators for thread safety (true - default), or use synchronization (false)? */
+  protected boolean threadSafe = true;
+
+
+  /**
+   * Create a template from which new instances can be generated. Note the template ignores the entropy and nonce values.
+   *
+   * @return a supplier of BaseRandom instances
+   */
+  public abstract Supplier<BaseRandom> asTemplate();
+
 
   /**
    * Build the secure random instance.
@@ -242,7 +305,27 @@ abstract public class SecureRandomBuilder {
    *
    * @return the instance
    */
-  abstract BaseRandom buildSpi();
+  BaseRandom buildSpi() {
+    // Synchronize to prevent re-use of nonce and entropy
+    BaseRandom base = createSpi();
+
+    // Do not re-use nonce and entropy. Note these arrays are passed by reference to InitialMaterial and cleared when that is used.
+    nonce = null;
+    entropy = null;
+    return base;
+  }
+
+
+  public SecureRandomBuilder copy() {
+    return newCopy()
+        .laziness(laziness)
+        .personalization(getPersonalization())
+        .source(source)
+        .threadSafe(threadSafe);
+  }
+
+
+  protected abstract BaseRandom createSpi();
 
 
   /**
@@ -260,11 +343,58 @@ abstract public class SecureRandomBuilder {
 
 
   /**
+   * Get the build specification as an attribute map.
+   *
+   * @return an attribute map
+   */
+  public Map<String, String> getAttributes() {
+    HashMap<String, String> map = new HashMap<>();
+    map.put("Laziness", String.valueOf(laziness));
+    if (personalization != null) {
+      map.put("Personalization", Base64.getUrlEncoder().encodeToString(personalization));
+    }
+    map.put("Source", source.name());
+    map.put("ThreadSafe", Boolean.toString(threadSafe));
+    return Map.copyOf(map);
+  }
+
+
+  /**
    * Get the class name that implements the RNG.
    *
    * @return the class name
    */
   abstract String getClassName();
+
+
+  public byte[] getEntropy() {
+    return entropy != null ? entropy.clone() : null;
+  }
+
+
+  public Hash getHash() {
+    return hash;
+  }
+
+
+  public int getLaziness() {
+    return laziness;
+  }
+
+
+  public byte[] getNonce() {
+    return nonce != null ? nonce.clone() : null;
+  }
+
+
+  public byte[] getPersonalization() {
+    return personalization != null ? personalization.clone() : null;
+  }
+
+
+  public Source getSource() {
+    return source;
+  }
 
 
   /**
@@ -276,16 +406,20 @@ abstract public class SecureRandomBuilder {
    */
   public SecureRandomBuilder hash(Hash newHash) {
     if (newHash == null) {
-      throw new IllegalArgumentException(
-          "Hash algorithm must be specified");
+      throw new IllegalArgumentException("Hash algorithm must be specified");
     }
     hash = newHash;
     return this;
   }
 
 
+  public boolean isThreadSafe() {
+    return threadSafe;
+  }
+
+
   /**
-   * How lazy is the generator when it comes to requesting new entropy? NIST refer to this parameter as "resistance" but lower values are more secure than
+   * How lazy is the generator when it comes to requesting new entropy? NIST refers to this parameter as "resistance" but lower values are more secure than
    * higher ones.
    *
    * @param lazy the amount of laziness (a non-negative integer). The default value is 0.
@@ -300,6 +434,9 @@ abstract public class SecureRandomBuilder {
     laziness = lazy;
     return this;
   }
+
+
+  protected abstract SecureRandomBuilder newCopy();
 
 
   /**
@@ -344,4 +481,19 @@ abstract public class SecureRandomBuilder {
     source = newSource;
     return this;
   }
+
+
+  /**
+   * Should a "thread safe" SPI be used? All SecureRandom instances are thread safe regardless of the SPI. If the SPI is not "thread safe", then the
+   * SecureRandom instance will use synchronization locks to ensure it is only invoked by a single thread at a time. The default is "true".
+   *
+   * @param isSafe If true, multiplex multiple SPIs. If false, synchronize on a single SPI.
+   *
+   * @return this
+   */
+  public SecureRandomBuilder threadSafe(boolean isSafe) {
+    threadSafe = isSafe;
+    return this;
+  }
+
 }

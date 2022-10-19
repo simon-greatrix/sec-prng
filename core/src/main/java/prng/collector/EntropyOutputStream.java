@@ -8,7 +8,7 @@ import java.util.zip.Checksum;
 import prng.EntropySource;
 
 /**
- * An utility output stream where the contents of the stream contribute to system entropy. An application may choose to wrap another output stream with this
+ * A utility output stream where the contents of the stream contribute to system entropy. An application may choose to wrap another output stream with this
  * class so that entropy is contributed to the pool when the stream is closed.
  *
  * @author Simon Greatrix

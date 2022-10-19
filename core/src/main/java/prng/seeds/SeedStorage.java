@@ -36,8 +36,8 @@ public abstract class SeedStorage implements AutoCloseable {
   private static final Set<Seed> QUEUE = new HashSet<>();
 
   /**
-   * Additive increase in the milliseconds between successive saves. For example, if this was set to 5000 the the time between saves in seconds would be 5, 10,
-   * 15, 20, 25, 30 and so on. Takes the value of "savePeriodAdd" from the "config" section and defaults to 5000.
+   * Additive increase in the milliseconds between successive saves. For example, if this was set to 5000 then the time between saves in seconds would be 5,
+   * 10, 15, 20, 25, 30 and so on. Takes the value of "savePeriodAdd" from the "config" section and defaults to 5000.
    */
   private static final int SAVE_ADD = Math.max(Config.getConfig("config", SeedStorage.class).getInt("savePeriodAdd", 5000), 0);
 
@@ -137,17 +137,11 @@ public abstract class SeedStorage implements AutoCloseable {
         try {
           store = new UserPrefsStorage();
         } catch (StorageException se) {
-          LOG.error(
-              "Failed to use user preferences for seed storage.",
-              se
-          );
+          LOG.error("Failed to use user preferences for seed storage.", se);
           try {
             store = new FileStorage();
           } catch (StorageException se2) {
-            LOG.error(
-                "Failed to use file system for seed storage.",
-                se2
-            );
+            LOG.error("Failed to use file system for seed storage.", se2);
             store = new FakedStorage();
           }
         }
@@ -307,7 +301,7 @@ public abstract class SeedStorage implements AutoCloseable {
       seed = type.getDeclaredConstructor().newInstance();
     } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
       // This is a programming error
-      throw new Error("Invalid seed type:" + type.getName(), e);
+      throw new InternalError("Invalid seed type:" + type.getName(), e);
     }
     SeedInput input = new SeedInput(data);
     try {
@@ -365,7 +359,7 @@ public abstract class SeedStorage implements AutoCloseable {
    *
    * @throws StorageException if the storage cannot be read
    */
-  abstract protected byte[] getRaw(String name) throws StorageException;
+  protected abstract byte[] getRaw(String name) throws StorageException;
 
 
   /**
@@ -394,8 +388,7 @@ public abstract class SeedStorage implements AutoCloseable {
    *
    * @throws StorageException if the storage cannot be written to
    */
-  abstract protected void putRaw(String name, byte[] data)
-      throws StorageException;
+  protected abstract void putRaw(String name, byte[] data) throws StorageException;
 
 
   /**
@@ -403,6 +396,6 @@ public abstract class SeedStorage implements AutoCloseable {
    *
    * @param name the seed's name
    */
-  abstract protected void remove(String name);
+  protected abstract void remove(String name);
 
 }

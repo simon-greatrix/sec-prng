@@ -6,6 +6,7 @@ import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+
 import prng.config.Config;
 import prng.internet.SimpleJSONParser.JSONArray;
 import prng.internet.SimpleJSONParser.JSONObject;
@@ -30,7 +31,7 @@ public class RandomDotOrg extends NetRandom {
     try {
       RANDOM_DOT_ORG = new URL("https://api.random.org/json-rpc/2/invoke");
     } catch (MalformedURLException e) {
-      throw new Error("Impossible exception", e);
+      throw new InternalError("Impossible exception", e);
     }
 
     Config config = Config.getConfig("", RandomDotOrg.class);
@@ -93,26 +94,22 @@ public class RandomDotOrg extends NetRandom {
 
       // if no error, a result is required
       if (res == null) {
-        throw new IOException(RANDOM_DOT_ORG.getHost()
-            + ": no results returned\n" + result.toString());
+        throw new IOException(RANDOM_DOT_ORG.getHost() + ": no results returned\n" + result);
       }
 
       // result should contain a "random" result
       res = res.get(JSONObject.class, "random", null);
       if (res == null) {
-        throw new IOException(RANDOM_DOT_ORG.getHost()
-            + ": no \"random\" in results\n" + result.toString());
+        throw new IOException(RANDOM_DOT_ORG.getHost() + ": no \"random\" in results\n" + result);
       }
 
       // and the "random" object should contain the actual data
       JSONArray randData = res.get(JSONArray.class, "data", null);
       if (randData == null) {
-        throw new IOException(RANDOM_DOT_ORG.getHost()
-            + ": no data in results\n" + result.toString());
+        throw new IOException(RANDOM_DOT_ORG.getHost() + ": no data in results\n" + result);
       }
       if (randData.size() != 128) {
-        throw new IOException(RANDOM_DOT_ORG.getHost() + " returned "
-            + randData.size() + " bytes not 128");
+        throw new IOException(RANDOM_DOT_ORG.getHost() + " returned "            + randData.size() + " bytes not 128");
       }
 
       // get the bytes from the JSON

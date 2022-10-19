@@ -51,6 +51,12 @@ public class PermutingSeedSource implements SeedSource {
 
 
   @Override
+  public String getName() {
+    return "Permuting";
+  }
+
+
+  @Override
   public byte[] getSeed(int size) {
     byte[] seed = new byte[size];
     int off = 0;

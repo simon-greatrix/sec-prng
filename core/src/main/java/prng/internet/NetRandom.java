@@ -5,10 +5,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
+
 import org.slf4j.Logger;
 import prng.LoggersFactory;
 import prng.SecureRandomProvider;
@@ -18,14 +18,18 @@ import prng.seeds.SeedStorage;
 /**
  * Fetch random data from well known on-line sources. Examples of web sources are:
  *
- * <ol> <li>www.random.org : Generates random data from radio static. <li>qrng.anu.edu.au : Generates random data from quantum vacuum fluctuations.
- * <li>www.fourmilab.ch/hotbits : Generates random data from the radioactive decay of Kr-85. </ol>
+ * <ol>
+ *   <li>www.random.org : Generates random data from radio static.</li>
+ *   <li>qrng.anu.edu.au : Generates random data from quantum vacuum fluctuations.</li>
+ *   <li>The NIST Randomness Beacon : https://beacon.nist.gov/home</li>
+ *   <li>www.fourmilab.ch/hotbits : Generates random data from the radioactive decay of Kr-85 (Shutdown 2022)</li>
+ *   </ol>
  * <p>
  * Each service is only asked for 1024 bits (128 bytes) at a time.
  *
  * @author Simon Greatrix
  */
-abstract public class NetRandom {
+public abstract class NetRandom {
 
   /** Logger for this class */
   protected static final Logger LOG = LoggersFactory.getLogger(NetRandom.class);
@@ -212,4 +216,5 @@ abstract public class NetRandom {
    * @return the URL
    */
   abstract URL url();
+
 }

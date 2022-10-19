@@ -40,7 +40,7 @@ public class DigestDataOutput implements DataOutput {
     try {
       digest = MessageDigest.getInstance(name);
     } catch (NoSuchAlgorithmException e) {
-      throw new Error(
+      throw new InternalError(
           "Digest algorithm \"" + name + "\" is not supported.");
     }
   }
@@ -56,7 +56,7 @@ public class DigestDataOutput implements DataOutput {
     try {
       digest = MessageDigest.getInstance(name, provider);
     } catch (NoSuchAlgorithmException e) {
-      throw new Error("Digest algorithm \"" + name
+      throw new InternalError("Digest algorithm \"" + name
           + "\" is not supported by provider \"" + provider.getName()
           + "\".");
     }

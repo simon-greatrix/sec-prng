@@ -7,6 +7,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+
 import prng.internet.SimpleJSONParser.JSONArray;
 import prng.internet.SimpleJSONParser.JSONObject;
 import prng.internet.SimpleJSONParser.Primitive;
@@ -28,7 +29,7 @@ public class Quantum extends NetRandom {
     try {
       QRNG = new URL("https://qrng.anu.edu.au/API/jsonI.php?length=128&size=1&type=uint8");
     } catch (MalformedURLException e) {
-      throw new Error("Impossible exception", e);
+      throw new InternalError("Impossible exception", e);
     }
   }
 
@@ -37,6 +38,7 @@ public class Quantum extends NetRandom {
    * Read data from the Australian National University Quantum Random Number Generator.
    *
    * @return the bits
+   *
    * @throws IOException if communication with the service fails
    */
   @Override
@@ -52,8 +54,10 @@ public class Quantum extends NetRandom {
     try {
       // convert response to JSON
       Primitive result = SimpleJSONParser.parse(
-          new InputStreamReader(new ByteArrayInputStream(data),
-              StandardCharsets.ISO_8859_1));
+          new InputStreamReader(
+              new ByteArrayInputStream(data),
+              StandardCharsets.ISO_8859_1
+          ));
       if (result.getType() != Type.OBJECT) {
         throw new IOException(QRNG.getHost() + " returned JSON type: "
             + result.getType());
@@ -61,8 +65,7 @@ public class Quantum extends NetRandom {
       JSONObject obj = result.getValueSafe(JSONObject.class);
 
       // response will indicate success
-      if (!obj.get(Boolean.class, "success",
-          Boolean.FALSE).booleanValue()) {
+      if (!obj.get(Boolean.class, "success", Boolean.FALSE)) {
         throw new IOException(
             QRNG.getHost() + " did not indicate success");
       }
@@ -95,7 +98,8 @@ public class Quantum extends NetRandom {
       return bits;
     } catch (IOException ioe) {
       LOG.error("Bad data received from {}\n\n{}", QRNG.getHost(),
-          BLOBPrint.toString(data));
+          BLOBPrint.toString(data)
+      );
       throw ioe;
     }
   }
@@ -105,4 +109,5 @@ public class Quantum extends NetRandom {
   URL url() {
     return QRNG;
   }
+
 }

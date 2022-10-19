@@ -17,6 +17,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
 import org.slf4j.Logger;
 import prng.collector.DaemonThreadFactory;
 import prng.collector.InstantEntropy;
@@ -57,8 +58,7 @@ public class SystemRandom implements Runnable {
   private static final Executor EXECUTOR;
 
   /** Queue for injected seeds */
-  private static final LinkedBlockingQueue<byte[]> INJECTED = new LinkedBlockingQueue<>(
-      100);
+  private static final LinkedBlockingQueue<byte[]> INJECTED = new LinkedBlockingQueue<>(100);
 
   /**
    * "Random" selection for which source gets reseeded. The intention is to all sources of seed data to influence all other sources by "randomly" assigning seed
@@ -67,7 +67,7 @@ public class SystemRandom implements Runnable {
   private static final Random RESEED = new Random();
 
   /** System provided secure random number generators */
-  private final static SystemRandom[] SOURCES;
+  private static final SystemRandom[] SOURCES;
 
   /** Number of sources */
   private static final int SOURCE_LEN;
@@ -75,7 +75,18 @@ public class SystemRandom implements Runnable {
   /**
    * Source for getting entropy from the system
    */
-  public static final SeedSource SOURCE = SystemRandom::getSeed;
+  public static final SeedSource SOURCE = new SeedSource() {
+    @Override
+    public String getName() {
+      return "System";
+    }
+
+
+    @Override
+    public byte[] getSeed(int size) {
+      return SystemRandom.getSeed(size);
+    }
+  };
 
   /**
    * Random number generator that draws from the System random number sources
@@ -125,17 +136,9 @@ public class SystemRandom implements Runnable {
         return this;
       }
 
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("Generating seed from "
-            + source.getProvider().getName() + ":"
-            + source.getAlgorithm());
-      }
+      LOG.debug("Generating seed from {}:{}", source.getProvider().getName(), source.getAlgorithm());
       seed = source.generateSeed(32);
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("Finished generating seed from "
-            + source.getProvider().getName() + ":"
-            + source.getAlgorithm());
-      }
+      LOG.debug("Finished generating seed from {}:{}", source.getProvider().getName(), source.getAlgorithm());
       return this;
     }
 
@@ -149,6 +152,7 @@ public class SystemRandom implements Runnable {
         SEED_MAKER.submit(this);
       }
     }
+
   }
 
 
@@ -165,9 +169,7 @@ public class SystemRandom implements Runnable {
         rand = RANDOM;
         if (rand == null) {
           byte[] entropy = getSeed(HashSpec.SPEC_SHA512.seedLength);
-          rand = new SecureRandomImpl(new NistHashRandom(SOURCE,
-              HashSpec.SPEC_SHA512, 0, entropy, new byte[0], NonceFactory.personalization()
-          ));
+          rand = new SecureRandomImpl(new NistHashRandom(SOURCE, HashSpec.SPEC_SHA512, 0, entropy, new byte[0], NonceFactory.personalization()));
           RANDOM = rand;
         }
       }
@@ -285,8 +287,7 @@ public class SystemRandom implements Runnable {
     // create the PRNGs
     for (int i = 0; i < len; i++) {
       Service s = servs.get(i);
-      LOG.debug("Found system PRNG " + s.getProvider().getName() + ":"
-          + s.getAlgorithm());
+      LOG.debug("Found system PRNG {}:{}", s.getProvider().getName(), s.getAlgorithm());
       SOURCES[i] = new SystemRandom(s.getProvider(), s.getAlgorithm());
     }
   }
@@ -305,7 +306,7 @@ public class SystemRandom implements Runnable {
   /** The System SecureRandom instance */
   private SecureRandom random = null;
 
-  /** Number of operations before requesting a reseed */
+  /** Number of operations before requesting a reseed operation. */
   private int reseed;
 
 
@@ -327,12 +328,10 @@ public class SystemRandom implements Runnable {
         random.setSeed(s);
       } catch (ProviderException pe) {
         canSeed = false;
-        LOG.debug("PRNG " + random.getProvider().getName() + ":" + random.getAlgorithm()
-            + " refused new seed information.");
+        LOG.debug("PRNG {}:{} refused new seed information.", random.getProvider().getName(), random.getAlgorithm());
       } catch (RuntimeException re) {
         canSeed = false;
-        LOG.warn("PRNG " + random.getProvider().getName() + ":" + random.getAlgorithm()
-            + " failed to accept new seed information.");
+        LOG.warn("PRNG {}:{} failed to accept new seed information.", random.getProvider().getName(), random.getAlgorithm());
       }
     }
 
@@ -347,20 +346,12 @@ public class SystemRandom implements Runnable {
    * Fetch new bytes
    */
   private void fetchBytes() {
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("Generating bytes from "
-          + random.getProvider().getName() + ":"
-          + random.getAlgorithm());
-    }
+    LOG.debug("Generating bytes from {}:{}", random.getProvider().getName(), random.getAlgorithm());
 
     // Generate random bytes. This may block.
     random.nextBytes(block);
 
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("Finished generating bytes from "
-          + random.getProvider().getName() + ":"
-          + random.getAlgorithm());
-    }
+    LOG.debug("Finished generating bytes from {}:{}", random.getProvider().getName(), random.getAlgorithm());
 
     synchronized (this) {
       // update the state
@@ -395,11 +386,7 @@ public class SystemRandom implements Runnable {
 
       // have we used all available bytes?
       if (p == 0) {
-        if (LOG.isDebugEnabled()) {
-          LOG.debug("Used all bytes from "
-              + random.getProvider().getName() + ":"
-              + random.getAlgorithm());
-        }
+        LOG.debug("Used all bytes from {}:{}", random.getProvider().getName(), random.getAlgorithm());
 
         // asynchronously generate more bytes
         EXECUTOR.execute(this);
@@ -422,8 +409,7 @@ public class SystemRandom implements Runnable {
       random = SecureRandom.getInstance(alg, prov);
     } catch (NoSuchAlgorithmException e) {
       // Instance not available.
-      LOG.error("Provider " + prov + " does not implement " + alg
-          + " after announcing it as a service");
+      LOG.error("Provider {} does not implement {} after announcing it as a service", prov, alg);
       random = null;
       return;
     }
@@ -491,4 +477,5 @@ public class SystemRandom implements Runnable {
 
     fetchBytes();
   }
+
 }

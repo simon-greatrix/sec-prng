@@ -8,16 +8,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
+
 import prng.SecureRandomProvider;
 
 /**
  * A factory for nonces where 256-bit security is required. <p>
  *
- * For such usage a nonce should not be expected to repeat more often than a (0.5 * security-strength)-bit random number is expected to repeat. Due to the
- * birthday problem a (0.5 * 256)-bit or 128 bit random number is expected to repeat within 2^64 values. <p> The time-based UUID comprises a 60 bit clock time,
- * a 16 bit sequence number and a 96 bit network ID. The combination of clock time and sequence exceeds the required values before repetition on a particular
- * network address. <p> In order to create nonces that are unique across different processes on the same machine, it is necessary to combine the type 1 UUID
- * with a process identifier.
+ * <p>For such usage a nonce should not be expected to repeat more often than a (0.5 * security-strength)-bit random number is expected to repeat. Due to the
+ * birthday problem a (0.5 * 256)-bit or 128 bit random number is expected to repeat within 2^64 values.</p>
+ *
+ * <p> The time-based UUID comprises a 60 bit clock time, a 16 bit sequence number and a 96 bit network ID. The combination of clock time and sequence exceeds
+ * the required values before repetition on a particular network address.</p>
+ *
+ * <p> In order to create nonces that are unique across different processes on the same machine, it is necessary to combine the type 1 UUID with a process
+ * identifier.</p>
  */
 
 public class NonceFactory {
@@ -53,6 +57,7 @@ public class NonceFactory {
     return PERSONALIZATION.clone();
   }
 
+
   static {
     DigestDataOutput dig = new DigestDataOutput("SHA-256");
 
@@ -66,8 +71,7 @@ public class NonceFactory {
     // If multiple applications are running in the same JVM, the class
     // loader and load time will make it unique
     dig.writeUTF(NonceFactory.class.getClassLoader().getClass().getName());
-    dig.writeInt(
-        System.identityHashCode(NonceFactory.class.getClassLoader()));
+    dig.writeInt(System.identityHashCode(NonceFactory.class.getClassLoader()));
     dig.writeLong(System.nanoTime());
     dig.writeLong(Thread.currentThread().getId());
 
@@ -78,8 +82,7 @@ public class NonceFactory {
     dig.writeUTF(runBean.getName());
     dig.writeLong(runBean.getStartTime());
     dig.writeUTF(NonceFactory.class.getClassLoader().getClass().getName());
-    dig.writeInt(
-        System.identityHashCode(NonceFactory.class.getClassLoader()));
+    dig.writeInt(System.identityHashCode(NonceFactory.class.getClassLoader()));
     dig.writeLong(System.nanoTime());
     dig.writeLong(Thread.currentThread().getId());
 
@@ -87,8 +90,7 @@ public class NonceFactory {
     List<String> args;
     try {
       // requires ManagementPermission monitor
-      args = AccessController.doPrivileged(
-          (PrivilegedAction<List<String>>) runBean::getInputArguments);
+      args = AccessController.doPrivileged((PrivilegedAction<List<String>>) runBean::getInputArguments);
     } catch (SecurityException e) {
       SecureRandomProvider.LOG.warn(
           "Lacking permission \"ManagementPermission monitor\" - cannot fully personalize nonce factory");
@@ -108,8 +110,7 @@ public class NonceFactory {
     Map<String, String> env;
     try {
       // requires PropertyPermission * read,write
-      env = AccessController.doPrivileged(
-          (PrivilegedAction<Map<String, String>>) runBean::getSystemProperties);
+      env = AccessController.doPrivileged((PrivilegedAction<Map<String, String>>) runBean::getSystemProperties);
     } catch (SecurityException se) {
       SecureRandomProvider.LOG.warn(
           "Lacking permission \"PropertyPermission * read,write\" - cannot fully personalize nonce factory");

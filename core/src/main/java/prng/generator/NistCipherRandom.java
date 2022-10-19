@@ -3,6 +3,7 @@ package prng.generator;
 import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandomParameters;
 import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
@@ -16,7 +17,7 @@ import javax.crypto.spec.SecretKeySpec;
 public class NistCipherRandom extends BaseRandom {
 
   /** Byte array of 48 zeros */
-  private final static byte[] EMPTY_BYTES = new byte[48];
+  private static final byte[] EMPTY_BYTES = new byte[48];
 
   /** A SHA-384 used to ensure that an input seed is converted to 384 bits. */
   private static final MessageDigest KEY_DF;
@@ -48,7 +49,7 @@ public class NistCipherRandom extends BaseRandom {
     try {
       KEY_DF = MessageDigest.getInstance("SHA-384");
     } catch (NoSuchAlgorithmException e) {
-      throw new Error("SHA-384 not available");
+      throw new InternalError("SHA-384 not available");
     }
   }
 
@@ -82,6 +83,15 @@ public class NistCipherRandom extends BaseRandom {
 
 
   /**
+   * Create a new deterministic random number generator with generated initialisation parameters.
+   */
+  public NistCipherRandom(SecureRandomParameters parameters) {
+    this(null, 0, null, null, getPersonalization(parameters));
+    verifyStrength(parameters, 256);
+  }
+
+
+  /**
    * Create a new deterministic random number generator
    *
    * @param source          entropy source (null means use the default source)
@@ -90,20 +100,31 @@ public class NistCipherRandom extends BaseRandom {
    * @param nonce           an optional nonce
    * @param personalization an optional personalization value
    */
-  public NistCipherRandom(SeedSource source, int resistance, byte[] entropy,
-      byte[] nonce, byte[] personalization) {
+  public NistCipherRandom(SeedSource source, int resistance, byte[] entropy, byte[] nonce, byte[] personalization) {
     super(source, new InitialMaterial(source, entropy, nonce, personalization, 32, 48), resistance, 48, 16);
 
     try {
       cipher = Cipher.getInstance("AES/ECB/NoPadding");
     } catch (NoSuchAlgorithmException e) {
-      throw new Error("AES not supported");
+      throw new InternalError("AES not supported");
     } catch (NoSuchPaddingException e) {
-      throw new Error("NoPadding not supported");
+      throw new InternalError("NoPadding not supported");
     }
 
     key = new byte[32];
     value = new byte[16];
+  }
+
+
+  @Override
+  public String getAlgorithm() {
+    return "Nist/AES256";
+  }
+
+
+  @Override
+  protected int getStrength() {
+    return 256;
   }
 
 
@@ -128,7 +149,7 @@ public class NistCipherRandom extends BaseRandom {
         setSpares(buffer, lastSize, 16 - lastSize);
       }
     } catch (GeneralSecurityException e) {
-      throw new Error("Cyryptographic failure", e);
+      throw new InternalError("Cyryptographic failure", e);
     }
 
     implSetSeed(EMPTY_BYTES);
@@ -151,7 +172,7 @@ public class NistCipherRandom extends BaseRandom {
         cipher.update(value, 0, 16, temp, i * 16);
       }
     } catch (GeneralSecurityException e) {
-      throw new Error("Cyryptographic failure", e);
+      throw new InternalError("Cryptographic failure", e);
     }
     for (int i = 0; i < 48; i++) {
       temp[i] ^= seedMaterial[i];

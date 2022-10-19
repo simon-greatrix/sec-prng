@@ -1,5 +1,8 @@
 package prng.seeds;
 
+import java.io.EOFException;
+import java.io.UTFDataFormatException;
+
 import prng.utility.BLOBPrint;
 
 /**
@@ -87,9 +90,10 @@ public class Seed {
    *
    * @param input input data to initialize with
    *
-   * @throws Exception if something goes wrong initializing the seed
+   * @throws UTFDataFormatException if the seed name is incomplete
+   * @throws EOFException           if the seed data is missing
    */
-  public void initialize(SeedInput input) throws Exception {
+  public void initialize(SeedInput input) throws UTFDataFormatException, EOFException {
     name = input.readUTF();
     data = input.readSeed();
   }
@@ -120,4 +124,5 @@ public class Seed {
   public String toString() {
     return "Seed( " + name + " ) [\n" + BLOBPrint.toString(data) + "]";
   }
+
 }

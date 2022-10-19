@@ -1,18 +1,21 @@
 package prng;
 
 import java.security.AccessController;
+import java.security.DrbgParameters;
 import java.security.PrivilegedAction;
 import java.security.Provider;
 import java.security.Security;
-import java.util.Arrays;
 import java.util.Base64;
-import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import org.slf4j.Logger;
 import prng.SecureRandomBuilder.Hash;
 import prng.SecureRandomBuilder.Source;
 import prng.config.Config;
+import prng.generator.HashSpec;
 import prng.generator.NistCipherRandom;
 import prng.generator.NistHashRandom;
 import prng.generator.NistHmacRandom;
@@ -38,9 +41,11 @@ public class SecureRandomProvider extends Provider {
    * Pattern to recognise the supported algorithm names
    */
   private static final Pattern ALG_PATTERN = Pattern.compile(
-      "^(?:nist/)?(aes(?:256)?|(?:hmac)?sha(?:1|256|512))/?(.*)$",
+      "^(?:nist/)?(aes(?:256)?|(?:hmac)?sha-?(?:1|256|512))/?(.*)$",
       Pattern.CASE_INSENSITIVE
   );
+
+  private static final Map<String, String> ATTR_THREAD_SAFE = Map.of("ThreadSafe", "true");
 
   /** serial version UID */
   private static final long serialVersionUID = 2L;
@@ -65,12 +70,9 @@ public class SecureRandomProvider extends Provider {
      * @param algorithm the algorithm implemented
      * @param builder   the builder for new instances
      */
-    public CustomService(
-        Provider provider, String algorithm,
-        SecureRandomBuilder builder
-    ) {
+    public CustomService(Provider provider, String algorithm, SecureRandomBuilder builder) {
       super(provider, "SecureRandom", algorithm, builder.getClassName(),
-          null, null
+          null, builder.getAttributes()
       );
       this.builder = builder;
     }
@@ -78,8 +80,32 @@ public class SecureRandomProvider extends Provider {
 
     @Override
     public Object newInstance(Object constructorParameter) {
+      if (constructorParameter == null) {
+        return builder.buildSpi();
+      }
+      if (!(constructorParameter instanceof DrbgParameters.Instantiation)) {
+        throw new IllegalArgumentException(
+            "Cannot use " + constructorParameter.getClass() + " as an initialisation parameter. Must be " + DrbgParameters.Instantiation.class);
+      }
+
+      DrbgParameters.Instantiation p = (DrbgParameters.Instantiation) constructorParameter;
+      if (builder.getHash() != null && builder.getHash().spec == HashSpec.SPEC_SHA1) {
+        if (p.getStrength() > 128) {
+          throw new IllegalArgumentException("SHA-1 based DRBGs can only support 128 bits of strength, not " + p.getStrength());
+        }
+      } else {
+        if (p.getStrength() > 256) {
+          throw new IllegalArgumentException("Selected DRBG algorithm can only support 256 bits of strength, not " + p.getStrength());
+        }
+      }
+
+      byte[] newPersonalization = p.getPersonalizationString();
+      if (newPersonalization != null) {
+        return builder.copy().personalization(newPersonalization).buildSpi();
+      }
       return builder.buildSpi();
     }
+
   }
 
 
@@ -94,21 +120,15 @@ public class SecureRandomProvider extends Provider {
       LOG.info("Installing provider as primary secure random provider");
       position = 1;
     } else {
-      Provider[] provs = Security.getProviders();
-      position = provs.length;
-      LOG.info(
-          "Installing provider as preference {}",
-          Integer.valueOf(position)
-      );
+      Provider[] providers = Security.getProviders();
+      position = providers.length;
+      LOG.info("Installing provider as preference {}", position);
     }
 
     // Inserting a provider is a privileged action
     try {
       AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
-        Security.insertProviderAt(
-            SecureRandomProvider.PROVIDER,
-            position
-        );
+        Security.insertProviderAt(PROVIDER, position);
         return null;
       });
     } catch (SecurityException se) {
@@ -128,49 +148,47 @@ public class SecureRandomProvider extends Provider {
   public static void premain(String args) {
     LOG.info("Installing provider via agent");
     boolean isPrimary = true;
-    if (args != null) {
-      if (args.matches("\\s*sprimary\\s*=\\s*false\\s*")) {
-        isPrimary = false;
-      }
+    if (args != null && args.matches("\\s*sprimary\\s*=\\s*false\\s*")) {
+      isPrimary = false;
     }
     install(isPrimary);
   }
 
 
   static {
-    // Add services to provider. The first added service is the
-    // default.
+    // Add services to provider. The first added service is the default.
+
     SecureRandomProvider prov = new SecureRandomProvider();
-    prov.putService(new Service(prov, "SecureRandom", "Nist/SHA256",
+    prov.putService(new Service(prov, "SecureRandom", "Nist/SHA-256",
         NistHashRandom.RandomSHA256.class.getName(),
-        Collections.singletonList("SHA256"), null
+        List.of("Nist/SHA256", "SHA-256", "SHA256"), ATTR_THREAD_SAFE
     ));
-    prov.putService(new Service(prov, "SecureRandom", "Nist/HmacSHA256",
+    prov.putService(new Service(prov, "SecureRandom", "Nist/HmacSHA-256",
         NistHmacRandom.RandomHmacSHA256.class.getName(),
-        Arrays.asList("Nist", "HmacSHA256"), null
+        List.of("Nist", "Nist/HmacSHA256", "HmacSHA-256", "HmacSHA256"), ATTR_THREAD_SAFE
     ));
 
-    prov.putService(new Service(prov, "SecureRandom", "Nist/SHA512",
+    prov.putService(new Service(prov, "SecureRandom", "Nist/SHA-512",
         NistHashRandom.RandomSHA512.class.getName(),
-        Collections.singletonList("SHA512"), null
+        List.of("Nist/SHA512", "SHA-512", "SHA512"), ATTR_THREAD_SAFE
     ));
-    prov.putService(new Service(prov, "SecureRandom", "Nist/HmacSHA512",
+    prov.putService(new Service(prov, "SecureRandom", "Nist/HmacSHA-512",
         NistHmacRandom.RandomHmacSHA512.class.getName(),
-        Collections.singletonList("HmacSHA512"), null
+        List.of("Nist/HmacSHA512", "HmacSHA-512", "HmacSHA512"), ATTR_THREAD_SAFE
     ));
 
-    prov.putService(new Service(prov, "SecureRandom", "Nist/AES256",
+    prov.putService(new Service(prov, "SecureRandom", "Nist/AES-256",
         NistCipherRandom.class.getName(),
-        Arrays.asList("AES256", "Nist/AES", "AES"), null
+        List.of("Nist/AES256", "AES-256", "AES256", "Nist/AES", "AES"), ATTR_THREAD_SAFE
     ));
 
-    prov.putService(new Service(prov, "SecureRandom", "Nist/SHA1",
+    prov.putService(new Service(prov, "SecureRandom", "Nist/SHA-1",
         NistHashRandom.RandomSHA1.class.getName(),
-        Collections.singletonList("SHA1"), null
+        List.of("Nist/SHA1", "SHA-1", "SHA1"), ATTR_THREAD_SAFE
     ));
-    prov.putService(new Service(prov, "SecureRandom", "Nist/HmacSHA1",
+    prov.putService(new Service(prov, "SecureRandom", "Nist/HmacSHA-1",
         NistHmacRandom.RandomHmacSHA1.class.getName(),
-        Collections.singletonList("HmacSHA1"), null
+        List.of("Nist/HmacSHA1", "HmacSHA-1", "HmacSHA1"), ATTR_THREAD_SAFE
     ));
 
     // Allow for the SHA1PRNG algorithm to be over-ridden with another
@@ -180,26 +198,19 @@ public class SecureRandomProvider extends Provider {
     if (replace != null) {
       Service s = prov.getService("SecureRandom", replace);
       if (s != null) {
-        Service s2 = new Service(prov, "SecureRandom", "SHA1PRNG",
-            s.getClassName(), null, null
-        );
+        Service s2 = new Service(prov, "SecureRandom", "SHA1PRNG", s.getClassName(), null, ATTR_THREAD_SAFE);
         prov.putService(s2);
       } else {
-        LOG.error(
-            "Cannot replace SHA1PRNG with unknown algorithm {}",
-            replace
-        );
+        LOG.error("Cannot replace SHA1PRNG with unknown algorithm {}", replace);
       }
     }
 
     // Set the strong algorithm (a privileged action)
-    String strongAlg = config.get("strongAlgorithm", "Nist/HmacSHA512")
-        + ":" + NAME;
+    String strongAlg = config.get("strongAlgorithm", "Nist/HmacSHA512") + ":" + NAME;
     LOG.info("Installing {} as a strong algorithm", strongAlg);
     try {
       AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
-        String algs = Security.getProperty(
-            "securerandom.strongAlgorithms");
+        String algs = Security.getProperty("securerandom.strongAlgorithms");
         if (algs == null || algs.trim().length() == 0) {
           algs = strongAlg;
         } else {
@@ -225,13 +236,42 @@ public class SecureRandomProvider extends Provider {
    * Create instance
    */
   protected SecureRandomProvider() {
-    super(NAME, 1.0, "Provides Secure PRNGs");
+    super(NAME, "1.1", "Provides Secure PRNGs using NIST algorithms");
+  }
+
+
+  /**
+   * Special handling for "ThreadSafe" attributes on dynamically generated services.
+   *
+   * @param key the key
+   *
+   * @return the value, or null
+   */
+  @Override
+  public String getProperty(String key) {
+    if (!(key.startsWith("SecureRandom.") && key.endsWith(" ThreadSafe"))) {
+      // normal query
+      return super.getProperty(key);
+    }
+
+    // We may know the answer
+    String v = super.getProperty(key);
+    if (v != null) {
+      return v;
+    }
+
+    String algorithm = key.substring(13, key.length() - 11);
+    Service service = getService("SecureRandom", algorithm);
+    if (service == null) {
+      return null;
+    }
+    return service.getAttribute("ThreadSafe");
   }
 
 
   @Override
   public synchronized Service getService(String type, String algorithm) {
-    if (type == null || !type.equals("SecureRandom")) {
+    if (!"SecureRandom".equals(type)) {
       return null;
     }
 
@@ -247,6 +287,15 @@ public class SecureRandomProvider extends Provider {
       LOG.debug("Algorithm {} is not matched.", algorithm);
       return null;
     }
+
+    // Could be stored as a service
+    Service service = super.getService(type, algorithm);
+    if (service != null) {
+      return service;
+    }
+
+    // We can store if it uses neither nonce nor entropy.
+    boolean canStore = true;
 
     // Try to match the algorithm name
     SecureRandomBuilder builder;
@@ -303,6 +352,7 @@ public class SecureRandomProvider extends Provider {
             );
             return null;
           }
+          canStore = false;
           break;
         case 'l':
           // laziness or lazy
@@ -333,6 +383,7 @@ public class SecureRandomProvider extends Provider {
             );
             return null;
           }
+          canStore = false;
           break;
         case 'p':
           // personalization
@@ -373,6 +424,13 @@ public class SecureRandomProvider extends Provider {
             return null;
           }
           break;
+        case 't':
+          if (!"threadSafe".startsWith(k)) {
+            LOG.debug("Unknown parameter key {}", k);
+            return null;
+          }
+          builder.threadSafe(Boolean.valueOf(v));
+          break;
         default:
           // unrecognised
           LOG.debug("Unknown parameter key {}", k);
@@ -381,6 +439,11 @@ public class SecureRandomProvider extends Provider {
       }
     }
 
-    return new CustomService(this, algorithm, builder);
+    service = new CustomService(this, algorithm, builder);
+    if (canStore) {
+      putService(service);
+    }
+    return service;
   }
+
 }

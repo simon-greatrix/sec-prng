@@ -21,13 +21,6 @@ import prng.generator.IsaacRandom;
  */
 public class AudioEntropy extends EntropyCollector {
 
-  /**
-   * Possible audio sample rates. These rates correspond to CD quality, ferric cassette, AM radio, low quality, and phone.
-   */
-  private static final float[] SAMPLE_RATES = new float[]{44100, 32000,
-      22050, 11025, 8000};
-
-
 
   /**
    * An audio source we can draw data from
@@ -189,18 +182,18 @@ public class AudioEntropy extends EntropyCollector {
         }
 
         // Recording quality is based on sample rate and size
-        float[] sampleRate = new float[]{supported.getSampleRate()};
+        float[] sampleRate = {supported.getSampleRate()};
         if (sampleRate[0] == AudioSystem.NOT_SPECIFIED) {
-          sampleRate = SAMPLE_RATES;
+          //Possible audio sample rates. These rates correspond to CD quality, ferric cassette, AM radio, low quality, and phone.
+          sampleRate = new float[]{44100, 32000, 22050, 11025, 8000};
         }
-        int[] sampleSize = new int[]{
-            supported.getSampleSizeInBits()};
+        int[] sampleSize = {supported.getSampleSizeInBits()};
         if (sampleSize[0] == AudioSystem.NOT_SPECIFIED) {
           sampleSize = new int[]{8, 16};
         }
 
         // Mono, stereo or something else?
-        int[] channels = new int[]{supported.getChannels()};
+        int[] channels = {supported.getChannels()};
         if (channels[0] == AudioSystem.NOT_SPECIFIED) {
           channels = new int[]{1, 2};
         }

@@ -83,8 +83,7 @@ public class SeedInput implements DataInput {
   public void readFully(byte[] b, int off, int len) throws EOFException {
     int endPos = position + len;
     if (endPos > length) {
-      throw new EOFException("Only "
-          + (length - position) + " bytes remain. Required " + len);
+      throw new EOFException("Only " + (length - position) + " bytes remain. Required " + len);
     }
     System.arraycopy(input, position, b, off, len);
     position = endPos;
@@ -111,14 +110,14 @@ public class SeedInput implements DataInput {
    * This method is not supported.
    *
    * @return nothing - always throws exception
+   *
    * @throws UnsupportedOperationException always as this is not supported
    * @deprecated Just don't write lines in the first place, use writeUTF() and readUTF()
    */
   @Deprecated
   @Override
   public String readLine() {
-    throw new UnsupportedOperationException(
-        "DataInput.readLine() is deprecated and not supported");
+    throw new UnsupportedOperationException("DataInput.readLine() is deprecated and not supported");
   }
 
 
@@ -126,8 +125,7 @@ public class SeedInput implements DataInput {
   public long readLong() throws EOFException {
     int endPos = position + 8;
     if (endPos > length) {
-      throw new EOFException(
-          "Only " + (length - position) + " bytes remain. Required 8");
+      throw new EOFException("Only " + (length - position) + " bytes remain. Required 8");
     }
 
     long v = 0;
@@ -143,6 +141,7 @@ public class SeedInput implements DataInput {
    * Read a seed from the input. The seed bits will be scrambled on read.
    *
    * @return the seed bits
+   *
    * @throws EOFException if the seed data is incomplete
    */
   public byte[] readSeed() throws EOFException {
@@ -166,8 +165,7 @@ public class SeedInput implements DataInput {
 
     int endPos = position + utflen;
     if (endPos > length) {
-      throw new EOFException("Only "
-          + (length - position) + " bytes remain. Required " + utflen);
+      throw new EOFException("Only " + (length - position) + " bytes remain. Required " + utflen);
     }
 
     int p = position;
@@ -178,33 +176,25 @@ public class SeedInput implements DataInput {
 
       if (x == 0) {
         // modified UTF-8 stores zero as 0xC0 0x80
-        throw new UTFDataFormatException(
-            "Malformed input. Saw byte 0x00 at position " + p);
+        throw new UTFDataFormatException("Malformed input. Saw byte 0x00 at position " + p);
       } else if (x < 0b1000_0000) {
         // regular ASCII character
         chars[c] = (char) x;
         c++;
         p++;
       } else if (x < 0b1100_0000) {
-        // A byte like 0b10.. must be a second or third byte, not the
+        // A byte like 0b10... must be a second or third byte, not the
         // first
-        throw new UTFDataFormatException("Malformed input. Saw byte 0x"
-            + Integer.toHexString(x) + " at position " + p);
+        throw new UTFDataFormatException(String.format("Malformed input. Saw byte 0x%02x at position %d", x, p));
       } else if (x < 0b1110_0000) {
         // two byte character, check 2nd byte
         p++;
         if (p == endPos) {
-          throw new UTFDataFormatException(
-              "Missing byte at end of input. Last byte was 0x"
-                  + Integer.toHexString(x) + " at position "
-                  + (p - 1));
+          throw new UTFDataFormatException(String.format("Missing byte at end of input. Last byte was 0x%02xs at position %d", x, p - 1));
         }
         int y = input[p] & 0xff;
         if (y < 0b1000_0000 || 0b1100_0000 <= y) {
-          throw new UTFDataFormatException(
-              "Malformed input. Saw bytes was 0x"
-                  + Integer.toHexString((x << 8) | y)
-                  + " at position " + (p - 1));
+          throw new UTFDataFormatException(String.format("Malformed input. Saw bytes 0x%04x at position %d", (x << 8) | y, p - 1));
         }
         chars[c] = (char) (((x & 0x1f) << 6) | (y & 0x3f));
         c++;
@@ -213,44 +203,29 @@ public class SeedInput implements DataInput {
         // three byte character, check 2nd byte
         p++;
         if (p == endPos) {
-          throw new UTFDataFormatException(
-              "Missing bytes at end of input. Last byte was 0x"
-                  + Integer.toHexString(x) + " at position "
-                  + (p - 1));
+          throw new UTFDataFormatException(String.format("Missing bytes at end of input. Last byte was 0x%02x at position %d", x, p - 1));
         }
         int y = input[p] & 0xff;
         if (y < 0b1000_0000 || 0b1100_0000 <= y) {
-          throw new UTFDataFormatException(
-              "Malformed input. Saw bytes was 0x"
-                  + Integer.toHexString((x << 8) | y)
-                  + " at position " + (p - 1));
+          throw new UTFDataFormatException(String.format("Malformed input. Saw bytes 0x%04x at position %d", (x << 8) | y, p - 1));
         }
 
         // check 3rd byte
         p++;
         if (p == endPos) {
-          throw new UTFDataFormatException(
-              "Missing byte at end of input. Last bytes were 0x"
-                  + Integer.toHexString((x << 8) | y)
-                  + " at position " + (p - 1));
+          throw new UTFDataFormatException(String.format("Missing byte at end of input. Last bytes were 0x%04x at position %d", (x << 8) | y, p - 1));
         }
         int z = input[p] & 0xff;
         if (z < 0b1000_0000 || 0b1100_0000 <= z) {
-          throw new UTFDataFormatException(
-              "Malformed input. Saw bytes was 0x"
-                  + Integer.toHexString(
-                  (x << 16) | (y << 8) | z)
-                  + " at position " + (p - 2));
+          throw new UTFDataFormatException(String.format("Malformed input. Saw bytes 0x%06x at position %d", (x << 16) | (y << 8) | z, p - 2));
         }
 
-        chars[c] = (char) (((x & 0xf) << 12) | ((y & 0x3f) << 6)
-            | (z & 0x3f));
+        chars[c] = (char) (((x & 0xf) << 12) | ((y & 0x3f) << 6) | (z & 0x3f));
         c++;
         p++;
       } else {
         // 4-byte or more character, which is outside of Java's range
-        throw new UTFDataFormatException("Malformed input. Saw byte 0x"
-            + Integer.toHexString(x) + " at position " + p);
+        throw new UTFDataFormatException(String.format("Malformed input. Saw byte 0x%02x at position %d", x, p));
       }
     }
 
@@ -276,8 +251,7 @@ public class SeedInput implements DataInput {
   public int readUnsignedShort() throws EOFException {
     int endPos = position + 2;
     if (endPos > length) {
-      throw new EOFException(
-          "Only " + (length - position) + " bytes remain. Required 2");
+      throw new EOFException("Only " + (length - position) + " bytes remain. Required 2");
     }
     int b0 = 0xff & input[position];
     int b1 = 0xff & input[position + 1];
@@ -293,4 +267,5 @@ public class SeedInput implements DataInput {
     position += skip;
     return skip;
   }
+
 }

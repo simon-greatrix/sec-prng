@@ -12,6 +12,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.prefs.Preferences;
+
 import prng.SecureRandomProvider;
 
 /**
@@ -93,7 +94,7 @@ public class PropsList {
       URL url = resources.nextElement();
       reversed.addLast(new Props(url));
     }
-    // Adding the reverse list at position zero puts the first loaded properties at the start and the later loaded ones further down the list, as required.
+    // Adding the reverse list at position zero puts the first loaded properties at the start and the ones loaded later further down the list, as required.
     props.addAll(0, reversed);
   }
 
@@ -164,4 +165,5 @@ public class PropsList {
   public int size() {
     return props.size();
   }
+
 }

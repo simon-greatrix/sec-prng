@@ -16,7 +16,7 @@ import java.util.prefs.Preferences;
 /**
  * Loaded property configuration that knows from where it was loaded
  *
- * @author Simon Gretrix
+ * @author Simon Greatrix
  */
 public class Props extends Properties {
 
@@ -87,8 +87,7 @@ public class Props extends Properties {
       // it went wrong :-(
       loadOk = false;
       clear();
-      Config.LOG.error(
-          "Failed to read configuration file " + url.toString(), ioe);
+      Config.LOG.error("Failed to read configuration file {}", url, ioe);
     } finally {
       loadedOk = loadOk;
     }
@@ -98,8 +97,7 @@ public class Props extends Properties {
     try {
       uri = url.toURI();
     } catch (URISyntaxException e) {
-      Config.LOG.warn("Unable to convert source URL \""
-          + url.toExternalForm() + "\" to URI");
+      Config.LOG.warn("Unable to convert source URL \"{}\" to URI", url.toExternalForm());
     } finally {
       source = uri;
     }

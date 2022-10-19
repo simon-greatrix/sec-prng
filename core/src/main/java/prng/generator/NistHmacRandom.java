@@ -1,6 +1,7 @@
 package prng.generator;
 
 import java.security.MessageDigest;
+import java.security.SecureRandomParameters;
 import java.util.Arrays;
 
 /**
@@ -11,7 +12,7 @@ import java.util.Arrays;
 public class NistHmacRandom extends BaseRandom {
 
   /** Empty byte array */
-  private final static byte[] NO_BYTES = new byte[0];
+  private static final byte[] NO_BYTES = new byte[0];
 
   /** Serial version UID */
   private static final long serialVersionUID = 1L;
@@ -33,6 +34,14 @@ public class NistHmacRandom extends BaseRandom {
     public RandomHmacSHA1() {
       super(null, HashSpec.SPEC_SHA1, 0, null, null, null);
     }
+
+
+    /** New instance */
+    public RandomHmacSHA1(SecureRandomParameters parameters) {
+      super(null, HashSpec.SPEC_SHA1, 0, null, null, getPersonalization(parameters));
+      verifyStrength(parameters, 128);
+    }
+
   }
 
 
@@ -52,6 +61,14 @@ public class NistHmacRandom extends BaseRandom {
     public RandomHmacSHA256() {
       super(null, HashSpec.SPEC_SHA256, 0, null, null, null);
     }
+
+
+    /** New instance */
+    public RandomHmacSHA256(SecureRandomParameters parameters) {
+      super(null, HashSpec.SPEC_SHA256, 0, null, null, getPersonalization(parameters));
+      verifyStrength(parameters, 256);
+    }
+
   }
 
 
@@ -71,7 +88,18 @@ public class NistHmacRandom extends BaseRandom {
     public RandomHmacSHA512() {
       super(null, HashSpec.SPEC_SHA512, 0, null, null, null);
     }
+
+
+    /** New instance */
+    public RandomHmacSHA512(SecureRandomParameters parameters) {
+      super(null, HashSpec.SPEC_SHA512, 0, null, null, getPersonalization(parameters));
+      // SHA-512 is still only 256 bits according to NIST
+      verifyStrength(parameters, 256);
+    }
+
   }
+
+
 
   /**
    * The hash function
@@ -95,19 +123,23 @@ public class NistHmacRandom extends BaseRandom {
   /**
    * Create a new deterministic random number generator
    *
-   * @param source entropy source (null means use the default source)
-   * @param spec digest specification (required)
-   * @param resistance number of operations between reseeds. Zero reseeds on every operation, one reseeds on every alternate operation, and so on.
-   * @param entropy optional initial entropy
-   * @param nonce an optional nonce
+   * @param source          entropy source (null means use the default source)
+   * @param spec            digest specification (required)
+   * @param resistance      number of operations between reseeds. Zero reseeds on every operation, one reseeds on every alternate operation, and so on.
+   * @param entropy         optional initial entropy
+   * @param nonce           an optional nonce
    * @param personalization an optional personalization value
    */
-  public NistHmacRandom(SeedSource source, HashSpec spec, int resistance,
-      byte[] entropy, byte[] nonce, byte[] personalization) {
+  public NistHmacRandom(
+      SeedSource source, HashSpec spec, int resistance,
+      byte[] entropy, byte[] nonce, byte[] personalization
+  ) {
     super(source,
         new InitialMaterial(source, entropy, nonce, personalization,
-            spec.seedLength, spec.seedLength),
-        resistance, spec.seedLength, spec.outputLength);
+            spec.seedLength, spec.seedLength
+        ),
+        resistance, spec.seedLength, spec.outputLength
+    );
     this.spec = spec;
     digest = spec.getInstance();
 
@@ -117,10 +149,55 @@ public class NistHmacRandom extends BaseRandom {
   }
 
 
+  @Override
+  public String getAlgorithm() {
+    return "Nist/Hmac" + spec.algorithm;
+  }
+
+
+  @Override
+  protected int getStrength() {
+    return spec.strength;
+  }
+
+
+  /**
+   * Calculate a HMAC where the message consists of three parts
+   *
+   * @param myKey   HMAC key
+   * @param myValue HMAC message part 1
+   * @param extra   HMAC message part 2
+   * @param message HMAC message part 3
+   *
+   * @return hmac value
+   */
+  private byte[] hmac(
+      byte[] myKey, byte[] myValue, byte extra,
+      byte[] message
+  ) {
+    byte[] ipad = myKey.clone();
+    byte[] opad = myKey.clone();
+    int len = myKey.length;
+    for (int i = 0; i < len; i++) {
+      ipad[i] ^= (byte) 0x36;
+      opad[i] ^= (byte) 0x5c;
+    }
+
+    digest.update(ipad);
+    digest.update(myValue);
+    digest.update(extra);
+    digest.update(message);
+    byte[] hash = digest.digest();
+    digest.update(opad);
+    digest.update(hash);
+    return digest.digest();
+  }
+
+
   /**
    * Calculate a HMAC where the message is a single value
    *
-   * @param myKey HMAC key
+   * @param myKey   HMAC key
    * @param myValue HMAC message
    *
    * @return hmac value
@@ -136,37 +213,6 @@ public class NistHmacRandom extends BaseRandom {
 
     digest.update(ipad);
     digest.update(myValue);
-    byte[] hash = digest.digest();
-    digest.update(opad);
-    digest.update(hash);
-    return digest.digest();
-  }
-
-
-  /**
-   * Calculate a HMAC where the message consists of three parts
-   *
-   * @param myKey HMAC key
-   * @param myValue HMAC message part 1
-   * @param extra HMAC message part 2
-   * @param message HMAC message part 3
-   *
-   * @return hmac value
-   */
-  private byte[] hmac(byte[] myKey, byte[] myValue, byte extra,
-      byte[] message) {
-    byte[] ipad = myKey.clone();
-    byte[] opad = myKey.clone();
-    int len = myKey.length;
-    for (int i = 0; i < len; i++) {
-      ipad[i] ^= (byte) 0x36;
-      opad[i] ^= (byte) 0x5c;
-    }
-
-    digest.update(ipad);
-    digest.update(myValue);
-    digest.update(extra);
-    digest.update(message);
     byte[] hash = digest.digest();
     digest.update(opad);
     digest.update(hash);
@@ -228,4 +274,5 @@ public class NistHmacRandom extends BaseRandom {
     key = hmac(key, value, (byte) 1, entropy);
     value = hmac(key, value);
   }
+
 }

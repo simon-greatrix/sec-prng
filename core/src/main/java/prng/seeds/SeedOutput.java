@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+
 import prng.utility.BLOBPrint;
 
 /**
@@ -13,6 +14,9 @@ import prng.utility.BLOBPrint;
  * @author Simon Greatrix
  */
 public class SeedOutput implements DataOutput {
+
+  /** Buffer for encoding primitives */
+  private final byte[] writeBuffer = new byte[8];
 
   /**
    * The buffer where data is stored.
@@ -23,9 +27,6 @@ public class SeedOutput implements DataOutput {
    * The number of valid bytes in the buffer.
    */
   protected int count;
-
-  /** Buffer for encoding primitives */
-  private final byte[] writeBuffer = new byte[8];
 
 
   /**
@@ -43,8 +44,7 @@ public class SeedOutput implements DataOutput {
    */
   public SeedOutput(int size) {
     if (size < 0) {
-      throw new IllegalArgumentException(
-          "Negative initial size: " + size);
+      throw new IllegalArgumentException("Negative initial size: " + size);
     }
     buf = new byte[size];
   }
@@ -139,7 +139,7 @@ public class SeedOutput implements DataOutput {
   /**
    * Writes <code>len</code> bytes from the specified byte array starting at offset <code>off</code> to this byte array output stream.
    *
-   * @param b the data.
+   * @param b   the data.
    * @param off the start offset in the data.
    * @param len the number of bytes to write.
    */
@@ -306,8 +306,7 @@ public class SeedOutput implements DataOutput {
     }
 
     if (utflen > 65535) {
-      throw new IllegalArgumentException(
-          "Encoded string too long: " + utflen + " bytes");
+      throw new IllegalArgumentException("Encoded string too long: " + utflen + " bytes");
     }
 
     // create output array
@@ -333,4 +332,5 @@ public class SeedOutput implements DataOutput {
 
     write(bytearr, 0, utflen + 2);
   }
+
 }

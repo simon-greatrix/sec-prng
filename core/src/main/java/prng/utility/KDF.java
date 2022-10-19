@@ -10,15 +10,26 @@ import javax.crypto.spec.SecretKeySpec;
  *
  * <p> Example usage:
  *
- * <p> <code> // privateKey and publicKey are compatible elliptic curve keys // kdfContext is some data known to both parties // // Calculate the key material
- * using elliptic curve Diffie-Hellman KeyAgreement keyAgreement = KeyAgreement.getInstance("ECDH"); keyAgreement.init(privateKey);
- * keyAgreement.doPhase(publicKey,true); byte[] secret = keyAgreement.generateSecret();
- *
- * // Derive the IV and key from the secret and the shared context byte[] iv = KDF.derive(secret,"IV",kdfContext,12); byte[] rawKey =
- * KDF.derive(secret,"KEY",kdfContext,32); SecretKey secretKey = new SecretKeySpec(rawKey,"AES");
- *
- * // Create a cipher in the normal way gcmSpec = new GCMParameterSpec(128, iv); cipher = Cipher.getInstance("AES/GCM/NoPadding");
- * cipher.init(Cipher.DECRYPT_MODE, secretKey, gcmSpec); </code>
+ * <p> <code>
+ * // privateKey and publicKey are compatible elliptic curve keys
+ * // kdfContext is some data known to both parties
+ * //
+ * // Calculate the key material using elliptic curve Diffie-Hellman
+ * KeyAgreement keyAgreement = KeyAgreement.getInstance("ECDH");
+ * keyAgreement.init(privateKey);
+ * keyAgreement.doPhase(publicKey,true);
+ * byte[] secret = keyAgreement.generateSecret();
+ * <p>
+ * // Derive the IV and key from the secret and the shared context
+ * byte[] iv = KDF.derive(secret,"IV",kdfContext,12);
+ * byte[] rawKey = KDF.derive(secret,"KEY",kdfContext,32);
+ * SecretKey secretKey = new SecretKeySpec(rawKey,"AES");
+ * <p>
+ * // Create a cipher in the normal way
+ * gcmSpec = new GCMParameterSpec(128, iv);
+ * cipher = Cipher.getInstance("AES/GCM/NoPadding");
+ * cipher.init(Cipher.DECRYPT_MODE, secretKey, gcmSpec);
+ * </code>
  *
  * @author Simon Greatrix on 30/10/2017.
  */
@@ -28,16 +39,16 @@ public class KDF {
    * Derive a key from the provided inputs.
    *
    * @param keyMaterial the key material
-   * @param label the label (which is converted using UTF16-BE)
-   * @param context the context
-   * @param length the number of bytes required
+   * @param label       the label (which is converted using UTF16-BE)
+   * @param context     the context
+   * @param length      the number of bytes required
    *
    * @return the generated key data
    */
-  public static byte[] derive(byte[] keyMaterial, String label,
-      byte[] context, int length) {
+  public static byte[] derive(byte[] keyMaterial, String label, byte[] context, int length) {
     return derive(keyMaterial, label.getBytes(StandardCharsets.UTF_16BE),
-        context, length);
+        context, length
+    );
   }
 
 
@@ -45,21 +56,22 @@ public class KDF {
    * Derive a key from the provided inputs.
    *
    * @param keyMaterial the key material
-   * @param label the label
-   * @param context the context
-   * @param length the number of bytes required
+   * @param label       the label
+   * @param context     the context
+   * @param length      the number of bytes required
    *
    * @return the generated key data
    */
-  public static byte[] derive(byte[] keyMaterial, byte[] label,
-      byte[] context, int length) {
+  public static byte[] derive(byte[] keyMaterial, byte[] label, byte[] context, int length) {
     final Mac mac;
     try {
       mac = Mac.getInstance("HmacSHA256");
       mac.init(new SecretKeySpec(keyMaterial, "HmacSHA256"));
     } catch (GeneralSecurityException e) {
-      throw new Error("Impossible exception: HMAC SHA-256 is required",
-          e);
+      throw new InternalError(
+          "Impossible exception: HMAC SHA-256 is required",
+          e
+      );
     }
 
     // Create the IV by concatenating the label, 0x00, the context, and the
@@ -79,8 +91,7 @@ public class KDF {
     // First pipe-line's input is the IV
     byte[] previous = iv;
 
-    // The second pipe-line's input is Hmac || counter || IV, so add 36
-    // bytes
+    // The second pipe-line's input is Hmac || counter || IV, so add 36 bytes
     byte[] input = new byte[iv.length + 36];
     System.arraycopy(iv, 0, input, 36, iv.length);
     for (int i = 0; i * 32 < length; i++) {
@@ -109,4 +120,5 @@ public class KDF {
 
     return output;
   }
+
 }

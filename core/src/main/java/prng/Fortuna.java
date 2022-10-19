@@ -28,7 +28,18 @@ public class Fortuna {
   /**
    * Derive entropy from Fortuna
    */
-  public static final SeedSource SOURCE = Fortuna::getSeed;
+  public static final SeedSource SOURCE = new SeedSource() {
+    @Override
+    public String getName() {
+      return "Fortuna";
+    }
+
+
+    @Override
+    public byte[] getSeed(int size) {
+      return Fortuna.getSeed(size);
+    }
+  };
 
 
 
@@ -248,7 +259,7 @@ public class Fortuna {
       cipher = Cipher.getInstance("AES/ECB/NoPadding");
       digest = MessageDigest.getInstance("SHA-256");
     } catch (GeneralSecurityException gse) {
-      throw new Error("Failed to initialise seed generator", gse);
+      throw new InternalError("Failed to initialise seed generator", gse);
     }
 
     // Create the entropy accumulators. These are based on NIST randoms,
@@ -287,15 +298,14 @@ public class Fortuna {
     try {
       cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"));
     } catch (InvalidKeyException e) {
-      throw new Error(
-          "AES cipher rejected key of " + key.length * 8 + " bits");
+      throw new InternalError("AES cipher rejected key of " + key.length * 8 + " bits");
     }
     for (int pos = 0; pos < len; ) {
       try {
         pos += cipher.update(counter, 0, 16, output, pos);
         pos += cipher.doFinal(output, pos);
       } catch (GeneralSecurityException e) {
-        throw new Error("Cipher failed", e);
+        throw new InternalError("Cipher failed", e);
       }
       incrementCounter();
     }

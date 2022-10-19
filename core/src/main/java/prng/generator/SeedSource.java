@@ -8,6 +8,14 @@ package prng.generator;
 public interface SeedSource {
 
   /**
+   * Get the name of this source.
+   *
+   * @return the name
+   */
+  String getName();
+
+
+  /**
    * Request seed bytes
    *
    * @param size number of bytes requested
@@ -15,4 +23,5 @@ public interface SeedSource {
    * @return seed bytes
    */
   byte[] getSeed(int size);
+
 }

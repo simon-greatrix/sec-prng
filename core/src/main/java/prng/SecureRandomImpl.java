@@ -1,6 +1,9 @@
 package prng;
 
 import java.security.SecureRandom;
+import java.security.SecureRandomParameters;
+import java.util.Objects;
+
 import prng.generator.BaseRandom;
 
 /**
@@ -14,7 +17,9 @@ class SecureRandomImpl extends SecureRandom {
   private static final long serialVersionUID = 2L;
 
   /** The actual PRNG */
-  private final BaseRandom base;
+  private final OpenEngineSpi engineSpi;
+
+  private boolean threadSafe;
 
 
   /**
@@ -24,7 +29,43 @@ class SecureRandomImpl extends SecureRandom {
    */
   SecureRandomImpl(BaseRandom spi) {
     super(spi, SecureRandomProvider.PROVIDER);
-    base = spi;
+    engineSpi = spi;
+    threadSafe = false;
+  }
+
+
+  SecureRandomImpl(MultiplexSpi multiplexSpi) {
+    super(multiplexSpi, SecureRandomProvider.PROVIDER);
+    engineSpi = multiplexSpi;
+    threadSafe = true;
+  }
+
+
+  /** {@inheritDoc} */
+  @Override
+  public byte[] generateSeed(int numBytes) {
+    if (numBytes < 0) {
+      throw new IllegalArgumentException("numBytes cannot be negative");
+    }
+    if (threadSafe) {
+      return engineSpi.engineGenerateSeed(numBytes);
+    } else {
+      synchronized (engineSpi) {
+        return engineSpi.engineGenerateSeed(numBytes);
+      }
+    }
+  }
+
+
+  @Override
+  public String getAlgorithm() {
+    return engineSpi.getAlgorithm();
+  }
+
+
+  @Override
+  public SecureRandomParameters getParameters() {
+    return engineSpi.engineGetParameters();
   }
 
 
@@ -34,6 +75,85 @@ class SecureRandomImpl extends SecureRandom {
    * @return some seed material
    */
   public byte[] newSeed() {
-    return base.newSeed();
+    return engineSpi.newSeed();
   }
+
+
+  /** {@inheritDoc} */
+  @Override
+  public void nextBytes(byte[] bytes, SecureRandomParameters params) {
+    if (params == null) {
+      throw new IllegalArgumentException("params cannot be null");
+    }
+    if (threadSafe) {
+      engineSpi.engineNextBytes(Objects.requireNonNull(bytes), params);
+    } else {
+      synchronized (engineSpi) {
+        engineSpi.engineNextBytes(Objects.requireNonNull(bytes), params);
+      }
+    }
+  }
+
+
+  /** {@inheritDoc} */
+  @Override
+  public void nextBytes(byte[] bytes) {
+    if (threadSafe) {
+      engineSpi.engineNextBytes(bytes);
+    } else {
+      synchronized (engineSpi) {
+        engineSpi.engineNextBytes(bytes);
+      }
+    }
+  }
+
+
+  /** {@inheritDoc} */
+  @Override
+  public void reseed(SecureRandomParameters params) {
+    if (params == null) {
+      throw new IllegalArgumentException("params cannot be null");
+    }
+    if (threadSafe) {
+      engineSpi.engineReseed(params);
+    } else {
+      synchronized (engineSpi) {
+        engineSpi.engineReseed(params);
+      }
+    }
+  }
+
+
+  /** {@inheritDoc} */
+  @Override
+  public void reseed() {
+    if (threadSafe) {
+      engineSpi.engineReseed(null);
+    } else {
+      synchronized (engineSpi) {
+        engineSpi.engineReseed(null);
+      }
+    }
+  }
+
+
+  /** {@inheritDoc} */
+  @Override
+  public void setSeed(byte[] seed) {
+    if (threadSafe) {
+      engineSpi.engineSetSeed(seed);
+    } else {
+      synchronized (engineSpi) {
+        engineSpi.engineSetSeed(seed);
+      }
+    }
+  }
+
+
+  @Override
+  public String toString() {
+    // TODO : Implement me! simon 19/10/2022
+    return super.toString();
+  }
+
 }

@@ -16,6 +16,12 @@ public class ZeroSeedSource implements SeedSource {
 
 
   @Override
+  public String getName() {
+    return "Zeros";
+  }
+
+
+  @Override
   public byte[] getSeed(int size) {
     return new byte[size];
   }

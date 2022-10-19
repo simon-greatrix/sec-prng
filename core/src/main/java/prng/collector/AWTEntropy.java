@@ -56,11 +56,8 @@ public class AWTEntropy extends EntropyCollector {
           throw (AWTException) cause;
         }
 
-        // SecurityException and RuntimeException are not checked
-        // exceptions so whilst they may happen, they should not come
-        // here.
-        EntropyCollector.LOG.error("Undeclared throwable in AWTEntropy",
-            e.getCause());
+        // SecurityException and RuntimeException are not checked exceptions so whilst they may happen, they should not come here.
+        EntropyCollector.LOG.error("Undeclared throwable in AWTEntropy", e.getCause());
         throw new UndeclaredThrowableException(e.getCause());
       }
     }
@@ -163,14 +160,11 @@ public class AWTEntropy extends EntropyCollector {
         list.add(samp);
       } catch (AWTException e) {
         // expected
-        LOG.debug("No entropy collection from "
-            + screen.getIDstring());
+        LOG.debug("No entropy collection from {}", screen.getIDstring());
       } catch (SecurityException e) {
         // also expected
-        LOG.debug("Security blocked entropy collection from "
-            + screen.getIDstring());
-        SecureRandomProvider.LOG.warn(
-            "Lacking permission \"AWTPermission createRobot\" or \"AWTPermission readDisplayPixels\" - cannot access display entropy");
+        LOG.debug("Security blocked entropy collection from {}", screen.getIDstring());
+        SecureRandomProvider.LOG.warn("Lacking permission \"AWTPermission createRobot\" or \"AWTPermission readDisplayPixels\" - cannot access display entropy");
       }
     }
 
@@ -178,7 +172,7 @@ public class AWTEntropy extends EntropyCollector {
       return false;
     }
 
-    samplers = list.toArray(new Sampler[list.size()]);
+    samplers = list.toArray(new Sampler[0]);
     return true;
   }
 

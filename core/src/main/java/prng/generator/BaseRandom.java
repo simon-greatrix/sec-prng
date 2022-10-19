@@ -1,17 +1,47 @@
 package prng.generator;
 
+import java.security.DrbgParameters;
+import java.security.DrbgParameters.Capability;
+import java.security.SecureRandomParameters;
 import java.security.SecureRandomSpi;
+
 import prng.Fortuna;
+import prng.OpenEngineSpi;
 
 /**
  * Common NIST secure random number functionality.
  *
  * @author Simon Greatrix
  */
-abstract public class BaseRandom extends SecureRandomSpi {
+public abstract class BaseRandom extends SecureRandomSpi implements OpenEngineSpi {
 
   /** serial version UID */
   private static final long serialVersionUID = 1L;
+
+
+  static byte[] getPersonalization(SecureRandomParameters parameters) {
+    if (parameters instanceof DrbgParameters.Instantiation) {
+      return ((DrbgParameters.Instantiation) parameters).getPersonalizationString();
+    }
+    if (parameters != null) {
+      throw new IllegalArgumentException("Parameters was not an instance of DrbgParameters.Instantiation, but " + parameters.getClass());
+    }
+    return null;
+  }
+
+
+  static void verifyStrength(SecureRandomParameters parameters, int supported) {
+    if (parameters instanceof DrbgParameters.Instantiation) {
+      int required = ((DrbgParameters.Instantiation) parameters).getStrength();
+      if (required > supported) {
+        throw new IllegalArgumentException("Algorithm has a strength of " + supported + ", cannot supply " + required);
+      }
+    }
+  }
+
+
+  /** A copy of the personalization data. */
+  protected final byte[] personalization;
 
   /**
    * A counter for how often this can generate bytes before needing reseeding. Counter-intuitively, higher values of resistance are less secure.
@@ -44,18 +74,18 @@ abstract public class BaseRandom extends SecureRandomSpi {
   /**
    * New instance.
    *
-   * @param source source of seed information
-   * @param initial the initial material
+   * @param source     source of seed information
+   * @param initial    the initial material
    * @param resistance number of operations between re-seeds
-   * @param seedSize the number of bytes in a re-seed.
-   * @param spareSize the maximum space required for spare bytes
+   * @param seedSize   the number of bytes in a re-seed.
+   * @param spareSize  the maximum space required for spare bytes
    */
-  protected BaseRandom(SeedSource source, InitialMaterial initial,
-      int resistance, int seedSize, int spareSize) {
+  protected BaseRandom(SeedSource source, InitialMaterial initial, int resistance, int seedSize, int spareSize) {
     this.source = (source == null) ? Fortuna.SOURCE : source;
     this.initial = initial;
     this.resistance = resistance;
     this.seedSize = seedSize;
+    personalization = initial.getPersonalization().clone();
     spares = new byte[spareSize];
   }
 
@@ -70,13 +100,33 @@ abstract public class BaseRandom extends SecureRandomSpi {
 
 
   @Override
-  protected final byte[] engineGenerateSeed(int size) {
+  public final byte[] engineGenerateSeed(int size) {
+    // Call our entropy source for a new seed.
     return source.getSeed(size);
   }
 
 
   @Override
-  protected final synchronized void engineNextBytes(byte[] bytes) {
+  public SecureRandomParameters engineGetParameters() {
+    checkInitialised();
+    return DrbgParameters.instantiation(getStrength(), Capability.PR_AND_RESEED, initial.getPersonalization());
+  }
+
+
+  @Override
+  public void engineNextBytes(byte[] bytes, SecureRandomParameters params) {
+    checkInitialised();
+    if (params instanceof DrbgParameters.NextBytes) {
+      DrbgParameters.NextBytes nextBytes = (DrbgParameters.NextBytes) params;
+      prepare(nextBytes.getPredictionResistance(), nextBytes.getAdditionalInput());
+    }
+
+    engineNextBytes(bytes);
+  }
+
+
+  @Override
+  public final synchronized void engineNextBytes(byte[] bytes) {
     checkInitialised();
     int offset = 0;
     if (spareBytes > 0) {
@@ -98,7 +148,23 @@ abstract public class BaseRandom extends SecureRandomSpi {
 
 
   @Override
-  protected final synchronized void engineSetSeed(byte[] seed) {
+  public void engineReseed(SecureRandomParameters params) {
+    checkInitialised();
+
+    if (params instanceof DrbgParameters.Reseed) {
+      DrbgParameters.Reseed reseed = (DrbgParameters.Reseed) params;
+      prepare(reseed.getPredictionResistance(), reseed.getAdditionalInput());
+    } else if (params != null) {
+      throw new UnsupportedOperationException("Cannot reseed from parameters of type: " + params.getClass());
+    } else {
+      // best effort
+      implSetSeed(engineGenerateSeed(seedSize));
+    }
+  }
+
+
+  @Override
+  public final synchronized void engineSetSeed(byte[] seed) {
     checkInitialised();
 
     implSetSeed(seed);
@@ -108,13 +174,16 @@ abstract public class BaseRandom extends SecureRandomSpi {
   }
 
 
+  protected abstract int getStrength();
+
+
   /**
    * The implementation for generating the next bytes, ignoring reseeds
    *
    * @param offset first byte to start
-   * @param bytes the bytes to generate
+   * @param bytes  the bytes to generate
    */
-  abstract protected void implNextBytes(int offset, byte[] bytes);
+  protected abstract void implNextBytes(int offset, byte[] bytes);
 
 
   /**
@@ -122,7 +191,7 @@ abstract public class BaseRandom extends SecureRandomSpi {
    *
    * @param seed the bytes to update with
    */
-  abstract protected void implSetSeed(byte[] seed);
+  protected abstract void implSetSeed(byte[] seed);
 
 
   /**
@@ -130,7 +199,7 @@ abstract public class BaseRandom extends SecureRandomSpi {
    *
    * @param material the starting material
    */
-  abstract protected void initialise(byte[] material);
+  protected abstract void initialise(byte[] material);
 
 
   /**
@@ -146,9 +215,33 @@ abstract public class BaseRandom extends SecureRandomSpi {
 
 
   /**
+   * Apply the operations indicated by the SecureRandomParameters passed to reseed or next bytes.
+   *
+   * @param pr    if true, inject new entropy
+   * @param input if specified, inject into the generator
+   */
+  private void prepare(boolean pr, byte[] input) {
+    if (pr) {
+      byte[] seed = engineGenerateSeed(seedSize);
+      if (input != null) {
+        byte[] newInput = new byte[seed.length + input.length];
+        System.arraycopy(input, 0, newInput, 0, input.length);
+        System.arraycopy(seed, 0, newInput, input.length, seed.length);
+        input = newInput;
+      } else {
+        input = seed;
+      }
+    }
+    if (input != null) {
+      implSetSeed(input);
+    }
+  }
+
+
+  /**
    * Set the spare bytes available for the next round
    *
-   * @param data the spares
+   * @param data   the spares
    * @param offset the offset into the input
    * @param length the number of bytes
    */
@@ -156,4 +249,5 @@ abstract public class BaseRandom extends SecureRandomSpi {
     spareBytes = length;
     System.arraycopy(data, offset, spares, 0, length);
   }
+
 }

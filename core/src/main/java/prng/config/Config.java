@@ -4,6 +4,7 @@ import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.Collections;
@@ -14,6 +15,7 @@ import java.util.Properties;
 import java.util.PropertyPermission;
 import java.util.Set;
 import java.util.TreeMap;
+
 import org.slf4j.Logger;
 import prng.LoggersFactory;
 
@@ -146,8 +148,7 @@ public class Config implements Iterable<String> {
       } catch (SecurityException se) {
         RuntimePermission p = new RuntimePermission(
             "getenv." + key);
-        LOG.warn("Unable to read environment variable \"" + key
-            + "\". Missing permission " + p);
+        LOG.warn("Unable to read environment variable \"{}\". Missing permission {}", key, p);
         return null;
       }
     });
@@ -167,8 +168,7 @@ public class Config implements Iterable<String> {
         return System.getProperty(key);
       } catch (SecurityException se) {
         PropertyPermission p = new PropertyPermission(key, "read");
-        LOG.warn("Unable to read system property \"" + key
-            + "\". Missing permission " + p);
+        LOG.warn("Unable to read system property \"{}\". Missing permission {}", key, p);
         return null;
       }
     });
@@ -224,11 +224,7 @@ public class Config implements Iterable<String> {
     if (userId == null) {
       userId = "*";
     }
-    try {
-      userId = URLEncoder.encode(userId, "UTF-8");
-    } catch (UnsupportedEncodingException e) {
-      throw new Error("UTF-8 must be supported by JVM");
-    }
+    userId = URLEncoder.encode(userId, StandardCharsets.UTF_8);
     URI_PREFERENCE_USER = URI.create("prefs:user/" + userId);
 
     init();
@@ -476,4 +472,5 @@ public class Config implements Iterable<String> {
   public int size() {
     return config.size();
   }
+
 }

@@ -45,7 +45,7 @@ public class FinalizerEntropy extends EntropyCollector {
    */
   final Object[] objects = new Object[HASH_SIZE];
 
-  private Cleaner cleaner = Cleaner.create(new DaemonThreadFactory("PRNG-FinalizerEntropy"));
+  private final Cleaner cleaner = Cleaner.create(new DaemonThreadFactory("PRNG-FinalizerEntropy"));
 
 
   /**
