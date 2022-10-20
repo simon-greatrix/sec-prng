@@ -16,9 +16,6 @@ import prng.SecureRandomBuilder.Hash;
 import prng.SecureRandomBuilder.Source;
 import prng.config.Config;
 import prng.generator.HashSpec;
-import prng.generator.NistCipherRandom;
-import prng.generator.NistHashRandom;
-import prng.generator.NistHmacRandom;
 
 /**
  * Security service provider
@@ -70,9 +67,9 @@ public class SecureRandomProvider extends Provider {
      * @param algorithm the algorithm implemented
      * @param builder   the builder for new instances
      */
-    public CustomService(Provider provider, String algorithm, SecureRandomBuilder builder) {
+    public CustomService(Provider provider, String algorithm, List<String> aliases, SecureRandomBuilder builder) {
       super(provider, "SecureRandom", algorithm, builder.getClassName(),
-          null, builder.getAttributes()
+          aliases, builder.getAttributes()
       );
       this.builder = builder;
     }
@@ -147,10 +144,7 @@ public class SecureRandomProvider extends Provider {
    */
   public static void premain(String args) {
     LOG.info("Installing provider via agent");
-    boolean isPrimary = true;
-    if (args != null && args.matches("\\s*sprimary\\s*=\\s*false\\s*")) {
-      isPrimary = false;
-    }
+    boolean isPrimary = args == null || !args.matches("\\s*sprimary\\s*=\\s*false\\s*");
     install(isPrimary);
   }
 
@@ -159,36 +153,36 @@ public class SecureRandomProvider extends Provider {
     // Add services to provider. The first added service is the default.
 
     SecureRandomProvider prov = new SecureRandomProvider();
-    prov.putService(new Service(prov, "SecureRandom", "Nist/SHA-256",
-        NistHashRandom.RandomSHA256.class.getName(),
-        List.of("Nist/SHA256", "SHA-256", "SHA256"), ATTR_THREAD_SAFE
+    prov.putService(new CustomService(prov, "Nist/SHA-256",
+        List.of("Nist/SHA256", "SHA-256", "SHA256"),
+        SecureRandomBuilder.hash().hash(Hash.SHA256)
     ));
-    prov.putService(new Service(prov, "SecureRandom", "Nist/HmacSHA-256",
-        NistHmacRandom.RandomHmacSHA256.class.getName(),
-        List.of("Nist", "Nist/HmacSHA256", "HmacSHA-256", "HmacSHA256"), ATTR_THREAD_SAFE
-    ));
-
-    prov.putService(new Service(prov, "SecureRandom", "Nist/SHA-512",
-        NistHashRandom.RandomSHA512.class.getName(),
-        List.of("Nist/SHA512", "SHA-512", "SHA512"), ATTR_THREAD_SAFE
-    ));
-    prov.putService(new Service(prov, "SecureRandom", "Nist/HmacSHA-512",
-        NistHmacRandom.RandomHmacSHA512.class.getName(),
-        List.of("Nist/HmacSHA512", "HmacSHA-512", "HmacSHA512"), ATTR_THREAD_SAFE
+    prov.putService(new CustomService(prov, "Nist/HmacSHA-256",
+        List.of("Nist", "Nist/HmacSHA256", "HmacSHA-256", "HmacSHA256"),
+        SecureRandomBuilder.hmac().hash(Hash.SHA256)
     ));
 
-    prov.putService(new Service(prov, "SecureRandom", "Nist/AES-256",
-        NistCipherRandom.class.getName(),
-        List.of("Nist/AES256", "AES-256", "AES256", "Nist/AES", "AES"), ATTR_THREAD_SAFE
+    prov.putService(new CustomService(prov, "Nist/SHA-512",
+        List.of("Nist/SHA512", "SHA-512", "SHA512"),
+        SecureRandomBuilder.hash().hash(Hash.SHA512)
+    ));
+    prov.putService(new CustomService(prov, "Nist/HmacSHA-512",
+        List.of("Nist/HmacSHA512", "HmacSHA-512", "HmacSHA512"),
+        SecureRandomBuilder.hmac().hash(Hash.SHA512)
     ));
 
-    prov.putService(new Service(prov, "SecureRandom", "Nist/SHA-1",
-        NistHashRandom.RandomSHA1.class.getName(),
-        List.of("Nist/SHA1", "SHA-1", "SHA1"), ATTR_THREAD_SAFE
+    prov.putService(new CustomService(prov, "Nist/AES-256",
+        List.of("Nist/AES256", "AES-256", "AES256", "Nist/AES", "AES"),
+        SecureRandomBuilder.cipher()
     ));
-    prov.putService(new Service(prov, "SecureRandom", "Nist/HmacSHA-1",
-        NistHmacRandom.RandomHmacSHA1.class.getName(),
-        List.of("Nist/HmacSHA1", "HmacSHA-1", "HmacSHA1"), ATTR_THREAD_SAFE
+
+    prov.putService(new CustomService(prov, "Nist/SHA-1",
+        List.of("Nist/SHA1", "SHA-1", "SHA1"),
+        SecureRandomBuilder.hash().hash(Hash.SHA1)
+    ));
+    prov.putService(new CustomService(prov, "Nist/HmacSHA-1",
+        List.of("Nist/HmacSHA1", "HmacSHA-1", "HmacSHA1"),
+        SecureRandomBuilder.hmac().hash(Hash.SHA1)
     ));
 
     // Allow for the SHA1PRNG algorithm to be over-ridden with another
@@ -361,7 +355,7 @@ public class SecureRandomProvider extends Provider {
             return null;
           }
           try {
-            builder = builder.laziness(Integer.decode(v).intValue());
+            builder = builder.laziness(Integer.decode(v));
           } catch (IllegalArgumentException exc) {
             LOG.debug("Value '{}' passed for 'laziness' was invalid", v,
                 exc
@@ -429,7 +423,7 @@ public class SecureRandomProvider extends Provider {
             LOG.debug("Unknown parameter key {}", k);
             return null;
           }
-          builder.threadSafe(Boolean.valueOf(v));
+          builder.threadSafe(Boolean.parseBoolean(v));
           break;
         default:
           // unrecognised
@@ -439,7 +433,7 @@ public class SecureRandomProvider extends Provider {
       }
     }
 
-    service = new CustomService(this, algorithm, builder);
+    service = new CustomService(this, algorithm, null, builder);
     if (canStore) {
       putService(service);
     }

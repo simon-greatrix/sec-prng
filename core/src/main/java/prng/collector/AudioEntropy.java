@@ -93,7 +93,7 @@ public class AudioEntropy extends EntropyCollector {
       }
 
       if (LOG.isDebugEnabled()) {
-        LOG.debug("Audio Sample gathered {} data.", doesVary ? (Integer.toString(seedData.length) + " bytes of") : "no");
+        LOG.debug("Audio Sample gathered {} data.", doesVary ? (seedData.length + " bytes of") : "no");
       }
       return doesVary ? seedData : null;
     }
@@ -176,7 +176,7 @@ public class AudioEntropy extends EntropyCollector {
         boolean isPCMUnsigned = AudioFormat.Encoding.PCM_UNSIGNED.equals(
             encoding);
 
-        // If its not PCM, we don't know how to use it
+        // If it is not PCM, we don't know how to use it
         if (!(isPCMSigned || isPCMUnsigned)) {
           continue;
         }

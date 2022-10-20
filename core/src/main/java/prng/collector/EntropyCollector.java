@@ -131,7 +131,7 @@ public abstract class EntropyCollector extends EntropySource
         // Nudge the ratio towards this
         double newRatio = 0.95 * oldRatio + 0.05 * requiredRatio;
 
-        // Never go below min - we slow down but we do not speed up.
+        // Never go below min - we slow down, but we do not speed up.
         ratio = Math.min(MAX_RATIO, Math.max(MIN_RATIO, newRatio));
 
         LOG.info("Entropy fulfillment ratio was {} out of {}. Changed delay ratio from {} to {}.", used, provided, oldRatio, newRatio);

@@ -8,8 +8,10 @@ package prng.utility;
 public class BLOBPrint {
 
   /** Hexadecimal digits */
-  private static final char[] HEX = new char[]{'0', '1', '2', '3', '4', '5',
-      '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+  private static final char[] HEX = {
+      '0', '1', '2', '3', '4', '5',
+      '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'
+  };
 
 
   /**
@@ -61,9 +63,7 @@ public class BLOBPrint {
         bufChars.append(" ");
       } else if ((i % 16) == 15) {
         // end of line
-        buffer.append(String.format("%06x  %-50s  %-17s\n",
-            Integer.valueOf(i - 15), bufBytes.toString(),
-            bufChars.toString()));
+        buffer.append(String.format("%06x  %-50s  %-17s\n", i - 15, bufBytes, bufChars));
         bufBytes.setLength(0);
         bufChars.setLength(0);
       }
@@ -71,11 +71,10 @@ public class BLOBPrint {
 
     // add last line
     if (len % 16 != 0) {
-      buffer.append(String.format("%06x  %-50s  %-17s\n",
-          Integer.valueOf(16 * (len / 16)), bufBytes.toString(),
-          bufChars.toString()));
+      buffer.append(String.format("%06x  %-50s  %-17s\n", 16 * (len / 16), bufBytes, bufChars));
     }
 
     return buffer.toString();
   }
+
 }

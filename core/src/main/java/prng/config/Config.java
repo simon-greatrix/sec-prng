@@ -1,7 +1,6 @@
 package prng.config;
 
 import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -64,7 +63,7 @@ public class Config implements Iterable<String> {
     // build new string
     StringBuilder buf = new StringBuilder();
     do {
-      buf.append(value.substring(0, s));
+      buf.append(value, 0, s);
 
       // advance to start of key, find end of key
       value = value.substring(s + 1);
@@ -139,7 +138,7 @@ public class Config implements Iterable<String> {
    *
    * @param key the variable name to retrieve
    *
-   * @return the value, or null if the variable does not exist or we lack the privilege to get it.
+   * @return the value, or null if the variable does not exist, or we lack the privilege to get it.
    */
   public static String getEnv(String key) {
     return AccessController.doPrivileged((PrivilegedAction<String>) () -> {
@@ -160,7 +159,7 @@ public class Config implements Iterable<String> {
    *
    * @param key the system property to retrieve
    *
-   * @return the property, or null if the property does not exist or we lack the privilege to get it.
+   * @return the property, or null if the property does not exist, or we lack the privilege to get it.
    */
   public static String getProperty(String key) {
     return AccessController.doPrivileged((PrivilegedAction<String>) () -> {
@@ -334,7 +333,7 @@ public class Config implements Iterable<String> {
    */
   public double getDouble(String key, double dflt) {
     Double v = getDouble(key);
-    return (v == null) ? dflt : v.doubleValue();
+    return (v == null) ? dflt : v;
   }
 
 
@@ -369,7 +368,7 @@ public class Config implements Iterable<String> {
    */
   public float getFloat(String key, float dflt) {
     Float v = getFloat(key);
-    return (v == null) ? dflt : v.floatValue();
+    return (v == null) ? dflt : v;
   }
 
 
@@ -404,7 +403,7 @@ public class Config implements Iterable<String> {
    */
   public int getInt(String key, int dflt) {
     Integer v = getInt(key);
-    return (v == null) ? dflt : v.intValue();
+    return (v == null) ? dflt : v;
   }
 
 
@@ -439,7 +438,7 @@ public class Config implements Iterable<String> {
    */
   public long getLong(String key, long dflt) {
     Long v = getLong(key);
-    return (v == null) ? dflt : v.longValue();
+    return (v == null) ? dflt : v;
   }
 
 

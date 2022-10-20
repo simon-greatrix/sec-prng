@@ -66,7 +66,7 @@ public class RunsTest {
         }
         
         int b = 8192;
-        int bi = -1;
+        int bi;
         for(int i=0;i<8192;i++) {
             if( points[i] <= b ) {
                 b = points[i];

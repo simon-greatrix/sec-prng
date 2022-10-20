@@ -222,7 +222,7 @@ public class AESWrap {
     int m = plainText.length;
 
     // derive the AIV (Alternate Initialisation Vector)
-    byte[] aiv = new byte[]{(byte) 0xA6, (byte) 0x59, (byte) 0x59,
+    byte[] aiv = {(byte) 0xA6, (byte) 0x59, (byte) 0x59,
         (byte) 0xA6, 0, 0, 0, 0};
     for (int i = 0; i < 4; i++) {
       aiv[7 - i] = (byte) (m >>> (8 * i));

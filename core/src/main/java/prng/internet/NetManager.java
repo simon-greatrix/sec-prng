@@ -1,6 +1,8 @@
 package prng.internet;
 
 import java.util.Random;
+import java.util.Timer;
+
 import prng.EntropySource;
 import prng.config.Config;
 import prng.generator.IsaacRandom;
@@ -23,12 +25,11 @@ public class NetManager implements Runnable {
     thread.start();
   }
 
+  /** Seed data drawn from network sources */
+  private final Seed[] seeds = new Seed[64];
 
   /** Number of times a network seed is expected to be used */
   private double expectedUsage;
-
-  /** Seed data drawn from network sources */
-  private final Seed[] seeds = new Seed[64];
 
   /** Number of seeds injected into Fortuna */
   private int seedsUsed;
@@ -41,7 +42,7 @@ public class NetManager implements Runnable {
 
 
   /**
-   * Fetch any missing network data
+   * Fetch any missing network data. We only try once as the service may be down.
    */
   private void fetch() {
     for (int i = 0; i < 64; i++) {
@@ -108,10 +109,9 @@ public class NetManager implements Runnable {
       NetRandom source;
       try {
         Class<?> cls = Class.forName(cl);
-        source = cls.asSubclass(NetRandom.class).newInstance();
+        source = cls.asSubclass(NetRandom.class).getConstructor().newInstance();
       } catch (Exception e) {
-        NetRandom.LOG.error("Failed to create internet source \"{}\"",
-            cl, e);
+        NetRandom.LOG.error("Failed to create internet source \"{}\"", cl, e);
         continue;
       }
       myWeights[count] = weight;
@@ -193,4 +193,5 @@ public class NetManager implements Runnable {
     inject();
     fetch();
   }
+
 }

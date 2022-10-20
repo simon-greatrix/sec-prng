@@ -269,9 +269,9 @@ final class UUIDTime {
   private static boolean IS_INIT_DONE = false;
 
   /**
-   * Timestamp value last used for generating a UUID (along with {@link #CLOCK_SEQUENCE}. Usually the same as System.currentTimeMillis , but not always (system
-   * clock moved backwards). Note that this value is guaranteed to be monotonically increasing; that is, at given absolute time points t1 and t2 (where t2 is
-   * after t1), t1 <= t2 will always hold true.
+   * Timestamp value last used for generating a UUID (along with {@link #CLOCK_SEQUENCE}). Usually the same as System.currentTimeMillis , but not always
+   * (system clock moved backwards). Note that this value is guaranteed to be monotonically increasing; that is, at given absolute time points t1 and t2
+   * (where t2 is after t1), t1 <= t2 will always hold true.
    */
   private static long LAST_USED_TIMESTAMP = 0L;
 
@@ -304,7 +304,7 @@ final class UUIDTime {
     long nanoTime = ((System.nanoTime() - INIT_NANO) / 100) % 10000;
     sysTime = sysTime * 10000 + nanoTime + CLOCK_OFFSET;
 
-    // If time is in past, move up
+    // If time is in the past, move up
     if (sysTime < LAST_USED_TIMESTAMP) {
       sysTime = LAST_USED_TIMESTAMP;
     }

@@ -250,4 +250,13 @@ public abstract class BaseRandom extends SecureRandomSpi implements OpenEngineSp
     System.arraycopy(data, offset, spares, 0, length);
   }
 
+
+  @Override
+  public String toString() {
+    return String.format(
+        "%s(resistance=%d/%d, source=%s, spareBytes=%d)",
+        getClass().getSimpleName(), counter, resistance, source, spareBytes
+    );
+  }
+
 }

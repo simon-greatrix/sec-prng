@@ -19,19 +19,19 @@ public class SimpleJSONParser {
   /**
    * Letters for the "false" literal
    */
-  private static final char[] LITERAL_FALSE = new char[]{'A', 'a', 'L', 'l',
+  private static final char[] LITERAL_FALSE = {'A', 'a', 'L', 'l',
       'S', 's', 'E', 'e'};
 
   /** Letters for the "null" literal */
-  private static final char[] LITERAL_NULL = new char[]{'U', 'u', 'L', 'l',
+  private static final char[] LITERAL_NULL = {'U', 'u', 'L', 'l',
       'L', 'l'};
 
   /** Letters for the "true" literal */
-  private static final char[] LITERAL_TRUE = new char[]{'R', 'r', 'U', 'u',
+  private static final char[] LITERAL_TRUE = {'R', 'r', 'U', 'u',
       'E', 'e'};
 
   /** Hexadecimal digits */
-  private static final char[] HEX = new char[]{'0', '1', '2', '3', '4', '5', '6',
+  private static final char[] HEX = {'0', '1', '2', '3', '4', '5', '6',
       '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
 
@@ -87,7 +87,7 @@ public class SimpleJSONParser {
   /**
    * Representation of an array in JSON
    */
-  static public class JSONArray extends ArrayList<Primitive> {
+  public static class JSONArray extends ArrayList<Primitive> {
 
     /** serial version UID */
     private static final long serialVersionUID = 2L;
@@ -124,7 +124,7 @@ public class SimpleJSONParser {
       StringBuilder buf = new StringBuilder();
       buf.append('[');
       for (Primitive e : this) {
-        buf.append(String.valueOf(e));
+        buf.append(e);
         buf.append(", ");
       }
       if (buf.length() > 1) {
@@ -140,7 +140,7 @@ public class SimpleJSONParser {
   /**
    * Representation of an object in JSON
    */
-  static public class JSONObject extends LinkedHashMap<String, Primitive> {
+  public static class JSONObject extends LinkedHashMap<String, Primitive> {
 
     /** serial version UID */
     private static final long serialVersionUID = 1L;
@@ -179,7 +179,7 @@ public class SimpleJSONParser {
       for (Map.Entry<String, Primitive> e : entrySet()) {
         buf.append(escapeString(e.getKey()));
         buf.append(':');
-        buf.append(String.valueOf(e.getValue()));
+        buf.append(e.getValue());
         buf.append(", ");
       }
       if (buf.length() > 1) {
@@ -195,7 +195,7 @@ public class SimpleJSONParser {
   /**
    * Container for a JSON primitive
    */
-  static public class Primitive {
+  public static class Primitive {
 
     /** The type represented by this primitive */
     final Type type;
@@ -472,8 +472,8 @@ public class SimpleJSONParser {
    */
   private static Primitive parseBoolean(Reader input, int r)
       throws IOException {
-    Boolean val = Boolean.valueOf(r == 'T' || r == 't');
-    matchLiteral(val.booleanValue() ? LITERAL_TRUE : LITERAL_FALSE, input);
+    Boolean val = r == 'T' || r == 't';
+    matchLiteral(val ? LITERAL_TRUE : LITERAL_FALSE, input);
     return new Primitive(Type.BOOLEAN, val);
   }
 
@@ -538,7 +538,7 @@ public class SimpleJSONParser {
           } else {
             buf.append((char) r);
             throw new IOException("Invalid numeric input: \""
-                + buf.toString() + "\"");
+                + buf + "\"");
           }
           break;
         case 1:
@@ -574,7 +574,7 @@ public class SimpleJSONParser {
           } else {
             buf.append((char) r);
             throw new IOException("Invalid numeric input: \""
-                + buf.toString() + "\"");
+                + buf + "\"");
           }
           break;
         case 4:
@@ -585,7 +585,7 @@ public class SimpleJSONParser {
           } else {
             buf.append((char) r);
             throw new IOException("Invalid numeric input: \""
-                + buf.toString() + "\"");
+                + buf + "\"");
           }
           break;
         case 5:
@@ -605,8 +605,8 @@ public class SimpleJSONParser {
     // convert to a good number type
     if (s == 1) {
       Long lval = Long.valueOf(buf.toString());
-      if (lval.longValue() == lval.intValue()) {
-        val = Integer.valueOf(lval.intValue());
+      if (lval == lval.intValue()) {
+        val = lval.intValue();
       } else {
         val = lval;
       }

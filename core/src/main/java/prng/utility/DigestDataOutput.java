@@ -13,11 +13,11 @@ import java.security.Provider;
  */
 public class DigestDataOutput implements DataOutput {
 
-  /** The digest */
-  private final MessageDigest digest;
-
   /** Buffer for numeric output */
   private final byte[] buffer = new byte[8];
+
+  /** The digest */
+  private final MessageDigest digest;
 
 
   /**
@@ -49,7 +49,7 @@ public class DigestDataOutput implements DataOutput {
   /**
    * Create a new digest output
    *
-   * @param name the required digest type
+   * @param name     the required digest type
    * @param provider specific provider for algorithm
    */
   public DigestDataOutput(String name, Provider provider) {
@@ -179,8 +179,8 @@ public class DigestDataOutput implements DataOutput {
 
 
   /**
-   * As defined in DataOutput, writes the supplied String out as modified UTF-8. Unlike DataOutput, there is no length prefix. Instead a zero byte is appended.
-   * This allows Strings of any length to be handled.
+   * As defined in DataOutput, writes the supplied String out as modified UTF-8. Unlike DataOutput, there is no length prefix. Instead, a zero byte is
+   * appended. This allows Strings of any length to be handled.
    *
    * @param str the String to output
    */

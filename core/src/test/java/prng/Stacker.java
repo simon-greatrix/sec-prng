@@ -1,9 +1,10 @@
 package prng;
 
-/**
- * @author Simon Greatrix on 06/06/2017.
- */
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
@@ -46,6 +47,11 @@ public class Stacker implements AutoCloseable {
     }
 
 
+    public void message(String msg) {
+      writer_.enque(msg);
+    }
+
+
     @Override
     public void run() {
       while (running_ && thread_.isAlive()) {
@@ -69,9 +75,6 @@ public class Stacker implements AutoCloseable {
       running_ = false;
     }
 
-    public void message(String msg) {
-      writer_.enque(msg);
-    }
   }
 
 
@@ -90,10 +93,9 @@ public class Stacker implements AutoCloseable {
     public void run() {
       DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HHmmssSSS").withZone(ZoneId.systemDefault());
       Instant now = Instant.now();
-      File file = new File("/tmp/stack"+dtf.format(now)+".txt");
-      System.out.println("Stacker at "+file.getAbsolutePath());
-      try (BufferedWriter fw = new BufferedWriter(
-          new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8))) {
+      File file = new File("/tmp/stack" + dtf.format(now) + ".txt");
+      System.out.println("Stacker at " + file.getAbsolutePath());
+      try (BufferedWriter fw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8))) {
         while (true) {
           Object obj;
           try {
@@ -105,7 +107,7 @@ public class Stacker implements AutoCloseable {
           if (obj == null) {
             continue;
           }
-          if( obj instanceof String ) {
+          if (obj instanceof String) {
             fw.write(String.valueOf(obj));
             fw.write('\n');
             fw.write('\n');
@@ -132,6 +134,7 @@ public class Stacker implements AutoCloseable {
         // LOGGER.error("Stack logging file writer failed.", ioe);
       }
     }
+
   }
 
 
@@ -167,14 +170,16 @@ public class Stacker implements AutoCloseable {
   }
 
 
+  @Override
+  public void close() {
+    stop();
+  }
+
+
   public void message(String msg) {
     Thread me = Thread.currentThread();
     Sampler sampler = SAMPLERS.get(me);
     sampler.message(msg);
   }
 
-  @Override
-  public void close() {
-    stop();
-  }
 }

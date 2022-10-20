@@ -66,12 +66,12 @@ public class NistCipherRandom extends BaseRandom {
   /**
    * The "Key" parameter as defined in the specification.
    */
-  private byte[] key;
+  private final byte[] key;
 
   /**
    * The "V" Value parameter as defined in the specification.
    */
-  private byte[] value;
+  private final byte[] value;
 
 
   /**
@@ -149,7 +149,7 @@ public class NistCipherRandom extends BaseRandom {
         setSpares(buffer, lastSize, 16 - lastSize);
       }
     } catch (GeneralSecurityException e) {
-      throw new InternalError("Cyryptographic failure", e);
+      throw new InternalError("Cryptographic failure", e);
     }
 
     implSetSeed(EMPTY_BYTES);

@@ -3,6 +3,7 @@ package prng;
 import java.security.SecureRandomParameters;
 import java.security.SecureRandomSpi;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import org.slf4j.Logger;
@@ -17,15 +18,17 @@ class MultiplexSpi extends SecureRandomSpi implements OpenEngineSpi {
 
   private static final Logger LOG = LoggersFactory.getLogger(MultiplexSpi.class);
 
-  /**
-   * Template for generating additional SPIs.
-   */
-  private final Supplier<BaseRandom> template;
+  private final AtomicInteger size = new AtomicInteger(0);
 
   /**
    * Pool of SPIs.
    */
-  private LinkedBlockingDeque<BaseRandom> spiPool = new LinkedBlockingDeque<>();
+  private final LinkedBlockingDeque<BaseRandom> spiPool = new LinkedBlockingDeque<>();
+
+  /**
+   * Template for generating additional SPIs.
+   */
+  private final Supplier<BaseRandom> template;
 
 
   /**
@@ -37,6 +40,7 @@ class MultiplexSpi extends SecureRandomSpi implements OpenEngineSpi {
   public MultiplexSpi(BaseRandom base, Supplier<BaseRandom> template) {
     if (base != null) {
       spiPool.add(base);
+      size.incrementAndGet();
     }
     this.template = template;
   }
@@ -133,13 +137,31 @@ class MultiplexSpi extends SecureRandomSpi implements OpenEngineSpi {
   private void release(BaseRandom spi) {
     if (!spiPool.offerLast(spi)) {
       LOG.warn("Unable to recycle SPI instance");
+      size.decrementAndGet();
     }
   }
 
 
   private BaseRandom reserve() {
     BaseRandom spi = spiPool.pollFirst();
-    return (spi == null) ? template.get() : spi;
+    if (spi == null) {
+      spi = template.get();
+      size.incrementAndGet();
+    }
+    return spi;
+  }
+
+
+  @Override
+  public String toString() {
+    String className;
+    BaseRandom spi = reserve();
+    try {
+      className = spi.getClass().getSimpleName();
+    } finally {
+      release(spi);
+    }
+    return String.format("MultiplexSpi(%s, %d)", className, size.get());
   }
 
 }

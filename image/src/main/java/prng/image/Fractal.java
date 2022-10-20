@@ -71,7 +71,7 @@ public class Fractal extends BasePainter {
       len *= 2;
     }
 
-    // collect the values so we can work out the equalization points
+    // collect the values, so we can work out the equalization points
     float[] values = new float[16384];
     for (int x = 0; x < 128; x++) {
       System.arraycopy(r[x], 0, values, x * 128, 128);

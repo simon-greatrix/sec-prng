@@ -120,7 +120,7 @@ public class SeedOutput implements DataOutput {
    *
    * @return the current contents of this output stream, as a byte array.
    */
-  public byte toByteArray()[] {
+  public byte[] toByteArray() {
     return Arrays.copyOf(buf, count);
   }
 

@@ -224,7 +224,7 @@ public class NistHashRandom extends BaseRandom {
     int fullLoops = byteLength / outLen;
     int lastSize = byteLength - (fullLoops * outLen);
     int pos = 0;
-    // use full output of digest for the majority of the required output
+    // use the full output of digest for the majority of the required output
     for (int i = 1; i <= fullLoops; i++) {
       digest.update((byte) i);
       digest.update(bitsToReturn);

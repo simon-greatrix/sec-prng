@@ -262,7 +262,7 @@ public class NistHmacRandom extends BaseRandom {
   /**
    * Update the key and value using the given entropy input
    *
-   * @param entropy entropy (may be empty)
+   * @param entropy entropy (maybe empty)
    */
   private void update(byte[] entropy) {
     key = hmac(key, value, (byte) 0, entropy);

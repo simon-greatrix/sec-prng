@@ -2,9 +2,8 @@ package prng;
 
 import java.security.SecureRandom;
 import java.security.SecureRandomParameters;
+import java.security.SecureRandomSpi;
 import java.util.Objects;
-
-import prng.generator.BaseRandom;
 
 /**
  * Implementation of a SecureRandom using a given SPI.
@@ -19,7 +18,7 @@ class SecureRandomImpl extends SecureRandom {
   /** The actual PRNG */
   private final OpenEngineSpi engineSpi;
 
-  private boolean threadSafe;
+  private final boolean threadSafe;
 
 
   /**
@@ -27,17 +26,10 @@ class SecureRandomImpl extends SecureRandom {
    *
    * @param spi SPI to use
    */
-  SecureRandomImpl(BaseRandom spi) {
-    super(spi, SecureRandomProvider.PROVIDER);
+  SecureRandomImpl(OpenEngineSpi spi) {
+    super((SecureRandomSpi) spi, SecureRandomProvider.PROVIDER);
     engineSpi = spi;
-    threadSafe = false;
-  }
-
-
-  SecureRandomImpl(MultiplexSpi multiplexSpi) {
-    super(multiplexSpi, SecureRandomProvider.PROVIDER);
-    engineSpi = multiplexSpi;
-    threadSafe = true;
+    threadSafe = spi instanceof MultiplexSpi;
   }
 
 
@@ -152,8 +144,7 @@ class SecureRandomImpl extends SecureRandom {
 
   @Override
   public String toString() {
-    // TODO : Implement me! simon 19/10/2022
-    return super.toString();
+    return engineSpi.toString();
   }
 
 }

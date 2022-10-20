@@ -2,6 +2,7 @@ package prng.generator;
 
 import java.util.Arrays;
 import java.util.Random;
+
 import prng.SecureRandomProvider;
 
 /**
@@ -13,11 +14,11 @@ import prng.SecureRandomProvider;
  */
 public class IsaacRandom extends Random {
 
-  /** serial version UID */
-  private static final long serialVersionUID = 1L;
-
   /** Architecture instance */
   private static final IsaacRandom INSTANCE = new IsaacRandom();
+
+  /** serial version UID */
+  private static final long serialVersionUID = 1L;
 
 
   /**
@@ -50,7 +51,7 @@ public class IsaacRandom extends Random {
   /**
    * Get the shared ISAAC instance
    *
-   * @return a instance that can be shared by different architecture components.
+   * @return an instance that can be shared by different architecture components.
    */
   public static IsaacRandom getSharedInstance() {
     return INSTANCE;
@@ -90,6 +91,7 @@ public class IsaacRandom extends Random {
     s[0] += s[1];
     // @formatter:on
   }
+
 
   /** Output of last generation */
   private final int[] randResult = new int[256];
@@ -222,8 +224,7 @@ public class IsaacRandom extends Random {
       System.arraycopy(initState, 0, state, i, 8);
     }
 
-    // Make sure generateMoreResults() will be called by
-    // the next next() call.
+    // Make sure generateMoreResults() will be called by the next "next()" call.
     valuesUsed = 256;
   }
 

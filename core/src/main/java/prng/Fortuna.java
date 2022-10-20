@@ -239,10 +239,10 @@ public class Fortuna {
   private final Pool[] pool = new Pool[32];
 
   /** AES with 256-bit key */
-  private Cipher cipher;
+  private final Cipher cipher;
 
   /** SHA-256 digest */
-  private MessageDigest digest;
+  private final MessageDigest digest;
 
   /** A 256-bit cipher key */
   private byte[] key = new byte[32];

@@ -301,18 +301,27 @@ public abstract class SecureRandomBuilder {
 
 
   /**
-   * Build the secure random SPI instance.
+   * Build the base secure random SPI instance.
    *
    * @return the instance
    */
-  BaseRandom buildSpi() {
-    // Synchronize to prevent re-use of nonce and entropy
+  BaseRandom buildBaseSpi() {
     BaseRandom base = createSpi();
 
     // Do not re-use nonce and entropy. Note these arrays are passed by reference to InitialMaterial and cleared when that is used.
     nonce = null;
     entropy = null;
     return base;
+  }
+
+
+  /**
+   * Build the secure random SPI instance, which may be a multiplexer.
+   *
+   * @return the instance
+   */
+  OpenEngineSpi buildSpi() {
+    return threadSafe ? new MultiplexSpi(buildBaseSpi(), asTemplate()) : buildBaseSpi();
   }
 
 

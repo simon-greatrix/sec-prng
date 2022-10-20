@@ -179,8 +179,7 @@ public abstract class NetRandom {
   public byte[] load() {
     byte[] newData;
     try {
-      newData = AccessController.doPrivileged(
-          (PrivilegedExceptionAction<byte[]>) this::fetch);
+      newData = AccessController.doPrivileged((PrivilegedExceptionAction<byte[]>) this::fetch);
       if (newData == null || newData.length != 128) {
         // Failed to fetch data. It happens.
         LOG.warn(
@@ -200,7 +199,7 @@ public abstract class NetRandom {
       newData = new byte[0];
     } catch (SecurityException e) {
       SecureRandomProvider.LOG.warn(
-          "Lacking permission \"SocketPermission {} resolve,connect\" or \"URLPermission {} GET,POST\". Cannot access to internet entropy source",
+          "Lacking permission \"SocketPermission {} resolve,connect\" or \"URLPermission {} GET,POST\". Cannot access internet entropy source",
           url(), url()
       );
       newData = new byte[0];

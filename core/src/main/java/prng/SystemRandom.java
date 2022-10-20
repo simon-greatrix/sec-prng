@@ -318,7 +318,7 @@ public class SystemRandom implements Runnable {
    * @param alg  the algorithm
    */
   SystemRandom(final Provider prov, final String alg) {
-    EXECUTOR.execute(() -> SystemRandom.this.init(prov, alg));
+    EXECUTOR.execute(() -> init(prov, alg));
   }
 
 

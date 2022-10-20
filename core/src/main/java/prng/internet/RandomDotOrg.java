@@ -17,6 +17,9 @@ import prng.utility.BLOBPrint;
 /**
  * Source that fetches from the Random.Org service
  *
+ * <p>
+ *   TODO: The class should handle random.org's "advisoryDelay" and using pre-generated randomization.
+ * </p>
  * @author Simon Greatrix
  */
 public class RandomDotOrg extends NetRandom {
@@ -29,7 +32,7 @@ public class RandomDotOrg extends NetRandom {
 
   static {
     try {
-      RANDOM_DOT_ORG = new URL("https://api.random.org/json-rpc/2/invoke");
+      RANDOM_DOT_ORG = new URL("https://api.random.org/json-rpc/4/invoke");
     } catch (MalformedURLException e) {
       throw new InternalError("Impossible exception", e);
     }
@@ -37,16 +40,17 @@ public class RandomDotOrg extends NetRandom {
     Config config = Config.getConfig("", RandomDotOrg.class);
     String apiKey = config.get("apiKey");
     if (apiKey != null) {
-      NetRandom.LOG.info("random.org RNG using API key :" + apiKey);
+      NetRandom.LOG.info("random.org RNG using API key : {}", apiKey);
       JSONObject obj = new JSONObject();
       obj.put("jsonrpc", new Primitive(Type.STRING, "2.0"));
       obj.put("method", new Primitive(Type.STRING, "generateIntegers"));
       JSONObject params = new JSONObject();
       obj.put("params", new Primitive(Type.OBJECT, params));
       params.put("apiKey", new Primitive(Type.STRING, apiKey));
-      params.put("n", new Primitive(Type.NUMBER, Integer.valueOf(128)));
-      params.put("min", new Primitive(Type.NUMBER, Integer.valueOf(0)));
-      params.put("max", new Primitive(Type.NUMBER, Integer.valueOf(255)));
+      params.put("n", new Primitive(Type.NUMBER, 128));
+      params.put("min", new Primitive(Type.NUMBER, 0));
+      params.put("max", new Primitive(Type.NUMBER, 255));
+      obj.put("id", new Primitive(Type.NUMBER, 1234));
       RANDOM_REQUEST = obj.toString().getBytes(StandardCharsets.US_ASCII);
     } else {
       NetRandom.LOG.info("random.org RNG not in use as no API key provided");
@@ -109,7 +113,7 @@ public class RandomDotOrg extends NetRandom {
         throw new IOException(RANDOM_DOT_ORG.getHost() + ": no data in results\n" + result);
       }
       if (randData.size() != 128) {
-        throw new IOException(RANDOM_DOT_ORG.getHost() + " returned "            + randData.size() + " bytes not 128");
+        throw new IOException(RANDOM_DOT_ORG.getHost() + " returned " + randData.size() + " bytes not 128");
       }
 
       // get the bytes from the JSON
@@ -127,8 +131,7 @@ public class RandomDotOrg extends NetRandom {
       }
       return bits;
     } catch (IOException ioe) {
-      LOG.error("Bad data received from {}\n\n{}",
-          RANDOM_DOT_ORG.getHost(), BLOBPrint.toString(data)
+      LOG.error("Bad data received from {}\n\n{}", RANDOM_DOT_ORG.getHost(), BLOBPrint.toString(data)
       );
       throw ioe;
     }

@@ -106,7 +106,7 @@ public class FileStorage extends SeedStorage {
 
 
   /**
-   * Close the storage after ascerting privilege
+   * Close the storage after asserting privilege
    *
    * @throws StorageException if the preferences cannot be written to
    */
@@ -114,8 +114,7 @@ public class FileStorage extends SeedStorage {
     TreeSet<String> keys = new TreeSet<>(storage.keySet());
     IOException ioe = null;
     try {
-      // if not modified, skip straight to the finally block to close the
-      // channel
+      // if not modified, skip straight to the "finally" block to close the channel
       if (!isModified) {
         return;
       }
@@ -177,8 +176,7 @@ public class FileStorage extends SeedStorage {
       fileName.delete();
 
       // rethrow exception
-      throw new StorageException(
-          "Failed to save " + fileName.getAbsolutePath(), ioe);
+      throw new StorageException("Failed to save " + fileName.getAbsolutePath(), ioe);
     }
   }
 

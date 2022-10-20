@@ -35,7 +35,7 @@ class InitialMaterial {
   /**
    * Personalization data. The nonce factory will be used if none is supplied.
    */
-  private byte[] personalization;
+  private final byte[] personalization;
 
 
   /**

@@ -23,7 +23,7 @@ import prng.utility.DigestDataOutput;
 import prng.utility.NonceFactory;
 
 /**
- * Attempts to create useful entropy from nothing. It should be assumed that this entropy is of low quality and therefore it should only be used a last
+ * Attempts to create useful entropy from nothing. It should be assumed that this entropy is of low quality, and therefore it should only be used a last
  * recourse.
  *
  * @author Simon Greatrix
@@ -58,13 +58,11 @@ public class InstantEntropy implements Runnable {
       new DaemonThreadFactory("PRNG-EntropyFactory")
   );
 
-  /** Bit for 256-bit FNV hash */
-  private static final BigInteger FNV_MASK = BigInteger.ZERO.setBit(
-      256).subtract(BigInteger.ONE);
+  /** Bit mask for 256-bit FNV hash */
+  private static final BigInteger FNV_MASK = BigInteger.ZERO.setBit(256).subtract(BigInteger.ONE);
 
   /** Offset for 256-bit FNV hash */
-  private static final BigInteger FNV_OFFSET = new BigInteger(
-      "100029257958052580907070968620625704837092796014241193945225284501741471925557");
+  private static final BigInteger FNV_OFFSET = new BigInteger("100029257958052580907070968620625704837092796014241193945225284501741471925557");
 
   /** Prime for 256-bit FNV hash */
   private static final BigInteger FNV_PRIME = new BigInteger(
@@ -435,8 +433,7 @@ public class InstantEntropy implements Runnable {
     now >>>= (bit + 1);
     buf.order((now & 1) == 0 ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN);
 
-    // Permute the bytes. This breaks up the blocks used to create the seed
-    // and used by ISAAC to interpret it.
+    // Permute the bytes. This breaks up the blocks used to create the seed and used by ISAAC to interpret it.
     for (int i = 0; i < 1024; i++) {
       int j = RAND.nextInt(1024);
       byte ti = buf.get(i);
