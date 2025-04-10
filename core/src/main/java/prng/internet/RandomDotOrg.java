@@ -20,6 +20,7 @@ import prng.utility.BLOBPrint;
  * <p>
  *   TODO: The class should handle random.org's "advisoryDelay" and using pre-generated randomization.
  * </p>
+ *
  * @author Simon Greatrix
  */
 public class RandomDotOrg extends NetRandom {
@@ -80,8 +81,7 @@ public class RandomDotOrg extends NetRandom {
               StandardCharsets.ISO_8859_1
           ));
       if (result.getType() != Type.OBJECT) {
-        throw new IOException(RANDOM_DOT_ORG.getHost()
-            + " returned JSON type: " + result.getType());
+        throw new IOException(RANDOM_DOT_ORG.getHost() + " returned JSON type: " + result.getType());
       }
       JSONObject obj = result.getValueSafe(JSONObject.class);
       JSONObject res = obj.get(JSONObject.class, "result", null);

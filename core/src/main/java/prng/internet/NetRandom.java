@@ -60,8 +60,7 @@ public abstract class NetRandom {
     conn.connect();
     if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
       conn.disconnect();
-      throw new IOException(url.getHost() + " returned status "
-          + conn.getResponseCode());
+      throw new IOException(url.getHost() + " returned status " + conn.getResponseCode());
     }
     return conn;
   }
@@ -156,8 +155,8 @@ public abstract class NetRandom {
 
   static {
     Config config = Config.getConfig("network");
-    CONNECT_TIMEOUT = config.getInt("connectionTimeOut", 120000);
-    READ_TIMEOUT = config.getInt("readTimeOut", 120000);
+    CONNECT_TIMEOUT = config.getInt("connectionTimeOut", 10000);
+    READ_TIMEOUT = config.getInt("readTimeOut", 10000);
   }
 
 

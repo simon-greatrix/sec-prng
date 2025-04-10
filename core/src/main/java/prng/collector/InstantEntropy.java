@@ -65,8 +65,7 @@ public class InstantEntropy implements Runnable {
   private static final BigInteger FNV_OFFSET = new BigInteger("100029257958052580907070968620625704837092796014241193945225284501741471925557");
 
   /** Prime for 256-bit FNV hash */
-  private static final BigInteger FNV_PRIME = new BigInteger(
-      "374144419156711147060143317175368453031918731002211");
+  private static final BigInteger FNV_PRIME = new BigInteger("374144419156711147060143317175368453031918731002211");
 
   /**
    * Stored entropy. We store 64 blocks of entropy and release them in a random order. There are much more than 2^256 ways of permuting 64 items, so this may
@@ -300,8 +299,7 @@ public class InstantEntropy implements Runnable {
    * @return some entropy
    */
   static byte[] create() {
-    DigestDataOutput dig = new DigestDataOutput(
-        HashSpec.SPEC_SHA512.getInstance());
+    DigestDataOutput dig = new DigestDataOutput(HashSpec.SPEC_SHA512.getInstance());
 
     // generate 256 samples in some order
     int[] p = permute(256);

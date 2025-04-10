@@ -1,6 +1,7 @@
 package prng.utility;
 
 import java.security.GeneralSecurityException;
+import java.security.Provider;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -76,11 +77,30 @@ public class AESWrap {
 
 
   /**
+   * Create an AES key wrap cipher from a secret key using a specified provider.
+   *
+   * @param key      the AES secret key
+   * @param provider the specific security provider to use
+   */
+  public AESWrap(SecretKey key, Provider provider) {
+    try {
+      wrapper = Cipher.getInstance("AES/ECB/NoPadding", provider);
+      unwrapper = Cipher.getInstance("AES/ECB/NoPadding", provider);
+      wrapper.init(Cipher.ENCRYPT_MODE, key);
+      unwrapper.init(Cipher.DECRYPT_MODE, key);
+    } catch (GeneralSecurityException gse) {
+      throw new AssertionError("AES not supported.", gse);
+    }
+  }
+
+
+  /**
    * Unwrap data.
    *
    * @param cipherText the wrapped data
    *
    * @return the unwrapped data
+   *
    * @throws GeneralSecurityException if the decryption fails
    * @throws IllegalArgumentException if the input does not conform to the expectations for key wrapped data
    */
@@ -200,6 +220,7 @@ public class AESWrap {
    * @param plainText the plain data
    *
    * @return the wrapped data
+   *
    * @throws GeneralSecurityException if encryption fails
    */
   public synchronized byte[] wrap(byte[] plainText)
@@ -222,8 +243,10 @@ public class AESWrap {
     int m = plainText.length;
 
     // derive the AIV (Alternate Initialisation Vector)
-    byte[] aiv = {(byte) 0xA6, (byte) 0x59, (byte) 0x59,
-        (byte) 0xA6, 0, 0, 0, 0};
+    byte[] aiv = {
+        (byte) 0xA6, (byte) 0x59, (byte) 0x59,
+        (byte) 0xA6, 0, 0, 0, 0
+    };
     for (int i = 0; i < 4; i++) {
       aiv[7 - i] = (byte) (m >>> (8 * i));
     }
@@ -305,4 +328,5 @@ public class AESWrap {
     }
     return output;
   }
+
 }

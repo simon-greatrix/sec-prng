@@ -18,6 +18,7 @@ class SecureRandomImpl extends SecureRandom {
   /** The actual PRNG */
   private final OpenEngineSpi engineSpi;
 
+  /** Synchronize at this level? If true, don't synchronize. */
   private final boolean threadSafe;
 
 

@@ -9,11 +9,13 @@ import java.awt.Robot;
 import java.awt.image.BufferedImage;
 import java.lang.reflect.UndeclaredThrowableException;
 import java.security.AccessController;
+import java.security.MessageDigest;
 import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Random;
+
 import prng.SecureRandomProvider;
 import prng.config.Config;
 import prng.generator.HashSpec;
@@ -48,8 +50,7 @@ public class AWTEntropy extends EntropyCollector {
     Sampler(GraphicsDevice d) throws AWTException, SecurityException {
       device = d;
       try {
-        robot = AccessController.doPrivileged(
-            (PrivilegedExceptionAction<Robot>) () -> new Robot(device));
+        robot = AccessController.doPrivileged((PrivilegedExceptionAction<Robot>) () -> new Robot(device));
       } catch (PrivilegedActionException e) {
         Exception cause = e.getException();
         if (cause instanceof AWTException) {
@@ -66,7 +67,7 @@ public class AWTEntropy extends EntropyCollector {
     /**
      * Sample from the graphics device
      *
-     * @param width desired sample width
+     * @param width  desired sample width
      * @param height desired sample height
      *
      * @return the sample image
@@ -91,14 +92,16 @@ public class AWTEntropy extends EntropyCollector {
       Rectangle rect = new Rectangle(xOff, yOff, width, height);
       try {
         // use privileges to read the screen
-        return AccessController.doPrivileged(
-            (PrivilegedAction<BufferedImage>) () -> robot.createScreenCapture(rect));
+        return AccessController.doPrivileged((PrivilegedAction<BufferedImage>) () -> robot.createScreenCapture(rect));
       } catch (SecurityException e) {
         // expected
         return null;
       }
     }
+
   }
+
+  private final MessageDigest digest = HashSpec.SPEC_SHA256.getInstance();
 
   /** Selected sample area height */
   private int sampleHeight;
@@ -194,16 +197,20 @@ public class AWTEntropy extends EntropyCollector {
     }
 
     // compute digest of screen image
-    DigestDataOutput output = new DigestDataOutput(
-        HashSpec.SPEC_SHA256.getInstance());
-    output.writeLong(System.nanoTime());
-    int w = image.getWidth();
-    int h = image.getHeight();
-    for (int x = 0; x < w; x++) {
-      for (int y = 0; y < h; y++) {
-        output.writeInt(image.getRGB(x, y));
+    byte[] hash;
+    synchronized (digest) {
+      DigestDataOutput output = new DigestDataOutput(digest);
+      output.writeLong(System.nanoTime());
+      int w = image.getWidth();
+      int h = image.getHeight();
+      for (int x = 0; x < w; x++) {
+        for (int y = 0; y < h; y++) {
+          output.writeInt(image.getRGB(x, y));
+        }
       }
+      hash = output.digest();
     }
-    setEvent(output.digest());
+    setEvent(hash);
   }
+
 }

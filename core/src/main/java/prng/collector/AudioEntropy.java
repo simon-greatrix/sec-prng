@@ -10,6 +10,7 @@ import javax.sound.sampled.Line;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.Mixer;
 import javax.sound.sampled.TargetDataLine;
+
 import prng.config.Config;
 import prng.generator.HashSpec;
 import prng.generator.IsaacRandom;
@@ -97,6 +98,7 @@ public class AudioEntropy extends EntropyCollector {
       }
       return doesVary ? seedData : null;
     }
+
   }
 
 
@@ -205,12 +207,14 @@ public class AudioEntropy extends EntropyCollector {
           for (int s : sampleSize) {
             for (int c : channels) {
               AudioFormat test = new AudioFormat(f, s, c,
-                  isPCMSigned, isBig);
+                  isPCMSigned, isBig
+              );
               DataLine.Info targetInfo = new DataLine.Info(
                   TargetDataLine.class, test, buffSize);
               if (mixer.isLineSupported(targetInfo)) {
                 list.add(new AudioSource(mixer, targetInfo,
-                    buffSize));
+                    buffSize
+                ));
               }
             }
           }
@@ -243,6 +247,7 @@ public class AudioEntropy extends EntropyCollector {
     }
   }
 
+  private final MessageDigest digest = HashSpec.SPEC_SHA256.getInstance();
 
   protected List<AudioSource> availableSources;
 
@@ -276,8 +281,12 @@ public class AudioEntropy extends EntropyCollector {
     AudioSource source = availableSources.get(index);
     byte[] seedData = source.sample();
     if (seedData != null) {
-      MessageDigest digest = HashSpec.SPEC_SHA256.getInstance();
-      setEvent(digest.digest(seedData));
+      byte[] hash;
+      synchronized (digest) {
+        hash = digest.digest(seedData);
+      }
+      setEvent(hash);
     }
   }
+
 }

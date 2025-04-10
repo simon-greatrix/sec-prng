@@ -21,6 +21,11 @@ class InitialMaterial {
   /** The minimum initial entropy required. */
   private final int minEntropy;
 
+  /**
+   * Personalization data. The nonce factory will be used if none is supplied.
+   */
+  private final byte[] personalization;
+
   /** Entropy source, if additional data is required. */
   private final SeedSource source;
 
@@ -31,11 +36,6 @@ class InitialMaterial {
    * The supplied nonce. Data from the nonce factory will be used if none is supplied.
    */
   private byte[] nonce;
-
-  /**
-   * Personalization data. The nonce factory will be used if none is supplied.
-   */
-  private final byte[] personalization;
 
 
   /**
@@ -98,7 +98,7 @@ class InitialMaterial {
 
 
   public byte[] getPersonalization() {
-    return personalization;
+    return personalization.clone();
   }
 
 }
