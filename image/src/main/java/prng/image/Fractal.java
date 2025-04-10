@@ -66,8 +66,7 @@ public class Fractal extends BasePainter {
           }
         }
       }
-      //  scale /= 2;
-      scale /= 1.5;
+      scale = (int) (scale / 1.5);
       len *= 2;
     }
 
@@ -91,7 +90,7 @@ public class Fractal extends BasePainter {
         if (k < 0) {
           k = -k - 1;
         }
-        ri[i][j] = k-1;
+        ri[i][j] = k - 1;
       }
     }
 
@@ -247,11 +246,19 @@ public class Fractal extends BasePainter {
   }
 
 
+  /**
+   * Create a fractal image instance. A random generator must be assigned.
+   */
   public Fractal() {
     // do nothing
   }
 
 
+  /**
+   * Create a fractal image using the provided random number generator
+   *
+   * @param rand source of randomness
+   */
   public Fractal(Random rand) {
     super(rand);
   }
@@ -260,8 +267,10 @@ public class Fractal extends BasePainter {
   @Override
   public void create() {
     // create image
-    BufferedImage image = new BufferedImage(512, 512,
-        BufferedImage.TYPE_INT_RGB);
+    BufferedImage image = new BufferedImage(
+        512, 512,
+        BufferedImage.TYPE_INT_RGB
+    );
     Graphics2D graphics = (Graphics2D) image.getGraphics();
 
     // draw Perlin noise background
@@ -278,8 +287,10 @@ public class Fractal extends BasePainter {
 
     // create the polygon
     Point2D[] points = createPoly(rand);
-    Path2D path = new Path2D.Double(Path2D.WIND_NON_ZERO,
-        (4 * VERTICES) + 2);
+    Path2D path = new Path2D.Double(
+        Path2D.WIND_NON_ZERO,
+        (4 * VERTICES) + 2
+    );
 
     // draw 1st quarter
     path.moveTo(points[0].getX(), points[0].getY());
@@ -295,8 +306,7 @@ public class Fractal extends BasePainter {
     }
 
     // draw 3rd quarter
-    for (int i = 0; i < points.length; i++) {
-      Point2D p = points[i];
+    for (Point2D p : points) {
       path.lineTo(512 - p.getX(), 512 - p.getY());
     }
 
@@ -312,21 +322,28 @@ public class Fractal extends BasePainter {
     graphics.fill(path);
 
     // draw the edge of the polygon in solid black
-    graphics.setStroke(new BasicStroke(4, BasicStroke.CAP_ROUND,
-        BasicStroke.JOIN_ROUND));
+    graphics.setStroke(new BasicStroke(
+        4, BasicStroke.CAP_ROUND,
+        BasicStroke.JOIN_ROUND
+    ));
     graphics.setColor(Color.BLACK);
     graphics.draw(path);
 
     // create a 5x5 Gaussian blur filter
-    float[] blurMatrix = new float[]{1, 4, 7, 4, 1, 4, 16, 26, 16, 4, 7,
-        26, 41, 26, 7, 4, 16, 26, 16, 4, 1, 4, 7, 4, 1};
+    float[] blurMatrix = new float[]{
+        1, 4, 7, 4, 1, 4, 16, 26, 16, 4, 7,
+        26, 41, 26, 7, 4, 16, 26, 16, 4, 1, 4, 7, 4, 1
+    };
     for (int i = 0; i < 25; i++) {
       blurMatrix[i] /= 273f;
     }
-    BufferedImageOp op = new ConvolveOp(new Kernel(5, 5, blurMatrix),
-        ConvolveOp.EDGE_NO_OP, null);
+    BufferedImageOp op = new ConvolveOp(
+        new Kernel(5, 5, blurMatrix),
+        ConvolveOp.EDGE_NO_OP, null
+    );
 
     // blur the image
     myImage = op.filter(image, null);
   }
+
 }

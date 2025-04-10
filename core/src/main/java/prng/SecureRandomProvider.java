@@ -1,8 +1,6 @@
 package prng;
 
-import java.security.AccessController;
 import java.security.DrbgParameters;
-import java.security.PrivilegedAction;
 import java.security.Provider;
 import java.security.Security;
 import java.util.Base64;
@@ -25,8 +23,7 @@ import prng.generator.HashSpec;
 public class SecureRandomProvider extends Provider {
 
   /** Logger for instantiating this provider */
-  public static final Logger LOG = LoggersFactory.getLogger(
-      SecureRandomProvider.class);
+  public static final Logger LOG = LoggersFactory.getLogger(SecureRandomProvider.class);
 
   /** The name of this provider */
   public static final String NAME = "SecureRandomProvider";
@@ -68,7 +65,8 @@ public class SecureRandomProvider extends Provider {
      * @param builder   the builder for new instances
      */
     public CustomService(Provider provider, String algorithm, List<String> aliases, SecureRandomBuilder builder) {
-      super(provider, "SecureRandom", algorithm, builder.getClassName(),
+      super(
+          provider, "SecureRandom", algorithm, builder.getClassName(),
           aliases, builder.getAttributes()
       );
       this.builder = builder;
@@ -122,18 +120,8 @@ public class SecureRandomProvider extends Provider {
       LOG.info("Installing provider as preference {}", position);
     }
 
-    // Inserting a provider is a privileged action
-    try {
-      AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
-        Security.insertProviderAt(PROVIDER, position);
-        return null;
-      });
-    } catch (SecurityException se) {
-      LOG.error(
-          "Cannot install security provider as lacking privilege \"insertProvider\" or \"insertProvider.SecureRandomProvider\"",
-          se
-      );
-    }
+    // Inserting the provider
+    Security.insertProviderAt(PROVIDER, position);
   }
 
 
@@ -153,34 +141,41 @@ public class SecureRandomProvider extends Provider {
     // Add services to provider. The first added service is the default.
 
     SecureRandomProvider prov = new SecureRandomProvider();
-    prov.putService(new CustomService(prov, "Nist/SHA-256",
+    prov.putService(new CustomService(
+        prov, "Nist/SHA-256",
         List.of("Nist/SHA256", "SHA-256", "SHA256"),
         SecureRandomBuilder.hash().hash(Hash.SHA256)
     ));
-    prov.putService(new CustomService(prov, "Nist/HmacSHA-256",
+    prov.putService(new CustomService(
+        prov, "Nist/HmacSHA-256",
         List.of("Nist", "Nist/HmacSHA256", "HmacSHA-256", "HmacSHA256"),
         SecureRandomBuilder.hmac().hash(Hash.SHA256)
     ));
 
-    prov.putService(new CustomService(prov, "Nist/SHA-512",
+    prov.putService(new CustomService(
+        prov, "Nist/SHA-512",
         List.of("Nist/SHA512", "SHA-512", "SHA512"),
         SecureRandomBuilder.hash().hash(Hash.SHA512)
     ));
-    prov.putService(new CustomService(prov, "Nist/HmacSHA-512",
+    prov.putService(new CustomService(
+        prov, "Nist/HmacSHA-512",
         List.of("Nist/HmacSHA512", "HmacSHA-512", "HmacSHA512"),
         SecureRandomBuilder.hmac().hash(Hash.SHA512)
     ));
 
-    prov.putService(new CustomService(prov, "Nist/AES-256",
+    prov.putService(new CustomService(
+        prov, "Nist/AES-256",
         List.of("Nist/AES256", "AES-256", "AES256", "Nist/AES", "AES"),
         SecureRandomBuilder.cipher()
     ));
 
-    prov.putService(new CustomService(prov, "Nist/SHA-1",
+    prov.putService(new CustomService(
+        prov, "Nist/SHA-1",
         List.of("Nist/SHA1", "SHA-1", "SHA1"),
         SecureRandomBuilder.hash().hash(Hash.SHA1)
     ));
-    prov.putService(new CustomService(prov, "Nist/HmacSHA-1",
+    prov.putService(new CustomService(
+        prov, "Nist/HmacSHA-1",
         List.of("Nist/HmacSHA1", "HmacSHA-1", "HmacSHA1"),
         SecureRandomBuilder.hmac().hash(Hash.SHA1)
     ));
@@ -202,25 +197,13 @@ public class SecureRandomProvider extends Provider {
     // Set the strong algorithm (a privileged action)
     String strongAlg = config.get("strongAlgorithm", "Nist/HmacSHA512") + ":" + NAME;
     LOG.info("Installing {} as a strong algorithm", strongAlg);
-    try {
-      AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
-        String algs = Security.getProperty("securerandom.strongAlgorithms");
-        if (algs == null || algs.trim().length() == 0) {
-          algs = strongAlg;
-        } else {
-          algs = strongAlg + "," + algs;
-        }
-        Security.setProperty("securerandom.strongAlgorithms", algs);
-
-        return null;
-      });
-    } catch (SecurityException se) {
-      LOG.error(
-          "Cannot install {} as a strong algorithm as lacking privilege \"getProperty.securerandom.strongAlgorithms\" or \"setProperty.securerandom.strongAlgorithms\"",
-          strongAlg,
-          se
-      );
+    String algs = Security.getProperty("securerandom.strongAlgorithms");
+    if (algs == null || algs.trim().isEmpty()) {
+      algs = strongAlg;
+    } else {
+      algs = strongAlg + "," + algs;
     }
+    Security.setProperty("securerandom.strongAlgorithms", algs);
 
     PROVIDER = prov;
   }
@@ -341,7 +324,8 @@ public class SecureRandomProvider extends Provider {
           try {
             builder = builder.entropy(Base64.getUrlDecoder().decode(v));
           } catch (IllegalArgumentException exc) {
-            LOG.debug("Value '{}' passed for 'entropy' was invalid", v,
+            LOG.debug(
+                "Value '{}' passed for 'entropy' was invalid", v,
                 exc
             );
             return null;
@@ -357,7 +341,8 @@ public class SecureRandomProvider extends Provider {
           try {
             builder = builder.laziness(Integer.decode(v));
           } catch (IllegalArgumentException exc) {
-            LOG.debug("Value '{}' passed for 'laziness' was invalid", v,
+            LOG.debug(
+                "Value '{}' passed for 'laziness' was invalid", v,
                 exc
             );
             return null;
@@ -372,7 +357,8 @@ public class SecureRandomProvider extends Provider {
           try {
             builder = builder.nonce(Base64.getUrlDecoder().decode(v));
           } catch (IllegalArgumentException exc) {
-            LOG.debug("Value '{}' passed for 'nonce' was invalid", v,
+            LOG.debug(
+                "Value '{}' passed for 'nonce' was invalid", v,
                 exc
             );
             return null;

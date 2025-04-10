@@ -5,6 +5,7 @@ import java.io.OutputStream;
 import java.util.zip.Adler32;
 import java.util.zip.CheckedOutputStream;
 import java.util.zip.Checksum;
+
 import prng.EntropySource;
 
 /**
@@ -35,4 +36,5 @@ public class EntropyOutputStream extends CheckedOutputStream {
     ENTROPY.setEvent((int) cs.getValue());
     super.close();
   }
+
 }

@@ -15,17 +15,17 @@ import javax.crypto.CipherInputStream;
 import javax.crypto.Mac;
 
 /**
- * Decrpyt files previously encryptes with PBEFileEncrypt
+ * Decrypt files previously encrypts with PBEFileEncrypt
  *
  * @author Simon Greatrix
  */
 public class PBEFileDecrypt {
 
   /** Resource name used for data */
-  public static final String DATA_RESOURCE = "\ufe4f\ufe4f\ufe4f\ufe4f\ufe4f\ufe33DATA\ufe33%x\ufe33\ufe4f\ufe4f\ufe4f\ufe4f\ufe4f";
+  public static final String DATA_RESOURCE = "﹏﹏﹏﹏﹏︳DATA︳%x︳﹏﹏﹏﹏﹏";
 
   /** Resource name used for meta information */
-  public static final String META_RESOURCE = "\ufe4f\ufe4f\ufe4f\ufe4f\ufe4f\ufe33META\ufe33%x\ufe33\ufe4f\ufe4f\ufe4f\ufe4f\ufe4f";
+  public static final String META_RESOURCE = "﹏﹏﹏﹏﹏︳META︳%x︳﹏﹏﹏﹏﹏";
 
 
   /**
@@ -88,6 +88,11 @@ public class PBEFileDecrypt {
   char[] password;
 
 
+  /** New instance. */
+  private PBEFileDecrypt() {
+  }
+
+
   /**
    * Run the application
    */
@@ -114,7 +119,6 @@ public class PBEFileDecrypt {
     Cipher cipher = pbeItem.createCipher(password, Cipher.DECRYPT_MODE);
     try (InputStream in = PBEFileDecrypt.class.getResourceAsStream(name)) {
       Mac mac = pbeItem.getMac();
-      @SuppressWarnings("resource")
       InputStream dataIn = new MacInputStream(
           new GZIPInputStream(new CipherInputStream(in, cipher)),
           mac

@@ -1,0 +1,11 @@
+plugins {
+    id 'buildlogic.java-conventions'
+}
+
+dependencies {
+    testImplementation libs.org.junit.jupiter.junit.jupiter.api
+}
+
+java {
+    withJavadocJar()
+}

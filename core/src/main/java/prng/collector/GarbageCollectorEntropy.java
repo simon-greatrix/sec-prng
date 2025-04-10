@@ -4,6 +4,7 @@ import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.util.Iterator;
 import java.util.List;
+
 import prng.config.Config;
 
 /**
@@ -62,4 +63,5 @@ public class GarbageCollectorEntropy extends EntropyCollector {
       setEvent((int) sum);
     }
   }
+
 }

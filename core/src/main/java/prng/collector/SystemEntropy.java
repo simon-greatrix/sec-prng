@@ -26,4 +26,5 @@ public class SystemEntropy extends EntropyCollector {
     byte[] data = SystemRandom.getSeed(256);
     post(data);
   }
+
 }

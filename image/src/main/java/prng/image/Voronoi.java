@@ -34,9 +34,9 @@ public class Voronoi extends BasePainter {
 
   static class Cell {
 
-    Point center;
+    final Point center;
 
-    List<Point> vert = new ArrayList<Point>();
+    List<Point> vert = new ArrayList<>();
 
 
     Cell(Point center, List<Point> box) {
@@ -86,10 +86,14 @@ public class Voronoi extends BasePainter {
 
       // create cutting edge
       Edge cut = new Edge(center, o, len);
-      Point entryPoint = cut.intersect(vert.get(entry - 1),
-          vert.get(entry));
-      Point exitPoint = cut.intersect(vert.get(exit - 1),
-          vert.get(exit));
+      Point entryPoint = cut.intersect(
+          vert.get(entry - 1),
+          vert.get(entry)
+      );
+      Point exitPoint = cut.intersect(
+          vert.get(exit - 1),
+          vert.get(exit)
+      );
       List<Point> newVerts = new ArrayList<>();
       newVerts.add(entryPoint);
       newVerts.add(exitPoint);
@@ -138,6 +142,21 @@ public class Voronoi extends BasePainter {
       ret.closePath();
       return ret;
     }
+
+  }
+
+
+
+  private static class Data {
+
+    Cell[] cells;
+
+    Color[] pallette;
+
+    Point[] pnts;
+
+    Shape[] shapes;
+
   }
 
 
@@ -190,6 +209,7 @@ public class Voronoi extends BasePainter {
       start = end;
       end = c;
     }
+
   }
 
 
@@ -242,13 +262,11 @@ public class Voronoi extends BasePainter {
     public int hashCode() {
       final int prime = 31;
       int result = 1;
-      long temp;
-      temp = Double.doubleToLongBits(x);
-      result = (prime * result) + (int) (temp ^ (temp >>> 32));
-      temp = Double.doubleToLongBits(y);
-      result = (prime * result) + (int) (temp ^ (temp >>> 32));
+      result = (prime * result) + Double.hashCode(x);
+      result = (prime * result) + Double.hashCode(y);
       return result;
     }
+
   }
 
 
@@ -295,24 +313,16 @@ public class Voronoi extends BasePainter {
   }
 
 
-  private class Data {
-
-    Cell[] cells;
-
-    Color[] pallette;
-
-    Point[] pnts;
-
-    Shape[] shapes;
-  }
-
-
-
   private final int points = 256;
 
   private boolean doingDots = false;
 
 
+  /**
+   * New instance.
+   *
+   * @param rand source of randomness
+   */
   public Voronoi(Random rand) {
     this.rand = rand;
   }
@@ -328,12 +338,16 @@ public class Voronoi extends BasePainter {
     createPallette(data);
 
     // create image
-    BufferedImage image = new BufferedImage(512, 512,
-        BufferedImage.TYPE_INT_RGB);
+    BufferedImage image = new BufferedImage(
+        512, 512,
+        BufferedImage.TYPE_INT_RGB
+    );
     myImage = image;
     Graphics2D graphics = (Graphics2D) image.getGraphics();
-    graphics.setStroke(new BasicStroke(1, BasicStroke.CAP_ROUND,
-        BasicStroke.JOIN_ROUND));
+    graphics.setStroke(new BasicStroke(
+        1, BasicStroke.CAP_ROUND,
+        BasicStroke.JOIN_ROUND
+    ));
 
     Shape[] shapes = getPolys(data);
     for (int i = 0; i < size; i++) {
@@ -365,10 +379,14 @@ public class Voronoi extends BasePainter {
     }
 
     // create a 3x3 Gaussian blur filter
-    float[] blurMatrix = new float[]{1f / 16, 1f / 8, 1f / 16, 1f / 8,
-        1f / 4, 1f / 8, 1f / 16, 1f / 8, 1f / 16};
-    BufferedImageOp op = new ConvolveOp(new Kernel(3, 3, blurMatrix),
-        ConvolveOp.EDGE_NO_OP, null);
+    float[] blurMatrix = new float[]{
+        1f / 16, 1f / 8, 1f / 16, 1f / 8,
+        1f / 4, 1f / 8, 1f / 16, 1f / 8, 1f / 16
+    };
+    BufferedImageOp op = new ConvolveOp(
+        new Kernel(3, 3, blurMatrix),
+        ConvolveOp.EDGE_NO_OP, null
+    );
 
     // blur the image
     myImage = op.filter(image, null);
@@ -509,7 +527,7 @@ public class Voronoi extends BasePainter {
   }
 
 
-  public Shape[] getPolys(Data data) {
+  private Shape[] getPolys(Data data) {
     Cell[] cells = data.cells;
     Shape[] ret = new Shape[cells.length];
     for (int i = 0; i < ret.length; i++) {
@@ -520,12 +538,7 @@ public class Voronoi extends BasePainter {
   }
 
 
-  public void isDoingDots(boolean is) {
-    doingDots = is;
-  }
-
-
-  public void make(Data data) {
+  private void make(Data data) {
     List<Point> bbox2 = new ArrayList<>(4);
     double x = 0;
     double y = 0;
@@ -607,6 +620,16 @@ public class Voronoi extends BasePainter {
     }
     rgba[r] = c;
     return new Color(rgba[0], rgba[1], rgba[2]);
+  }
+
+
+  /**
+   * Set whether dots are drawn on top of the Voronoi diagram.
+   *
+   * @param is true if dots should be drawn
+   */
+  public void setDoingDots(boolean is) {
+    doingDots = is;
   }
 
 }

@@ -1,5 +1,7 @@
+/.gradle
 **/bin/
 **/target/
+**/build/
 **/.classpath
 **/.project
 **/.settings/
@@ -7,3 +9,4 @@
 .idea/
 **/docs/
 .DS_Store
+*.swp

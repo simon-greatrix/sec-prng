@@ -1,0 +1,109 @@
+plugins {
+  id 'java-library'
+  id 'maven-publish'
+  id 'signing'
+}
+
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  api 'org.slf4j:slf4j-api:1.7.25'
+  compileOnly 'org.slf4j:slf4j-jdk14:1.7.25'
+
+  testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+  testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: '5.9.2'
+}
+
+group = 'com.pippsford'
+version = '0.14'
+java.sourceCompatibility = JavaVersion.VERSION_11
+
+java {
+  withJavadocJar()
+  withSourcesJar()
+  toolchain {
+    languageVersion = JavaLanguageVersion.of(17)
+  }
+}
+
+javadoc {
+  // Exclude generated code and test code from javadoc
+  source = sourceSets.main.allJava.filter { !it.path.contains('/src/test/') }
+  options.addStringOption('Xdoclint:none', '-quiet')
+  failOnError = false
+}
+
+test {
+  useJUnitPlatform()
+}
+
+artifacts {
+  archives javadocJar, sourcesJar
+}
+
+publishing {
+  publications {
+    mavenJava(MavenPublication) {
+      from components.java
+      pom {
+        name = 'Secure PRNG'
+        packaging = 'jar'
+        description = 'Implementation of NIST compliant secure random number generators and related tools.'
+        url = 'https://github.com/simon-greatrix/sec-prng'
+
+        scm {
+          connection = 'scm:git:https://github.com/simon-greatrix/sec-prng'
+          developerConnection = 'scm:git:https://github.com/simon-greatrix/sec-prng'
+          url = 'https://github.com/simon-greatrix/sec-prng'
+        }
+
+        licenses {
+          license {
+            name = 'The Apache License, Version 2.0'
+            url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+          }
+        }
+
+        developers {
+          developer {
+            id = 'simon-greatrix'
+            name = 'Simon Greatrix'
+            email = 'simon@pippsford.com'
+            organization = ''
+            organizationUrl = ''
+          }
+        }
+      }
+    }
+  }
+
+  repositories {
+    maven {
+      name = 'file'
+      url = layout.buildDirectory.dir('repository')
+    }
+  }
+}
+
+tasks.withType(JavaCompile).configureEach {
+  options.encoding = 'UTF-8'
+}
+
+tasks.withType(Javadoc).configureEach {
+  options.encoding = 'UTF-8'
+}
+
+
+signing {
+  useGpgCmd()
+  sign publishing.publications.mavenJava
+}
+
+tasks.register("createCentralZip", Zip) {
+  dependsOn tasks.named("publishMavenJavaPublicationToFileRepository")
+  from layout.buildDirectory.dir("repository")
+  destinationDirectory = layout.buildDirectory.dir("publications")
+  archiveFileName = "central.zip"
+}

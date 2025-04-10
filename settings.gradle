@@ -1,0 +1,8 @@
+rootProject.name = 'SecurePRNG'
+include(':secure-prng-core')
+include(':secure-prng-image')
+include(':secure-prng-utilities')
+
+project(":secure-prng-core").projectDir = file('core')
+project(":secure-prng-image").projectDir = file('image')
+project(":secure-prng-utilities").projectDir = file('utilities')

@@ -4,10 +4,12 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
 import prng.config.Config;
 
 /**
@@ -29,15 +31,16 @@ public class SecureRandomEntropy extends EntropyCollector {
       randoms[index].nextBytes(data);
       entropyQueue.add(this);
     }
+
   }
 
 
 
-  private BlockingQueue<Runner> entropyQueue;
-
   private final SecureRandom[] randoms;
 
-  private ExecutorService service;
+  private BlockingQueue<Runner> entropyQueue;
+
+  private Executor service;
 
 
   public SecureRandomEntropy(Config config) {
@@ -65,8 +68,10 @@ public class SecureRandomEntropy extends EntropyCollector {
           tmp[k] = SecureRandom.getInstance(a);
         }
         k++;
-      } catch (NoSuchAlgorithmException | NoSuchProviderException e) {
-        LOG.error("Invalid secure random specification for entropy collector: {}", n);
+      } catch (NoSuchProviderException e) {
+        LOG.error("Invalid secure random specification for entropy collector: {}. The provider is unknown.", n);
+      } catch (NoSuchAlgorithmException e) {
+        LOG.error("Invalid secure random specification for entropy collector: {}. The algorithm is unknown.", n);
       }
     }
 
@@ -82,13 +87,15 @@ public class SecureRandomEntropy extends EntropyCollector {
     }
 
     entropyQueue = new LinkedBlockingQueue<>();
-    service = new ThreadPoolExecutor(randoms.length, randoms.length, 2L * getBaseDelay(), TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(),
-        new DaemonThreadFactory("PRNG-collect-secure-random"));
+    service = new ThreadPoolExecutor(
+        randoms.length, randoms.length, 2L * getBaseDelay(), TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(),
+        new DaemonThreadFactory("PRNG-collect-secure-random")
+    );
     ((ThreadPoolExecutor) service).allowCoreThreadTimeOut(true);
     for (int i = 0; i < randoms.length; i++) {
       Runner r = new Runner();
       r.index = i;
-      service.submit(r);
+      service.execute(r);
     }
     return true;
   }
@@ -99,7 +106,8 @@ public class SecureRandomEntropy extends EntropyCollector {
     Runner r = entropyQueue.poll();
     if (r != null) {
       setEvent(r.data);
-      service.submit(r);
+      service.execute(r);
     }
   }
+
 }

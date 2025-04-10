@@ -36,4 +36,5 @@ public class SchedulingEntropy extends EntropyCollector {
     lastTime = now;
     setEvent((short) diff);
   }
+
 }

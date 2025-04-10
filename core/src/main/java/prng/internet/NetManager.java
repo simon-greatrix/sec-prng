@@ -1,7 +1,6 @@
 package prng.internet;
 
 import java.util.Random;
-import java.util.Timer;
 
 import prng.EntropySource;
 import prng.config.Config;
@@ -152,9 +151,9 @@ public class NetManager implements Runnable {
     Random rand = IsaacRandom.getSharedInstance();
     byte[] indexes = new byte[seedsUsed];
     rand.nextBytes(indexes);
-    for (int i = 0; i < indexes.length; i++) {
+    for (byte b : indexes) {
       // pick a seed at random
-      int index = indexes[i] & 63;
+      int index = b & 63;
       Seed seed = seeds[index];
 
       // get data from the seed

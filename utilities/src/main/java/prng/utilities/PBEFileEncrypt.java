@@ -67,7 +67,7 @@ public class PBEFileEncrypt {
     }
 
     /** Input arguments */
-    String[] args;
+    final String[] args;
 
     /** Input files */
     File[] inputFiles;
@@ -178,10 +178,8 @@ public class PBEFileEncrypt {
      *
      * @throws GeneralSecurityException
      *             some kind of cryptographic failure, especially missing algorithms
-     * @throws IOException
-     *             if an I/O problem occurs
      */
-    void exec() throws GeneralSecurityException, IOException {
+    void exec() throws GeneralSecurityException {
         checkArgs();
         getPassword();
         initItems();
@@ -215,7 +213,7 @@ public class PBEFileEncrypt {
 
     /**
      * Store a prepared file in the jar
-     * 
+     *
      * @param jarOutput
      *            the jar
      * @param name
@@ -254,7 +252,7 @@ public class PBEFileEncrypt {
 
     /**
      * Store a set of meta information in the JAR
-     * 
+     *
      * @param jarOutput
      *            the jar
      * @param id
@@ -276,10 +274,10 @@ public class PBEFileEncrypt {
         ByteArrayOutputStream metaOut = new ByteArrayOutputStream();
         DataOutputStream dataOut = new DataOutputStream(metaOut);
         dataOut.writeInt(items.length);
-        for(int i = 0;i < items.length;i++) {
-            // append binary representation
-            items[i].writeTo(dataOut);
-        }
+      for (PBEItem item : items) {
+        // append binary representation
+        item.writeTo(dataOut);
+      }
         dataOut.flush();
         byte[] itemBytes = metaOut.toByteArray();
 
@@ -343,7 +341,7 @@ public class PBEFileEncrypt {
 
     /**
      * Encrypt a file
-     * 
+     *
      * @param index
      *            the file's index
      * @return the prepared file
@@ -352,7 +350,6 @@ public class PBEFileEncrypt {
      * @throws IOException
      *            if writing to the file fails
      */
-    @SuppressWarnings("resource")
     File prepareFile(int index) throws GeneralSecurityException, IOException {
         File input = inputFiles[index];
         System.console().format("Preparing file %s\n", input.getPath());

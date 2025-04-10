@@ -2,25 +2,21 @@ package prng.utility;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
 
-import prng.SecureRandomProvider;
-
 /**
- * A factory for nonces where 256-bit security is required. <p>
+ * A factory for nonces where 256-bit security is required.
  *
  * <p>For such usage a nonce should not be expected to repeat more often than a (0.5 * security-strength)-bit random number is expected to repeat. Due to the
- * birthday problem a (0.5 * 256)-bit or 128 bit random number is expected to repeat within 2^64 values.</p>
+ * birthday problem a (0.5 * 256)-bit or 128-bit random number is expected to repeat within 2^64 values.</p>
  *
- * <p> The time-based UUID comprises a 60 bit clock time, a 16 bit sequence number and a 96 bit network ID. The combination of clock time and sequence exceeds
+ * <p>The time-based UUID comprises a 60 bit clock time, a 16 bit sequence number and a 96 bit network ID. The combination of clock time and sequence exceeds
  * the required values before repetition on a particular network address.</p>
  *
- * <p> In order to create nonces that are unique across different processes on the same machine, it is necessary to combine the type 1 UUID with a process
+ * <p>In order to create nonces that are unique across different processes on the same machine, it is necessary to combine the type 1 UUID with a process
  * identifier.</p>
  */
 
@@ -87,15 +83,7 @@ public class NonceFactory {
     dig.writeLong(Thread.currentThread().getId());
 
     // input arguments to this instance
-    List<String> args;
-    try {
-      // requires ManagementPermission monitor
-      args = AccessController.doPrivileged((PrivilegedAction<List<String>>) runBean::getInputArguments);
-    } catch (SecurityException e) {
-      SecureRandomProvider.LOG.warn(
-          "Lacking permission \"ManagementPermission monitor\" - cannot fully personalize nonce factory");
-      args = null;
-    }
+    List<String> args = runBean.getInputArguments();
 
     if (args == null) {
       dig.writeInt(-1);
@@ -107,15 +95,7 @@ public class NonceFactory {
     }
 
     // system and environment properties
-    Map<String, String> env;
-    try {
-      // requires PropertyPermission * read,write
-      env = AccessController.doPrivileged((PrivilegedAction<Map<String, String>>) runBean::getSystemProperties);
-    } catch (SecurityException se) {
-      SecureRandomProvider.LOG.warn(
-          "Lacking permission \"PropertyPermission * read,write\" - cannot fully personalize nonce factory");
-      env = null;
-    }
+    Map<String, String> env = runBean.getSystemProperties();
 
     if (env == null) {
       dig.writeInt(-1);
@@ -127,15 +107,7 @@ public class NonceFactory {
       }
     }
 
-    try {
-      // requires RuntimePermission getenv.*
-      env = AccessController.doPrivileged(
-          (PrivilegedAction<Map<String, String>>) System::getenv);
-    } catch (SecurityException se) {
-      SecureRandomProvider.LOG.warn(
-          "Lacking permission \"RuntimePermission getenv.*\" - cannot fully personalize nonce factory");
-      env = null;
-    }
+    env = System.getenv();
 
     if (env == null) {
       dig.writeInt(-1);

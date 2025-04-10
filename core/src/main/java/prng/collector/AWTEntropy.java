@@ -7,12 +7,7 @@ import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
 import java.awt.Robot;
 import java.awt.image.BufferedImage;
-import java.lang.reflect.UndeclaredThrowableException;
-import java.security.AccessController;
 import java.security.MessageDigest;
-import java.security.PrivilegedAction;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -49,18 +44,7 @@ public class AWTEntropy extends EntropyCollector {
      */
     Sampler(GraphicsDevice d) throws AWTException, SecurityException {
       device = d;
-      try {
-        robot = AccessController.doPrivileged((PrivilegedExceptionAction<Robot>) () -> new Robot(device));
-      } catch (PrivilegedActionException e) {
-        Exception cause = e.getException();
-        if (cause instanceof AWTException) {
-          throw (AWTException) cause;
-        }
-
-        // SecurityException and RuntimeException are not checked exceptions so whilst they may happen, they should not come here.
-        EntropyCollector.LOG.error("Undeclared throwable in AWTEntropy", e.getCause());
-        throw new UndeclaredThrowableException(e.getCause());
-      }
+      robot = new Robot(device);
     }
 
 
@@ -91,8 +75,7 @@ public class AWTEntropy extends EntropyCollector {
 
       Rectangle rect = new Rectangle(xOff, yOff, width, height);
       try {
-        // use privileges to read the screen
-        return AccessController.doPrivileged((PrivilegedAction<BufferedImage>) () -> robot.createScreenCapture(rect));
+        return robot.createScreenCapture(rect);
       } catch (SecurityException e) {
         // expected
         return null;
@@ -100,6 +83,8 @@ public class AWTEntropy extends EntropyCollector {
     }
 
   }
+
+
 
   private final MessageDigest digest = HashSpec.SPEC_SHA256.getInstance();
 

@@ -30,4 +30,5 @@ public class FreeMemoryEntropy extends EntropyCollector {
     long memory = Runtime.getRuntime().freeMemory() >> 2;
     setEvent((short) memory);
   }
+
 }

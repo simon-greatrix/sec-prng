@@ -5,8 +5,6 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.Map;
 import java.util.Properties;
 import java.util.function.Supplier;
@@ -34,19 +32,11 @@ public class Props extends Properties {
    * Load preferences as properties
    *
    * @param prefSupplier source of preferences
-   * @param src the nominal URI for these preferences
+   * @param src          the nominal URI for these preferences
    */
   public Props(Supplier<Preferences> prefSupplier, URI src) {
     source = src;
-    Preferences prefs = null;
-    // Get the preferences using a privileged action.
-    try {
-      prefs = AccessController.doPrivileged(
-          (PrivilegedAction<Preferences>) prefSupplier::get);
-    } catch (SecurityException se) {
-      Config.LOG.info("Unable to access preferences for \""
-          + src.toASCIIString() + "\"", se);
-    }
+    Preferences prefs = prefSupplier.get();
 
     // Start loading the properties
     if (prefs == null) {
@@ -138,4 +128,5 @@ public class Props extends Properties {
   public boolean isLoadedOk() {
     return loadedOk;
   }
+
 }

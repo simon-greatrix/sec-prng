@@ -1,0 +1,13 @@
+plugins {
+    id 'buildlogic.java-conventions'
+}
+
+dependencies {
+    api project(':secure-prng-core')
+}
+
+description = 'image'
+
+java {
+    withJavadocJar()
+}

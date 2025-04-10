@@ -25,9 +25,8 @@ public abstract class PreferenceStorage extends SeedStorage {
    * Get the appropriate preferences
    *
    * @return the preferences.
-   * @throws StorageException if the preferences cannot be retrieved
    */
-  protected abstract Preferences getPreferences() throws StorageException;
+  protected abstract Preferences getPreferences();
 
 
   @Override
@@ -62,7 +61,7 @@ public abstract class PreferenceStorage extends SeedStorage {
       Preferences prefs = getPreferences();
       prefs.remove(name);
       prefs.flush();
-    } catch (StorageException | BackingStoreException e) {
+    } catch (BackingStoreException e) {
       LOG.error("Failed to remove {} from storage", name, e);
     }
   }

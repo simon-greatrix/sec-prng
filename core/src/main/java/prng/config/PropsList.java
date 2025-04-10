@@ -4,8 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.LinkedList;
@@ -43,10 +41,45 @@ public class PropsList {
    * Load the configuration.
    */
   public void load() {
-    AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
-      loadWithPrivilege();
-      return null;
-    });
+    // We work from least important to most important
+    // First load from the class-path
+    loadPropertyResources("prng/secure-prng-defaults.properties");
+    loadPropertyResources("prng/secure-prng.properties");
+    loadPropertyResources("prng/secure-prng-override.properties");
+
+    // merge to see if system properties are enabled
+    merge();
+
+    if (Boolean.parseBoolean(merged.get("config.preferences.enable.system"))) {
+      // System properties over-ride anything on the deployment
+      props.addFirst(new Props(
+          () -> Preferences.systemNodeForPackage(
+              SecureRandomProvider.class),
+          Config.URI_PREFERENCE_SYSTEM
+      ));
+    }
+
+    // Now from files or URLs
+    loadFromUrl(Config.getProperty("prng.config.properties.url"), false);
+    loadFromUrl(Config.getProperty("prng.config.properties"), true);
+    loadFromUrl(Config.getEnv("PRNG_CONFIG_PROPERTIES_URL"), false);
+    loadFromUrl(Config.getEnv("PRNG_CONFIG_PROPERTIES"), true);
+
+    // merge to see if user properties are enabled
+    merge();
+
+    if (Boolean.parseBoolean(merged.get("config.preferences.enable.user"))) {
+      // User properties over-ride everything
+      props.addFirst(
+          new Props(
+              () -> Preferences.userNodeForPackage(
+                  SecureRandomProvider.class),
+              Config.URI_PREFERENCE_USER
+          )
+      );
+    }
+
+    merge();
   }
 
 
@@ -96,52 +129,6 @@ public class PropsList {
     }
     // Adding the reverse list at position zero puts the first loaded properties at the start and the ones loaded later further down the list, as required.
     props.addAll(0, reversed);
-  }
-
-
-  /**
-   * Load the property files with access privilege.
-   */
-  void loadWithPrivilege() {
-    // We work from least important to most important
-    // First load from the class-path
-    loadPropertyResources("prng/secure-prng-defaults.properties");
-    loadPropertyResources("prng/secure-prng.properties");
-    loadPropertyResources("prng/secure-prng-override.properties");
-
-    // merge to see if system properties are enabled
-    merge();
-
-    if (Boolean.parseBoolean(merged.get("config.preferences.enable.system"))) {
-      // System properties over-ride anything on the deployment
-      props.addFirst(new Props(
-          () -> Preferences.systemNodeForPackage(
-              SecureRandomProvider.class),
-          Config.URI_PREFERENCE_SYSTEM
-      ));
-    }
-
-    // Now from files or URLs
-    loadFromUrl(Config.getProperty("prng.config.properties.url"), false);
-    loadFromUrl(Config.getProperty("prng.config.properties"), true);
-    loadFromUrl(Config.getEnv("PRNG_CONFIG_PROPERTIES_URL"), false);
-    loadFromUrl(Config.getEnv("PRNG_CONFIG_PROPERTIES"), true);
-
-    // merge to see if user properties are enabled
-    merge();
-
-    if (Boolean.parseBoolean(merged.get("config.preferences.enable.user"))) {
-      // User properties over-ride everything
-      props.addFirst(
-          new Props(
-              () -> Preferences.userNodeForPackage(
-                  SecureRandomProvider.class),
-              Config.URI_PREFERENCE_USER
-          )
-      );
-    }
-
-    merge();
   }
 
 

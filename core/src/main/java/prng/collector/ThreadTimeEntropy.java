@@ -2,6 +2,7 @@ package prng.collector;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
+
 import prng.config.Config;
 
 /**

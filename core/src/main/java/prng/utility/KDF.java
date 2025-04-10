@@ -14,9 +14,9 @@ import javax.crypto.spec.SecretKeySpec;
 /**
  * Implementation of NIST SP800-108 key derivation function in double pipeline mode.
  *
- * <p>Example usage:
+ * <p>Example usage:</p>
  *
- * <p><code><pre>
+ * <p><code>
  *   // privateKey and publicKey are compatible elliptic curve keys
  *   // kdfContext is some data known to both parties
  *   //
@@ -35,7 +35,7 @@ import javax.crypto.spec.SecretKeySpec;
  *   gcmSpec = new GCMParameterSpec(128, iv);
  *   cipher = Cipher.getInstance("AES/GCM/NoPadding");
  *   cipher.init(Cipher.DECRYPT_MODE, secretKey, gcmSpec);
- * </pre></code>
+ * </code></p>
  *
  * @author Simon Greatrix on 30/10/2017.
  */

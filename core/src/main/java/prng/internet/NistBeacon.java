@@ -8,9 +8,12 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.DigestException;
 import java.security.MessageDigest;
+
 import prng.generator.HashSpec;
 
 /**
+ * Fetch random data from the NIST beacon.
+ *
  * @author Simon Greatrix on 25/10/2019.
  */
 public class NistBeacon extends NetRandom {
@@ -60,4 +63,5 @@ public class NistBeacon extends NetRandom {
   URL url() {
     return NIST_BEACON;
   }
+
 }

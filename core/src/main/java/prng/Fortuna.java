@@ -19,7 +19,7 @@ import prng.seeds.SeedStorage;
 
 /**
  * Implementation of a Fortuna-like secure random number source. Fortuna has many internal pools to collect potential entropy in. As long as some pool collects
- * some entropy, the output becomes unpredictable. <p>
+ * some entropy, the output becomes unpredictable.
  *
  * @author Simon Greatrix
  */

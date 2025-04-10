@@ -23,6 +23,6 @@ public class WorksAsPrimary {
     System.out.println(random.getAlgorithm());
 
     System.out.println("Sleeping 5 seconds");
-    Thread.currentThread().sleep(5000);
+    Thread.sleep(5000);
   }
 }

@@ -177,7 +177,7 @@ public class AESWrap {
         // NB: Add one as our R is zero based
         int t = n * j + i + 1;
         for (int k = 0; (k < 4) && (t != 0); k++) {
-          A[7 - k] ^= t & 0xff;
+          A[7 - k] ^= (byte) (t & 0xff);
           t >>>= 8;
         }
         unwrapper.update(A);
@@ -236,9 +236,9 @@ public class AESWrap {
     // m The number of octets in the key data
     // n The number of 64-bit blocks in the padded key data
     // Q[i] The ith plaintext octet in the key data
-    // P[i] The ith 64-bit plaintext block in the padded key data
-    // C[i] The ith 64-bit ciphertext data block
-    // A The 64-bit integrity check register
+    // 'P[i]' : The ith 64-bit plaintext block in the padded key data
+    // 'C[i]' : The ith 64-bit ciphertext data block
+    // 'A'    : The 64-bit integrity check register
 
     int m = plainText.length;
 

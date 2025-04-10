@@ -4,14 +4,11 @@ import java.io.StringWriter;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
-import java.util.PropertyPermission;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -109,7 +106,7 @@ public class Config implements Iterable<String> {
    * @return the configuration associated with that prefix
    */
   public static Config getConfig(String prefix) {
-    if ((prefix.length() > 0) && !prefix.endsWith(".")) {
+    if ((!prefix.isEmpty()) && !prefix.endsWith(".")) {
       prefix = prefix + ".";
     }
     return new Config(prefix);
@@ -125,7 +122,7 @@ public class Config implements Iterable<String> {
    * @return the configuration
    */
   public static Config getConfig(String prefix, Class<?> context) {
-    if ((prefix.length() > 0) && !prefix.endsWith(".")) {
+    if ((!prefix.isEmpty()) && !prefix.endsWith(".")) {
       prefix = prefix + ".";
     }
     prefix += context.getName() + ".";
@@ -138,19 +135,11 @@ public class Config implements Iterable<String> {
    *
    * @param key the variable name to retrieve
    *
-   * @return the value, or null if the variable does not exist, or we lack the privilege to get it.
+   * @return the value, or null if the variable does not exist.
    */
   public static String getEnv(String key) {
-    return AccessController.doPrivileged((PrivilegedAction<String>) () -> {
-      try {
-        return System.getProperty(key);
-      } catch (SecurityException se) {
-        RuntimePermission p = new RuntimePermission(
-            "getenv." + key);
-        LOG.warn("Unable to read environment variable \"{}\". Missing permission {}", key, p);
-        return null;
-      }
-    });
+    // This used to be a privileged action, but it is not needed anymore.
+    return System.getProperty(key);
   }
 
 
@@ -159,18 +148,11 @@ public class Config implements Iterable<String> {
    *
    * @param key the system property to retrieve
    *
-   * @return the property, or null if the property does not exist, or we lack the privilege to get it.
+   * @return the property, or null if the property does not exist.
    */
   public static String getProperty(String key) {
-    return AccessController.doPrivileged((PrivilegedAction<String>) () -> {
-      try {
-        return System.getProperty(key);
-      } catch (SecurityException se) {
-        PropertyPermission p = new PropertyPermission(key, "read");
-        LOG.warn("Unable to read system property \"{}\". Missing permission {}", key, p);
-        return null;
-      }
-    });
+    // This used to be a privileged action, but it is not needed anymore.
+    return System.getProperty(key);
   }
 
 

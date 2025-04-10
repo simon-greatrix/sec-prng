@@ -52,6 +52,11 @@ public class Letters extends BasePainter {
   }
 
 
+  /**
+   * Create a new instance.
+   *
+   * @param rand source of randomness
+   */
   public Letters(Random rand) {
     super(rand);
   }
@@ -73,7 +78,8 @@ public class Letters extends BasePainter {
 
     ArrayList<Area> drawn = new ArrayList<>();
     ArrayList<Rectangle2D> bounds = new ArrayList<>();
-    BufferedImage image = new BufferedImage(512, 512,
+    BufferedImage image = new BufferedImage(
+        512, 512,
         BufferedImage.TYPE_INT_RGB
     );
 

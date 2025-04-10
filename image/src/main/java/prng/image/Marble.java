@@ -5,28 +5,32 @@ import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.util.Random;
 
+/**
+ * Create a random marbled image.
+ */
 public class Marble extends BasePainter {
 
-  public interface Op {
+  private interface Op {
 
     int getHue(double x, double y);
+
   }
 
 
 
-  public static class Comb implements Op {
+  private static class Comb implements Op {
 
-    Op next;
+    final Op next;
 
-    double sharpness;
+    final double sharpness;
 
-    double shift;
+    final double shift;
 
-    double spacing;
+    final double spacing;
 
-    double unitX;
+    final double unitX;
 
-    double unitY;
+    final double unitY;
 
 
     Comb(Op op, Random rand) {
@@ -49,21 +53,22 @@ public class Marble extends BasePainter {
       double ny = y - (scale * unitX);
       return next.getHue(nx, ny);
     }
+
   }
 
 
 
-  public static class Ink implements Op {
+  private static class Ink implements Op {
+
+    final double centX;
+
+    final double centY;
+
+    final Op next;
 
     double area;
 
-    double centX;
-
-    double centY;
-
     int hue;
-
-    Op next;
 
 
     Ink(Op ink, double scale, Random rand) {
@@ -105,24 +110,54 @@ public class Marble extends BasePainter {
       double oy = centY + (dy * fact);
       return next.getHue(ox, oy);
     }
+
   }
 
 
 
-  public static class Wave implements Op {
+  private static class Ripple {
 
-    double amplitude;
+    final double centX;
 
-    Op next;
+    final double centY;
 
-    double unitX;
+    final double min;
 
-    double unitY;
-
-    double wavelength;
+    final double wavelength;
 
 
-    public Wave(Op op, Random rand) {
+    Ripple(Random rand, float min) {
+      centX = rand.nextInt(512);
+      centY = rand.nextInt(512);
+      wavelength = 8 + (24 * rand.nextDouble());
+      this.min = min;
+    }
+
+
+    public float getModifier(double x, double y) {
+      double dist = Math.hypot(x - centX, y - centY);
+      return (float) (min
+          + ((1 - min) * 0.5 * (1 + Math.cos(dist / wavelength))));
+    }
+
+  }
+
+
+
+  private static class Wave implements Op {
+
+    final double amplitude;
+
+    final Op next;
+
+    final double unitX;
+
+    final double unitY;
+
+    final double wavelength;
+
+
+    Wave(Op op, Random rand) {
       next = op;
       double angle = Math.PI * 2 * rand.nextDouble();
       unitX = Math.cos(angle);
@@ -140,42 +175,21 @@ public class Marble extends BasePainter {
       double ny = y + (eff * unitX);
       return next.getHue(nx, ny);
     }
+
   }
 
 
-
-  public class Ripple {
-
-    double centX;
-
-    double centY;
-
-    double min;
-
-    double wavelength;
-
-
-    Ripple(Random rand, float min) {
-      centX = rand.nextInt(512);
-      centY = rand.nextInt(512);
-      wavelength = 8 + (24 * rand.nextDouble());
-      this.min = min;
-    }
-
-
-    public float getModifier(double x, double y) {
-      double dist = Math.hypot(x - centX, y - centY);
-      return (float) (min
-          + ((1 - min) * 0.5 * (1 + Math.cos(dist / wavelength))));
-    }
-  }
-
-
+  /** New instance. A random number generator must be assigned. */
   public Marble() {
     // do nothing
   }
 
 
+  /**
+   * New instance.
+   *
+   * @param rand source of randomness
+   */
   public Marble(Random rand) {
     super(rand);
   }
@@ -183,8 +197,10 @@ public class Marble extends BasePainter {
 
   @Override
   public void create() {
-    BufferedImage image = new BufferedImage(512, 512,
-        BufferedImage.TYPE_INT_RGB);
+    BufferedImage image = new BufferedImage(
+        512, 512,
+        BufferedImage.TYPE_INT_RGB
+    );
 
     double scale = 1000;
     Op ink = new Ink(null, scale, rand);
@@ -253,4 +269,5 @@ public class Marble extends BasePainter {
 
     myImage = image;
   }
+
 }

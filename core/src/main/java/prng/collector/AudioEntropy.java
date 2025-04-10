@@ -28,7 +28,7 @@ public class AudioEntropy extends EntropyCollector {
    *
    * @author Simon Greatrix
    */
-  static class AudioSource {
+  protected static class AudioSource {
 
     /** The buffer size we will use with this format */
     final int bufferSize;
@@ -119,7 +119,7 @@ public class AudioEntropy extends EntropyCollector {
       // May throw SecurityException
       Mixer mixer = AudioSystem.getMixer(mi);
 
-      // No use if cannot record from it
+      // No use if we cannot record from it
       if (!mixer.isLineSupported(targetDataType)) {
         continue;
       }
@@ -140,7 +140,7 @@ public class AudioEntropy extends EntropyCollector {
   protected static void getSources(List<AudioSource> list, Mixer mixer) {
     // Get the recordable lines
     Line.Info[] sourceLines = mixer.getTargetLineInfo();
-    if ((sourceLines == null) || (sourceLines.length == 0)) {
+    if (sourceLines == null) {
       // no sources from this mixer
       return;
     }
@@ -206,13 +206,15 @@ public class AudioEntropy extends EntropyCollector {
         for (float f : sampleRate) {
           for (int s : sampleSize) {
             for (int c : channels) {
-              AudioFormat test = new AudioFormat(f, s, c,
+              AudioFormat test = new AudioFormat(
+                  f, s, c,
                   isPCMSigned, isBig
               );
               DataLine.Info targetInfo = new DataLine.Info(
                   TargetDataLine.class, test, buffSize);
               if (mixer.isLineSupported(targetInfo)) {
-                list.add(new AudioSource(mixer, targetInfo,
+                list.add(new AudioSource(
+                    mixer, targetInfo,
                     buffSize
                 ));
               }
@@ -225,6 +227,11 @@ public class AudioEntropy extends EntropyCollector {
   }
 
 
+  /**
+   * Report available audio sources.
+   *
+   * @param args ignored
+   */
   public static void main(String[] args) {
     // A recordable line is a target data line
     Line.Info targetDataType = new Line.Info(TargetDataLine.class);
@@ -235,7 +242,7 @@ public class AudioEntropy extends EntropyCollector {
       // May throw SecurityException
       Mixer mixer = AudioSystem.getMixer(mi);
 
-      // No use if cannot record from it
+      // No use if we cannot record from it
       if (!mixer.isLineSupported(targetDataType)) {
         continue;
       }
@@ -247,8 +254,10 @@ public class AudioEntropy extends EntropyCollector {
     }
   }
 
+
   private final MessageDigest digest = HashSpec.SPEC_SHA256.getInstance();
 
+  /** Available audio sources. */
   protected List<AudioSource> availableSources;
 
 

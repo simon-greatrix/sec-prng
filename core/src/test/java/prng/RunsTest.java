@@ -3,7 +3,7 @@ package prng;
 import java.util.Arrays;
 import java.util.TreeSet;
 
-/** http://www.itl.nist.gov/div898/handbook/eda/section3/eda35d.htm */
+/** <a href="http://www.itl.nist.gov/div898/handbook/eda/section3/eda35d.htm">...</a> */
 public class RunsTest {
 
     static byte[] create(int order) {
@@ -23,7 +23,7 @@ public class RunsTest {
     public static void main(String[] args) {
         boolean[] ht = new boolean[256];
 
-        double[][] score = new double[8192][8];        
+        double[][] score = new double[8192][8];
         for(int i = 0;i < 8192;i++) {
             byte[] data = create(i);
             for(int k = 0;k < 8;k++) {
@@ -54,17 +54,17 @@ public class RunsTest {
         }
 
         int[] points = new int[8192];
-        
+
         for(int j=0;j<8;j++) {
             TreeSet<Double> values = new TreeSet<>();
             for(int i=0;i<8192;i++) {
-                values.add(Double.valueOf(score[i][j]));
+                values.add(score[i][j]);
             }
             for(int i=0;i<8192;i++) {
-                points[i] += values.headSet(Double.valueOf(score[i][j])).size();
+                points[i] += values.headSet(score[i][j]).size();
             }
         }
-        
+
         int b = 8192;
         int bi;
         for(int i=0;i<8192;i++) {
@@ -74,7 +74,7 @@ public class RunsTest {
                 System.out.println(bi+" "+b);
             }
         }
-        
+
         byte[] data = create(3223);
         System.out.println(Arrays.toString(data));
         System.out.println(Arrays.toString(score[3223]));

@@ -129,7 +129,6 @@ public class Stacker implements AutoCloseable {
           fw.write('\n');
         }
         fw.flush();
-        fw.close();
       } catch (IOException ioe) {
         // LOGGER.error("Stack logging file writer failed.", ioe);
       }

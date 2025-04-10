@@ -207,12 +207,11 @@ public abstract class EntropyCollector extends EntropySource
       } catch (ClassCastException cce) {
         LOG.error("Class {} is not a sub-class of EntropyCollector", cl, cce);
       } catch (InvocationTargetException | InstantiationException
-          | IllegalAccessException e) {
-        LOG.error("Class " + cl + " could not be instantiated", e);
+               | IllegalAccessException e) {
+        LOG.error("Class {} could not be instantiated", cl, e);
       } catch (NoSuchMethodException e) {
         // It really should have a constructor :-)
-        LOG.error("Class " + cl + " does not have a constructor"
-            + " that takes an instance of Config", e);
+        LOG.error("Class {} does not have a constructor that takes an instance of Config", cl, e);
       }
     }
   }

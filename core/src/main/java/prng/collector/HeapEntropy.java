@@ -29,4 +29,5 @@ public class HeapEntropy extends EntropyCollector {
   protected void runImpl() {
     setEvent(System.identityHashCode(new Object()));
   }
+
 }

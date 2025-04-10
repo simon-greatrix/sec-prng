@@ -5,13 +5,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.security.AccessController;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
 
 import org.slf4j.Logger;
 import prng.LoggersFactory;
-import prng.SecureRandomProvider;
 import prng.config.Config;
 import prng.seeds.SeedStorage;
 
@@ -21,7 +17,7 @@ import prng.seeds.SeedStorage;
  * <ol>
  *   <li>www.random.org : Generates random data from radio static.</li>
  *   <li>qrng.anu.edu.au : Generates random data from quantum vacuum fluctuations.</li>
- *   <li>The NIST Randomness Beacon : https://beacon.nist.gov/home</li>
+ *   <li>The NIST Randomness Beacon : <a href="https://beacon.nist.gov/home">https://beacon.nist.gov/home</a></li>
  *   <li>www.fourmilab.ch/hotbits : Generates random data from the radioactive decay of Kr-85 (Shutdown 2022)</li>
  *   </ol>
  * <p>
@@ -178,7 +174,8 @@ public abstract class NetRandom {
   public byte[] load() {
     byte[] newData;
     try {
-      newData = AccessController.doPrivileged((PrivilegedExceptionAction<byte[]>) this::fetch);
+      newData = fetch();
+
       if (newData == null || newData.length != 128) {
         // Failed to fetch data. It happens.
         LOG.warn(
@@ -189,18 +186,11 @@ public abstract class NetRandom {
         // blank the entropy to indicate it is no good
         newData = new byte[0];
       }
-    } catch (PrivilegedActionException e) {
-      Exception ioe = e.getException();
+    } catch (IOException ioe) {
       // Failed to fetch data. It happens.
       LOG.warn("External entropy service failed", ioe);
 
       // blank the entropy to indicate it is no good
-      newData = new byte[0];
-    } catch (SecurityException e) {
-      SecureRandomProvider.LOG.warn(
-          "Lacking permission \"SocketPermission {} resolve,connect\" or \"URLPermission {} GET,POST\". Cannot access internet entropy source",
-          url(), url()
-      );
       newData = new byte[0];
     }
 

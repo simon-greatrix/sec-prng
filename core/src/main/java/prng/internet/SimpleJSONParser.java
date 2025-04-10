@@ -737,7 +737,7 @@ public class SimpleJSONParser {
         case 3: // fall thru
         case 4: // fall thru
         case 5: // fall thru
-          // unicode escape
+          // Unicode escape
           u = u * 16;
           if ('0' <= r && r <= '9') {
             u += r - '0';

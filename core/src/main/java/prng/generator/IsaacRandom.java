@@ -106,7 +106,7 @@ public class IsaacRandom extends Random {
   private int valuesUsed;
 
 
-  /** Create a unseeded generator */
+  /** Create an unseeded generator */
   public IsaacRandom() {
     super(0);
     setSeed(createStartingSeed(this));

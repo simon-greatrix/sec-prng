@@ -138,12 +138,7 @@ public abstract class SeedStorage implements AutoCloseable {
           store = new UserPrefsStorage();
         } catch (StorageException se) {
           LOG.error("Failed to use user preferences for seed storage.", se);
-          try {
-            store = new FileStorage();
-          } catch (StorageException se2) {
-            LOG.error("Failed to use file system for seed storage.", se2);
-            store = new FakedStorage();
-          }
+          store = new FileStorage();
         }
       }
 

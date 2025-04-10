@@ -27,7 +27,6 @@ public class PBEItem {
      * @param input
      *            the input
      * @return the bytes
-     * @throws IOException
      */
     private static byte[] readArray(DataInputStream input) throws IOException {
         int len = input.readUnsignedShort();
@@ -54,7 +53,7 @@ public class PBEItem {
         StringBuilder buf = new StringBuilder();
         buf.append("[ ");
         for(byte b:data) {
-            buf.append(String.format("%02x ", Integer.valueOf(b & 0xff)));
+            buf.append(String.format("%02x ", b & 0xff));
         }
         buf.append("]");
         return buf.toString();
@@ -68,7 +67,6 @@ public class PBEItem {
      *            the output
      * @param array
      *            the bytes
-     * @throws IOException
      */
     private static void writeArray(DataOutputStream output, byte[] array)
             throws IOException {
@@ -331,7 +329,7 @@ public class PBEItem {
         writeArray(output, iv);
         writeArray(output, mac);
         output.writeUTF(macAlg);
-        writeArray(output, ((SecretKeySpec) macKey).getEncoded());
+        writeArray(output, macKey.getEncoded());
         output.writeUTF(path);
         output.writeInt(pbeIterations);
         writeArray(output, pbeSalt);

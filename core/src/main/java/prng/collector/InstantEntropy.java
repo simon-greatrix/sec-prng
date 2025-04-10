@@ -8,6 +8,7 @@ import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -37,7 +38,8 @@ public class InstantEntropy implements Runnable {
   static final Counter COUNTER = new Counter();
 
   /** Thread pool for handling requests for entropy */
-  static final ExecutorService FUTURE_RUNNER = new ThreadPoolExecutor(2, 2,
+  static final Executor FUTURE_RUNNER = new ThreadPoolExecutor(
+      2, 2,
       100, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(),
       new DaemonThreadFactory("PRNG-SeedGenerator")
   );
@@ -53,7 +55,8 @@ public class InstantEntropy implements Runnable {
   private static final int[] ADD_CONST = {1, 7, 11, 13, 17, 19, 23, 29};
 
   /** Thread pool for generating entropy */
-  private static final ExecutorService ENTROPY_RUNNER = new ThreadPoolExecutor(20,
+  private static final ExecutorService ENTROPY_RUNNER = new ThreadPoolExecutor(
+      20,
       20, 100, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(),
       new DaemonThreadFactory("PRNG-EntropyFactory")
   );
@@ -112,7 +115,7 @@ public class InstantEntropy implements Runnable {
           updates = 0;
 
           // Save the ISAAC entropy.
-          FUTURE_RUNNER.submit(() -> {
+          FUTURE_RUNNER.execute(() -> {
             byte[] data = new byte[1024];
             RAND.nextBytes(data);
             Seed seed = new Seed("instant", data);
@@ -185,7 +188,7 @@ public class InstantEntropy implements Runnable {
           entropy = null;
         }
       }
-      FUTURE_RUNNER.submit(this);
+      FUTURE_RUNNER.execute(this);
     }
 
 
@@ -401,8 +404,8 @@ public class InstantEntropy implements Runnable {
     while (buf.hasRemaining()) {
       // hash the previous value
       BigInteger hash = FNV_OFFSET;
-      for (int j = 0; j < p.length; j++) {
-        hash = hash.xor(BigInteger.valueOf(0xff & p[j])).multiply(FNV_PRIME).and(FNV_MASK);
+      for (byte b : p) {
+        hash = hash.xor(BigInteger.valueOf(0xff & b)).multiply(FNV_PRIME).and(FNV_MASK);
       }
 
       // Add the nano time to the hash. As we are not doing anything

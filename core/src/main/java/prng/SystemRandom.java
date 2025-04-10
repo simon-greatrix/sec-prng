@@ -32,10 +32,10 @@ import prng.utility.NonceFactory;
  * <p>System provided secure random sources. We assume there is at least one such source. The sources are multiplexed, with one byte taken from each source in
  * turn. This means that if any source has a good entropic seed, its entropy will be included in all outputs. </p>
  *
- * <p>The sources are periodically cross-pollinated with entropy from each other. </p>
+ * <p>The sources are periodically cross-pollinated with entropy from each other.</p>
  *
  * <p>Note that since some system provided random sources will block whilst they wait for entropy to arrive (e.g. reading from /dev/random), this class may
- * delay start-up. </p>
+ * delay start-up.</p>
  *
  * @author Simon Greatrix
  */

@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.security.SecureRandom;
 import java.util.Enumeration;
 import java.util.LinkedList;
@@ -62,8 +60,7 @@ public class TimeBasedUUID {
    */
   private static byte[] getAddress() {
     try {
-      byte[] data = AccessController.doPrivileged(
-          (PrivilegedAction<byte[]>) TimeBasedUUID::getAddressWithPrivilege);
+      byte[] data = getAddressInternal();
       if (data != null) {
         return data;
       }
@@ -72,7 +69,7 @@ public class TimeBasedUUID {
           "Cannot get MAC for local host. Require permission \"NetPermission getNetworkInformation\" and \"SocketPermission localhost, resolve\".");
     }
 
-    // Must create random multi-cast address. We will create one from an
+    // Must create random multicast address. We will create one from an
     // unused block in the CF range. The CF range is currently closed but
     // was intended for when there is no appropriate regular organizational
     // unit identifier (OUI) which would normally constitute the first three
@@ -92,7 +89,7 @@ public class TimeBasedUUID {
    *
    * @throws SecurityException if the MAC address remains inaccessible
    */
-  static byte[] getAddressWithPrivilege() throws SecurityException {
+  private static byte[] getAddressInternal() throws SecurityException {
     try {
       // first try local host
       LOG.info("Getting address for localhost");
@@ -157,11 +154,7 @@ public class TimeBasedUUID {
         }
       } catch (SocketException se) {
         // ignore this interface
-        LOG.warn(
-            "Failed to get localhost hardware address or sub-interfaces for "
-                + nint.getDisplayName(),
-            se
-        );
+        LOG.warn("Failed to get localhost hardware address or sub-interfaces for {}", nint.getDisplayName(), se);
       }
     }
 
@@ -277,7 +270,7 @@ final class UUIDTime {
 
 
   /**
-   * Initialize this timer. Ideally the random number generator will provide a secure random value to initialise the sequence with.
+   * Initialise this timer. Ideally the random number generator will provide a secure random value to initialise the sequence with.
    *
    * @param random RNG
    */

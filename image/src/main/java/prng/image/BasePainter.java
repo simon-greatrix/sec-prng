@@ -8,6 +8,9 @@ import java.awt.image.BufferedImage;
 import java.util.Random;
 import java.util.function.DoubleConsumer;
 
+/**
+ * Base class for all painters.
+ */
 public abstract class BasePainter implements Painter {
 
   BufferedImage myImage;
@@ -32,11 +35,17 @@ public abstract class BasePainter implements Painter {
   }
 
 
+  /** Create the image. */
   public void create() {
     throw new UnsupportedOperationException("Not implemented");
   }
 
 
+  /**
+   * Get the image.
+   *
+   * @return the image
+   */
   public BufferedImage getImage() {
     return myImage;
   }
@@ -47,10 +56,14 @@ public abstract class BasePainter implements Painter {
     Rectangle bounds = graphics.getClipBounds();
     AffineTransform trans = AffineTransform.getScaleInstance(
         bounds.getWidth() / 512, bounds.getHeight() / 512);
-    AffineTransformOp op = new AffineTransformOp(trans,
-        AffineTransformOp.TYPE_BICUBIC);
-    graphics.drawImage(myImage, op, (int) bounds.getX(),
-        (int) bounds.getY());
+    AffineTransformOp op = new AffineTransformOp(
+        trans,
+        AffineTransformOp.TYPE_BICUBIC
+    );
+    graphics.drawImage(
+        myImage, op, (int) bounds.getX(),
+        (int) bounds.getY()
+    );
   }
 
 
@@ -58,4 +71,5 @@ public abstract class BasePainter implements Painter {
   public void setRandom(Random newRand) {
     rand = newRand;
   }
+
 }
