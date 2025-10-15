@@ -17,7 +17,7 @@ dependencies {
 }
 
 group = 'com.pippsford'
-version = '0.14'
+version = '0.15'
 
 java {
   withJavadocJar()
