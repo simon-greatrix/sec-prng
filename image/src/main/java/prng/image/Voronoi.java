@@ -540,10 +540,10 @@ public class Voronoi extends BasePainter {
 
   private void make(Data data) {
     List<Point> bbox2 = new ArrayList<>(4);
-    double x = 0;
-    double y = 0;
-    double w = 512;
-    double h = 512;
+    final double x = 0;
+    final double y = 0;
+    final double w = 512;
+    final double h = 512;
     bbox2.add(new Point(x, y));
     bbox2.add(new Point(x + w, y));
     bbox2.add(new Point(x + w, y + h));

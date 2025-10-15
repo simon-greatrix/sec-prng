@@ -1,4 +1,4 @@
-/.gradle
+**/.gradle
 **/bin/
 **/target/
 **/build/

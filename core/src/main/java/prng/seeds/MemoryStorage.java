@@ -1,22 +1,24 @@
 package prng.seeds;
 
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ConcurrentHashMap;
+
 import prng.SystemRandom;
 
 /**
- * Faked fallback storage. If you are using this, something has probably gone wrong.
+ * In-memory only storage. If you are using this, something has probably gone wrong.
  *
  * @author Simon Greatrix
  */
-public class FakedStorage extends SeedStorage {
+public class MemoryStorage extends SeedStorage {
+
+  private final ConcurrentHashMap<String, byte[]> storage = new ConcurrentHashMap<>();
+
 
   @Override
   protected byte[] getRaw(String name) {
     SystemRandom.injectSeed(name.getBytes(StandardCharsets.UTF_8));
-    // No record of what size might be expected, so just go with 512 bits.
-    byte[] seed = new byte[64];
-    SystemRandom.nextBytes(seed);
-    return seed;
+    return storage.get(name);
   }
 
 
@@ -24,12 +26,14 @@ public class FakedStorage extends SeedStorage {
   protected void putRaw(String name, byte[] data) {
     SystemRandom.injectSeed(name.getBytes(StandardCharsets.UTF_8));
     SystemRandom.injectSeed(data);
+    storage.put(name, data);
   }
 
 
   @Override
   protected void remove(String name) {
     SystemRandom.injectSeed(name.getBytes(StandardCharsets.UTF_8));
+    storage.remove(name);
   }
 
 }

@@ -24,7 +24,7 @@ import prng.utility.DigestDataOutput;
 import prng.utility.NonceFactory;
 
 /**
- * Attempts to create useful entropy from nothing. It should be assumed that this entropy is of low quality, and therefore it should only be used a last
+ * Attempts to create useful entropy from nothing. It should be assumed that this entropy is of low quality, and therefore it should only be used as a last
  * recourse.
  *
  * @author Simon Greatrix
